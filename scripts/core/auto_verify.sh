@@ -73,9 +73,16 @@ echo "${BLUE}📋 [Auto Verify] Detected stack: $DETECTED_STACK (Package Manager
 # 2. 스택별 검증 실행
 case "$DETECTED_STACK" in
 	python)
-		echo "${BLUE}🐍 [Python/Poetry] Running Python-specific verification...${NC}"
+		if [ "$HAS_UV_LOCK" = true ]; then
+			echo "${BLUE}🐍 [Python/uv] Running Python-specific verification...${NC}"
+		elif [ "$HAS_POETRY_LOCK" = true ]; then
+			echo "${BLUE}🐍 [Python/Poetry] Running Python-specific verification...${NC}"
+			echo "${YELLOW}💡 Tip: Migrate to uv for faster dependency management: scripts/core/migrate_to_uv.sh${NC}"
+		else
+			echo "${BLUE}🐍 [Python] Running Python-specific verification...${NC}"
+		fi
 		
-		# 2a. Poetry shell 활성화 확인
+		# 2a. 가상 환경 활성화 확인 (uv 또는 Poetry)
 		if [ -z "$VIRTUAL_ENV" ] && [ -n "$DETECTED_VENV_PATH" ]; then
 			if [ -d "$PROJECT_ROOT/$DETECTED_VENV_PATH" ]; then
 				echo "${YELLOW}⚠️  Virtual environment not activated. Activating...${NC}"
@@ -87,13 +94,38 @@ case "$DETECTED_STACK" in
 			fi
 		fi
 		
-		# Poetry 명령어 확인
-		if ! command -v poetry >/dev/null 2>&1; then
-			echo "${YELLOW}⚠️  Poetry not found in PATH. Some checks may be skipped.${NC}"
+		# uv 또는 Poetry 명령어 확인
+		if [ "$HAS_UV_LOCK" = true ]; then
+			if ! command -v uv >/dev/null 2>&1; then
+				echo "${YELLOW}⚠️  uv not found in PATH. Install from: https://github.com/astral-sh/uv${NC}"
+			fi
+		elif [ "$HAS_POETRY_LOCK" = true ]; then
+			if ! command -v poetry >/dev/null 2>&1; then
+				echo "${YELLOW}⚠️  Poetry not found in PATH. Some checks may be skipped.${NC}"
+				echo "${YELLOW}💡 Or migrate to uv: scripts/core/migrate_to_uv.sh${NC}"
+			fi
 		fi
 		
-		# 2b. ruff check 실행 (black, mypy는 deprecated)
-		if command -v ruff >/dev/null 2>&1; then
+		# 2b. ruff check 실행
+		if [ "$HAS_UV_LOCK" = true ] && command -v uv >/dev/null 2>&1; then
+			# uv 프로젝트인 경우
+			echo "${BLUE}   Running ruff check (via uv)...${NC}"
+			if uv run ruff check "$PROJECT_ROOT" 2>&1; then
+				echo "${GREEN}   ✅ ruff check passed${NC}"
+			else
+				add_error "ruff check failed"
+				echo "${RED}   ❌ ruff check failed${NC}"
+			fi
+		elif [ "$HAS_POETRY_LOCK" = true ] && command -v poetry >/dev/null 2>&1; then
+			# Poetry 프로젝트인 경우 (마이그레이션 전)
+			echo "${BLUE}   Running ruff check (via poetry)...${NC}"
+			if poetry run ruff check "$PROJECT_ROOT" 2>&1; then
+				echo "${GREEN}   ✅ ruff check passed${NC}"
+			else
+				add_error "ruff check failed"
+				echo "${RED}   ❌ ruff check failed${NC}"
+			fi
+		elif command -v ruff >/dev/null 2>&1; then
 			echo "${BLUE}   Running ruff check...${NC}"
 			if ruff check "$PROJECT_ROOT" 2>&1; then
 				echo "${GREEN}   ✅ ruff check passed${NC}"
@@ -119,17 +151,37 @@ case "$DETECTED_STACK" in
 				fi
 			fi
 		else
-			echo "${YELLOW}   ⚠️  ruff not found. Install with: poetry add ruff --group dev${NC}"
+			if [ "$HAS_UV_LOCK" = true ]; then
+				echo "${YELLOW}   ⚠️  ruff not found. Install with: uv add ruff --dev${NC}"
+			elif [ "$HAS_POETRY_LOCK" = true ]; then
+				echo "${YELLOW}   ⚠️  ruff not found. Install with: poetry add ruff --group dev${NC}"
+				echo "${YELLOW}   💡 Or migrate to uv: scripts/core/migrate_to_uv.sh${NC}"
+			fi
 		fi
 		
 		# 2c. ruff format 실행
-		if command -v ruff >/dev/null 2>&1; then
+		if [ "$HAS_UV_LOCK" = true ] && command -v uv >/dev/null 2>&1; then
+			# uv 프로젝트인 경우
+			echo "${BLUE}   Running ruff format (via uv)...${NC}"
+			if uv run ruff format --check "$PROJECT_ROOT" 2>&1; then
+				echo "${GREEN}   ✅ ruff format check passed${NC}"
+			else
+				echo "${YELLOW}   ⚠️  Code formatting issues detected. Run 'uv run ruff format' to fix.${NC}"
+			fi
+		elif [ "$HAS_POETRY_LOCK" = true ] && command -v poetry >/dev/null 2>&1; then
+			# Poetry 프로젝트인 경우 (마이그레이션 전)
+			echo "${BLUE}   Running ruff format (via poetry)...${NC}"
+			if poetry run ruff format --check "$PROJECT_ROOT" 2>&1; then
+				echo "${GREEN}   ✅ ruff format check passed${NC}"
+			else
+				echo "${YELLOW}   ⚠️  Code formatting issues detected. Run 'poetry run ruff format' to fix.${NC}"
+			fi
+		elif command -v ruff >/dev/null 2>&1; then
 			echo "${BLUE}   Running ruff format...${NC}"
 			if ruff format --check "$PROJECT_ROOT" 2>&1; then
 				echo "${GREEN}   ✅ ruff format check passed${NC}"
 			else
 				echo "${YELLOW}   ⚠️  Code formatting issues detected. Run 'ruff format' to fix.${NC}"
-				# 포매팅 문제는 경고로 처리 (실패로 간주하지 않음)
 			fi
 		elif [ -f "$PROJECT_ROOT/.venv/bin/ruff" ] || [ -f "$PROJECT_ROOT/venv/bin/ruff" ]; then
 			RUFF_CMD=""
@@ -150,7 +202,25 @@ case "$DETECTED_STACK" in
 		
 		# 2d. pre-commit run --all-files (설정되어 있는 경우)
 		if [ -f "$PROJECT_ROOT/.pre-commit-config.yaml" ]; then
-			if command -v pre-commit >/dev/null 2>&1; then
+			if [ "$HAS_UV_LOCK" = true ] && command -v uv >/dev/null 2>&1; then
+				# uv 프로젝트인 경우
+				echo "${BLUE}   Running pre-commit hooks (via uv)...${NC}"
+				if uv run pre-commit run --all-files 2>&1; then
+					echo "${GREEN}   ✅ pre-commit hooks passed${NC}"
+				else
+					add_error "pre-commit hooks failed"
+					echo "${RED}   ❌ pre-commit hooks failed${NC}"
+				fi
+			elif [ "$HAS_POETRY_LOCK" = true ] && command -v poetry >/dev/null 2>&1; then
+				# Poetry 프로젝트인 경우 (마이그레이션 전)
+				echo "${BLUE}   Running pre-commit hooks (via poetry)...${NC}"
+				if poetry run pre-commit run --all-files 2>&1; then
+					echo "${GREEN}   ✅ pre-commit hooks passed${NC}"
+				else
+					add_error "pre-commit hooks failed"
+					echo "${RED}   ❌ pre-commit hooks failed${NC}"
+				fi
+			elif command -v pre-commit >/dev/null 2>&1; then
 				echo "${BLUE}   Running pre-commit hooks...${NC}"
 				if pre-commit run --all-files 2>&1; then
 					echo "${GREEN}   ✅ pre-commit hooks passed${NC}"
@@ -175,13 +245,36 @@ case "$DETECTED_STACK" in
 					fi
 				fi
 			else
-				echo "${YELLOW}   ⚠️  pre-commit not found. Install with: poetry add pre-commit --group quality${NC}"
+				if [ "$HAS_UV_LOCK" = true ]; then
+					echo "${YELLOW}   ⚠️  pre-commit not found. Install with: uv add pre-commit --dev${NC}"
+				elif [ "$HAS_POETRY_LOCK" = true ]; then
+					echo "${YELLOW}   ⚠️  pre-commit not found. Install with: poetry add pre-commit --group quality${NC}"
+					echo "${YELLOW}   💡 Or migrate to uv: scripts/core/migrate_to_uv.sh${NC}"
+				fi
 			fi
 		fi
 		
 		# 2e. pytest 실행 (tests/ 디렉토리가 있는 경우)
 		if [ -d "$PROJECT_ROOT/tests" ] || [ -d "$PROJECT_ROOT/test" ]; then
-			if command -v pytest >/dev/null 2>&1; then
+			if [ "$HAS_UV_LOCK" = true ] && command -v uv >/dev/null 2>&1; then
+				# uv 프로젝트인 경우
+				echo "${BLUE}   Running pytest (via uv)...${NC}"
+				if uv run pytest "$PROJECT_ROOT" 2>&1; then
+					echo "${GREEN}   ✅ pytest passed${NC}"
+				else
+					add_error "pytest failed"
+					echo "${RED}   ❌ pytest failed${NC}"
+				fi
+			elif [ "$HAS_POETRY_LOCK" = true ] && command -v poetry >/dev/null 2>&1; then
+				# Poetry 프로젝트인 경우 (마이그레이션 전)
+				echo "${BLUE}   Running pytest (via poetry)...${NC}"
+				if poetry run pytest "$PROJECT_ROOT" 2>&1; then
+					echo "${GREEN}   ✅ pytest passed${NC}"
+				else
+					add_error "pytest failed"
+					echo "${RED}   ❌ pytest failed${NC}"
+				fi
+			elif command -v pytest >/dev/null 2>&1; then
 				echo "${BLUE}   Running pytest...${NC}"
 				if pytest "$PROJECT_ROOT" 2>&1; then
 					echo "${GREEN}   ✅ pytest passed${NC}"
@@ -206,7 +299,12 @@ case "$DETECTED_STACK" in
 					fi
 				fi
 			else
-				echo "${YELLOW}   ⚠️  pytest not found. Install with: poetry add pytest --group dev${NC}"
+				if [ "$HAS_UV_LOCK" = true ]; then
+					echo "${YELLOW}   ⚠️  pytest not found. Install with: uv add pytest --dev${NC}"
+				elif [ "$HAS_POETRY_LOCK" = true ]; then
+					echo "${YELLOW}   ⚠️  pytest not found. Install with: poetry add pytest --group dev${NC}"
+					echo "${YELLOW}   💡 Or migrate to uv: scripts/core/migrate_to_uv.sh${NC}"
+				fi
 			fi
 		fi
 		;;

@@ -1,0 +1,107 @@
+name: Sync CLAUDE.md Knowledge
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  sync-knowledge:
+    name: Extract @.claude tags and update CLAUDE.md
+    runs-on: ubuntu-latest
+    # PR 코멘트에서만 실행
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '@.claude')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Extract @.claude content
+        id: extract_claude
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          
+          # @.claude 태그 뒤의 내용 추출
+          # 여러 줄 지원: @.claude 다음 줄부터 다음 빈 줄까지 또는 끝까지
+          EXTRACTED=$(echo "$COMMENT_BODY" | sed -n '/@\.claude/,/^$/p' | sed '1d' | sed '/^$/d')
+          
+          if [ -z "$EXTRACTED" ]; then
+            # @.claude 태그만 있고 내용이 없는 경우, 다음 줄부터 끝까지 추출
+            EXTRACTED=$(echo "$COMMENT_BODY" | sed -n '/@\.claude/,$p' | sed '1d')
+          fi
+          
+          # 멀티라인 출력을 위해 base64 인코딩
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$EXTRACTED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # 디버깅용 출력
+          echo "Extracted content:"
+          echo "$EXTRACTED"
+      
+      - name: Update CLAUDE.md
+        run: |
+          EXTRACTED_CONTENT="${{ steps.extract_claude.outputs.content }}"
+          
+          if [ -z "$EXTRACTED_CONTENT" ]; then
+            echo "⚠️  No content extracted from @.claude tag"
+            exit 0
+          fi
+          
+          CLAUDE_FILE="CLAUDE.md"
+          
+          # Lessons Learned 섹션 찾기
+          if ! grep -q "## Lessons Learned" "$CLAUDE_FILE"; then
+            echo "Creating 'Lessons Learned' section..."
+            echo "" >> "$CLAUDE_FILE"
+            echo "## Lessons Learned" >> "$CLAUDE_FILE"
+            echo "" >> "$CLAUDE_FILE"
+          fi
+          
+          # 현재 날짜와 PR 정보로 엔트리 생성
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          PR_NUMBER="${{ github.event.issue.number }}"
+          PR_AUTHOR="${{ github.event.comment.user.login }}"
+          
+          # Lessons Learned 섹션 뒤에 새 엔트리 추가
+          ENTRY="### $(date -u +'%Y-%m-%d') - PR #$PR_NUMBER (@$PR_AUTHOR)
+          
+$EXTRACTED_CONTENT
+
+---
+"
+          
+          # Lessons Learned 섹션 뒤에 삽입
+          awk -v entry="$ENTRY" '
+            /^## Lessons Learned/ {
+              print
+              getline
+              print
+              print entry
+              next
+            }
+            { print }
+          ' "$CLAUDE_FILE" > "$CLAUDE_FILE.tmp" && mv "$CLAUDE_FILE.tmp" "$CLAUDE_FILE"
+          
+          echo "✅ Updated CLAUDE.md with new knowledge entry"
+      
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CLAUDE.md
+          git commit -m "docs: Update CLAUDE.md with knowledge from PR #${{ github.event.issue.number }}" || exit 0
+          git push || echo "No changes to commit or push failed"
+      
+      - name: Create comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ CLAUDE.md has been updated with the knowledge from your comment.'
+            })

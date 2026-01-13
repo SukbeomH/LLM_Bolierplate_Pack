@@ -59,6 +59,8 @@ const verificationResults = {
 		verify: {
 			basic: { status: 'pending', message: '', errors: [] },
 			simplifier: { status: 'pending', message: '', suggestions: [] },
+			security: { status: 'pending', message: '', vulnerabilities: [], errors: [] },
+			log_analysis: { status: 'pending', message: '', errors: [], criticals: [], code_analysis_guides: [] },
 			visual: { status: 'pending', message: '', guide: null },
 			proxymock: { status: 'pending', message: '', guide: null },
 		},
@@ -218,7 +220,73 @@ async function runSimplifierVerification() {
 }
 
 /**
- * Step 3c: 시각적 검증 (visual_verifier.js, 웹 프로젝트인 경우)
+ * Step 3c: 보안 감사 (security-audit.js)
+ */
+async function runSecurityAudit(stackInfo) {
+	log('\n🔒 Step 3c: Security Audit (security-audit.js)', 'cyan');
+	log('=============================================\n', 'cyan');
+
+	try {
+		const securityScript = path.join(AGENTS_DIR, 'security-audit.js');
+		if (!fs.existsSync(securityScript)) {
+			throw new Error('security-audit.js not found');
+		}
+
+		log('Running security-audit.js...', 'blue');
+		const output = execSync(`node ${securityScript}`, {
+			cwd: PROJECT_ROOT,
+			encoding: 'utf-8',
+			stdio: 'pipe',
+		});
+
+		// JSON 출력 부분 추출
+		const jsonMatch = output.match(/\{[\s\S]*\}/);
+		if (jsonMatch) {
+			try {
+				const jsonData = JSON.parse(jsonMatch[0]);
+				if (jsonData.audit) {
+					verificationResults.steps.verify.security.vulnerabilities = jsonData.audit.vulnerabilities || [];
+					verificationResults.steps.verify.security.errors = jsonData.audit.errors || [];
+					
+					if (jsonData.audit.status === 'vulnerable') {
+						verificationResults.steps.verify.security.status = 'failed';
+						verificationResults.steps.verify.security.message = `Found ${jsonData.audit.vulnerabilities.length} vulnerability(ies)`;
+						log(`❌ Security audit: Found ${jsonData.audit.vulnerabilities.length} vulnerability(ies)`, 'red');
+					} else if (jsonData.audit.status === 'secure') {
+						verificationResults.steps.verify.security.status = 'completed';
+						verificationResults.steps.verify.security.message = 'No vulnerabilities found';
+						log('✅ Security audit: No vulnerabilities found', 'green');
+					} else {
+						verificationResults.steps.verify.security.status = 'warning';
+						verificationResults.steps.verify.security.message = jsonData.audit.message || 'Security audit completed with warnings';
+						log('⚠️  Security audit: Completed with warnings', 'yellow');
+					}
+				}
+			} catch (parseError) {
+				// JSON 파싱 실패 시 무시
+				verificationResults.steps.verify.security.status = 'error';
+				verificationResults.steps.verify.security.message = 'Failed to parse security audit output';
+			}
+		}
+
+		console.log(output);
+	} catch (error) {
+		// security-audit.js가 종료 코드 1을 반환한 경우 (취약점 발견)
+		if (error.status === 1) {
+			verificationResults.steps.verify.security.status = 'failed';
+			verificationResults.steps.verify.security.message = 'Security vulnerabilities found';
+			log('❌ Security audit: Vulnerabilities found', 'red');
+		} else {
+			verificationResults.steps.verify.security.status = 'failed';
+			verificationResults.steps.verify.security.message = error.message;
+			log('⚠️  Security audit: Failed', 'yellow');
+			log(`   Error: ${error.message}`, 'yellow');
+		}
+	}
+}
+
+/**
+ * Step 3d: 시각적 검증 (visual_verifier.js, 웹 프로젝트인 경우)
  */
 async function runVisualVerification(stackInfo) {
 	log('\n👁️  Step 3c: Visual Verification (visual_verifier.js)', 'cyan');
@@ -316,12 +384,15 @@ async function runApproveStep() {
 	log('📊 Verification Summary:', 'blue');
 	log(`   Basic Verification: ${verificationResults.steps.verify.basic.status}`, verificationResults.steps.verify.basic.status === 'passed' ? 'green' : 'red');
 	log(`   Code Simplification: ${verificationResults.steps.verify.simplifier.status}`, 'yellow');
+	log(`   Security Audit: ${verificationResults.steps.verify.security.status}`, verificationResults.steps.verify.security.status === 'completed' ? 'green' : verificationResults.steps.verify.security.status === 'failed' ? 'red' : 'yellow');
 	log(`   Visual Verification: ${verificationResults.steps.verify.visual.status}`, 'yellow');
 	log(`   Proxymock Verification: ${verificationResults.steps.verify.proxymock.status}`, 'yellow');
 
 	// 문제가 있는 경우 요약
 	const hasErrors = verificationResults.steps.verify.basic.status === 'failed';
 	const hasSuggestions = verificationResults.steps.verify.simplifier.suggestions.length > 0;
+	const hasVulnerabilities = verificationResults.steps.verify.security.status === 'failed';
+	const hasLogErrors = verificationResults.steps.verify.log_analysis?.status === 'failed';
 
 	if (hasErrors) {
 		log('\n❌ Errors found during verification:', 'red');
@@ -332,6 +403,29 @@ async function runApproveStep() {
 
 	if (hasSuggestions) {
 		log(`\n💡 Found ${verificationResults.steps.verify.simplifier.suggestions.length} code simplification suggestion(s)`, 'yellow');
+	}
+
+	if (hasVulnerabilities) {
+		log('\n🔒 Security vulnerabilities found:', 'red');
+		for (const vuln of verificationResults.steps.verify.security.vulnerabilities.slice(0, 5)) {
+			log(`   - ${vuln.name || vuln.title || 'Unknown'}: ${vuln.severity || 'Unknown severity'}`, 'red');
+		}
+	}
+
+	if (hasLogErrors) {
+		log('\n📋 Severe errors found in local logs:', 'red');
+		const logAnalysis = verificationResults.steps.verify.log_analysis;
+		if (logAnalysis.errors && logAnalysis.errors.length > 0) {
+			for (const error of logAnalysis.errors.slice(0, 5)) {
+				log(`   - [${error.level}] ${error.module}:${error.funcName}:${error.lineno} - ${error.message}`, 'red');
+			}
+		}
+		if (logAnalysis.criticals && logAnalysis.criticals.length > 0) {
+			for (const critical of logAnalysis.criticals.slice(0, 5)) {
+				log(`   - [CRITICAL] ${critical.module}:${critical.funcName}:${critical.lineno} - ${critical.message}`, 'red');
+			}
+		}
+		log('   💡 Use Codanna/Serena MCP to analyze related source code.', 'yellow');
 	}
 
 	// 사용자 승인 요청
@@ -416,19 +510,37 @@ async function main() {
 	// 3b. 코드 단순화 검증
 	await runSimplifierVerification();
 
-	// 3c. 시각적 검증 (웹 프로젝트인 경우)
+	// 3c. 보안 감사
+	await runSecurityAudit(stackInfo);
+
+	// 3d. 로컬 로그 분석
+	await runLogAnalysis(stackInfo);
+
+	// 3e. 시각적 검증 (웹 프로젝트인 경우)
 	await runVisualVerification(stackInfo);
 
-	// 3d. 데이터 기반 검증 (API 프로젝트인 경우)
+	// 3f. 데이터 기반 검증 (API 프로젝트인 경우)
 	await runProxymockVerification(stackInfo);
 
 	// Step 4: Approve
 	const approved = await runApproveStep();
 
+	// 보안 취약점이 있는 경우 승인 여부와 관계없이 경고
+	const securityStatus = verificationResults.steps.verify.security?.status;
+	if (securityStatus === 'failed') {
+		log('\n⚠️  WARNING: Security vulnerabilities were found during verification.', 'yellow');
+		log('   Even if approved, please review and fix vulnerabilities before merging.', 'yellow');
+	}
+
 	// 결과 출력
 	outputResults();
 
-	// 종료 코드
+	// 종료 코드: 보안 취약점이 있으면 실패로 처리
+	if (securityStatus === 'failed') {
+		log('\n❌ Verification failed due to security vulnerabilities.', 'red');
+		process.exit(1);
+	}
+
 	process.exit(approved ? 0 : 1);
 }
 

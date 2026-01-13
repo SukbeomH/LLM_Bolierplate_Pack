@@ -45,7 +45,7 @@ export interface InjectResponse {
 	error?: string | null;
 }
 
-export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | "docs/ai-onboarding.md";
+export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | "docs/ai-onboarding.md" | "logging.conf" | "zmp-branch-policy.json" | ".pre-commit-config.yaml";
 
 export const ASSETS: Array<{
 	id: AssetType;
@@ -81,6 +81,24 @@ export const ASSETS: Array<{
 		id: "docs/ai-onboarding.md",
 		label: "docs/ai-onboarding.md (온보딩 가이드)",
 		description: "AI 팀 온보딩 가이드 (선택)",
+		required: false,
+	},
+	{
+		id: "logging.conf",
+		label: "logging.conf (로깅 설정)",
+		description: "표준 로깅 설정 파일 (Python 프로젝트 권장)",
+		required: false,
+	},
+	{
+		id: "zmp-branch-policy.json",
+		label: "zmp-branch-policy.json (브랜치 정책)",
+		description: "GitHub 브랜치 보호 정책 설정 (선택)",
+		required: false,
+	},
+	{
+		id: ".pre-commit-config.yaml",
+		label: ".pre-commit-config.yaml (Pre-commit 훅)",
+		description: "Ruff 및 표준 훅 설정 (선택)",
 		required: false,
 	},
 ];

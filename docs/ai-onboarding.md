@@ -113,13 +113,68 @@ Boris Cherny처럼 여러 세션을 운영할 때 컨텍스트 혼선을 방지�
 
 **이유**: 보안은 절대 타협할 수 없습니다. AI가 자동으로 위험한 작업을 수행하지 않도록 가드레일이 필요합니다.
 
+## 7. 팀 Git Flow 및 Python 표준
+
+### Git Flow 워크플로우
+
+우리 팀은 엄격한 Git 컨벤션을 따릅니다:
+
+1. **이슈 선행 생성**: 모든 변경사항은 반드시 GitHub Issue를 먼저 생성
+2. **브랜치 생성**: GitHub Issue 화면에서 "Development > Create a branch" 기능 사용
+   - Prefix 필수: `feature/` (신규 기능) 또는 `bugfix/` (버그 수정)
+   - 형식: `feature/{issue_number}-{description}` 또는 `bugfix/{issue_number}-{description}`
+3. **커밋 메시지**: `Resolved #{Issue No} - {Description}` 형식 강제
+   - 주의: "Resovled"가 아닌 "Resolved"로 정확히 작성
+4. **PR 병합**: 
+   - `feature/bugfix` → `develop`: 반드시 **Squash and merge**
+   - `develop` → `main`: **Merge pull request** (Create merge commit)
+
+### Python 프로젝트 표준
+
+1. **uv 설정** (Poetry 대체): 
+   ```bash
+   # Python 버전 설치
+   uv python install 3.11
+   
+   # 의존성 동기화 (uv.lock 및 .venv 생성)
+   uv sync
+   
+   # 명령 실행
+   uv run pytest
+   uv run python main.py
+   ```
+   - Poetry 프로젝트 마이그레이션: `scripts/core/migrate_to_uv.sh` 실행
+   - `detect_stack.sh`가 자동으로 uv.lock을 감지하고 마이그레이션 제안
+
+2. **로깅 설정**: 
+   - 프로젝트 루트에 `logging.conf` 파일 사용
+   - `colorlog` 패키지 설치: `uv add colorlog`
+   - 로거 사용 예시:
+   ```python
+   import logging.config
+   logging.config.fileConfig('logging.conf')
+   logger = logging.getLogger('appLogger')
+   logger.info("Application started")
+   ```
+
+3. **Pre-commit 훅**: 
+   - `.pre-commit-config.yaml` 파일 사용
+   - 설치: `uv run pre-commit install`
+   - 실행: `uv run pre-commit run --all-files`
+
+4. **Ruff 사용**: 
+   - 포매팅: `uv run ruff format`
+   - 린팅: `uv run ruff check --fix`
+
 ## 💡 온보딩 체크리스트
 
 * [ ] `mise` 설치 및 환경 구성 완료
 * [ ] `CLAUDE.md`의 `Anti-patterns` 섹션 1회 정독
+* [ ] 팀 Git Flow 및 Python 표준 섹션 정독
 * [ ] 첫 번째 작업 시 `/verify-app`으로 전체 테스트 통과 확인
 * [ ] PR 생성 시 AI가 작성한 요약본 검토 후 제출
 * [ ] 세션 관리 전략 수립 (단일 세션 vs 병렬 세션)
+* [ ] Python 프로젝트인 경우: `logging.conf` 및 `.pre-commit-config.yaml` 확인
 
 ---
 

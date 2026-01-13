@@ -13,7 +13,7 @@ import sys
 backend_root = Path(__file__).parent
 sys.path.insert(0, str(backend_root))
 
-from app.api import injector
+from app.api import injector, config
 
 app = FastAPI(
 	title="AI-Native Boilerplate Injector API",
@@ -32,6 +32,7 @@ app.add_middleware(
 
 # API 라우터 등록
 app.include_router(injector.router)
+app.include_router(config.router)
 
 
 @app.get("/")
@@ -43,6 +44,14 @@ async def root():
 		"endpoints": {
 			"detect": "POST /api/v1/detect",
 			"inject": "POST /api/v1/inject",
+			"config": {
+				"claude_sections": "GET /api/v1/config/claude/sections",
+				"update_claude": "POST /api/v1/config/claude/sections",
+				"check_env": "GET /api/v1/config/env/check",
+				"update_env": "POST /api/v1/config/env/update",
+				"migrate_uv": "POST /api/v1/config/migrate/uv",
+				"check_tools": "GET /api/v1/config/tools/check",
+			},
 		},
 	}
 

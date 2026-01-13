@@ -48,6 +48,20 @@ function formatVerificationResult(result) {
 				markdown += `  - ${error}\n`;
 			}
 		}
+
+		// 보안 감사 결과
+		if (verify.security) {
+			if (verify.security.vulnerabilities && verify.security.vulnerabilities.length > 0) {
+				markdown += `- **보안 감사**: ${verify.security.vulnerabilities.length}개의 취약점 발견\n`;
+				for (const vuln of verify.security.vulnerabilities.slice(0, 3)) {
+					markdown += `  - ${vuln.name || vuln.title || 'Unknown'}: ${vuln.severity || 'Unknown severity'}\n`;
+				}
+			} else if (verify.security.status === 'completed') {
+				markdown += `- **보안 감사**: 취약점 없음\n`;
+			} else if (verify.security.status === 'failed') {
+				markdown += `- **보안 감사**: 실패 (도구 미설치 또는 오류)\n`;
+			}
+		}
 	}
 
 	// 승인 상태

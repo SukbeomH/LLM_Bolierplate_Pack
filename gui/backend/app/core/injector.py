@@ -22,6 +22,9 @@ class BoilerplateInjector:
 		"CLAUDE.md": "CLAUDE.md",
 		"mise.toml": "mise.toml",
 		"docs/ai-onboarding.md": "docs/ai-onboarding.md",
+		"logging.conf": "logging.conf",
+		"zmp-branch-policy.json": "zmp-branch-policy.json",
+		".pre-commit-config.yaml": ".pre-commit-config.yaml",
 	}
 
 	def __init__(self, boilerplate_root: Path):
@@ -210,4 +213,78 @@ class BoilerplateInjector:
 				merged[key] = value
 
 		return merged
+
+	def _post_process_python(self, target: Path) -> Dict[str, Any]:
+		"""
+		Python 프로젝트 후처리: Poetry 프로젝트를 uv로 마이그레이션
+		
+		Args:
+			target: 대상 프로젝트 경로
+			
+		Returns:
+			후처리 결과 딕셔너리
+		"""
+		result = {
+			"executed": False,
+			"success": False,
+			"message": "",
+			"migration": False,
+		}
+		
+		# Python 프로젝트인지 확인 (pyproject.toml 존재)
+		pyproject_toml = target / "pyproject.toml"
+		poetry_lock = target / "poetry.lock"
+		
+		if not pyproject_toml.exists():
+			result["message"] = "Not a Python project, skipping post-process"
+			return result
+		
+		# poetry.lock이 있으면 uv 마이그레이션 실행
+		if poetry_lock.exists():
+			try:
+				import subprocess
+				
+				# migrate_to_uv.sh 실행
+				migrate_script = self.boilerplate_root / "scripts" / "core" / "migrate_to_uv.sh"
+				if not migrate_script.exists():
+					result["message"] = "migrate_to_uv.sh not found"
+					return result
+				
+				result["executed"] = True
+				result["migration"] = True
+				
+				# 마이그레이션 스크립트 실행
+				migrate_result = subprocess.run(
+					["bash", str(migrate_script), str(target)],
+					cwd=target,
+					capture_output=True,
+					text=True,
+					timeout=300,  # 5분 타임아웃
+				)
+				
+				if migrate_result.returncode == 0:
+					result["success"] = True
+					result["message"] = "Successfully migrated from Poetry to uv"
+					if migrate_result.stdout:
+						result["message"] += f"\n{migrate_result.stdout[-500:]}"  # 마지막 500자만
+				else:
+					result["success"] = False
+					result["message"] = f"Migration failed: {migrate_result.stderr[-500:] if migrate_result.stderr else 'Unknown error'}"
+				
+			except subprocess.TimeoutExpired:
+				result["executed"] = True
+				result["success"] = False
+				result["message"] = "Migration timed out (exceeded 5 minutes)"
+			except FileNotFoundError:
+				result["executed"] = False
+				result["message"] = "bash or migrate_to_uv.sh not found"
+			except Exception as e:
+				result["executed"] = True
+				result["success"] = False
+				result["message"] = f"Unexpected error during migration: {str(e)}"
+		else:
+			# poetry.lock이 없으면 단순히 uv 프로젝트로 확인
+			result["message"] = "Not a Poetry project (no poetry.lock), skipping migration"
+		
+		return result
 

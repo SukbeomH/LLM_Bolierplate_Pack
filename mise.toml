@@ -13,10 +13,16 @@
 # 기본 개발 도구 버전 관리
 # AI가 프로젝트의 스택을 감지한 후 필요한 도구만 설치하도록 설계됨
 node = "22"
-python = "3.13"
+# Python 버전 관리는 uv에 위임됨
+# uv가 pyproject.toml의 requires-python을 읽어 적절한 Python 버전을 자동으로 설치/관리
+# mise에서는 uv만 설치하고, Python 버전은 uv가 관리하도록 함
+uv = "latest"
+# 참고: Python 버전은 uv가 관리하므로 mise에서는 python을 지정하지 않음
+# 실제 프로젝트 Python 버전은 pyproject.toml의 requires-python에서 관리
 go = "latest"
 rust = "latest"
 terraform = "latest"
+# uv 설치: curl -LsSf https://astral.sh/uv/install.sh | sh
 
 [tasks]
 # verify 태스크: 종합 검증 실행
@@ -33,27 +39,17 @@ format = { run = "scripts/core/auto_format.sh", description = "Format code using
 test = { run = "scripts/core/auto_test.sh", description = "Run tests using stack-specific test runner" }
 
 # deploy 태스크: 배포 실행 (위험 작업이므로 주의)
-# 실제 배포 전에 반드시 검증 단계를 거치도록 설계됨
-deploy = { 
-    run = "scripts/core/auto_deploy.sh", 
-    description = "Deploy application (requires verification first)",
-    # deploy는 verify에 의존
-    deps = ["verify"]
-}
+# 실제 배포 전에 반드시 검증 단계를 거치도록 설계됨 (deploy는 verify에 의존)
+deploy = { run = "scripts/core/auto_deploy.sh", description = "Deploy application (requires verification first)", depends = ["verify"] }
 
-# pre-pr 태스크: PR 생성 전 최종 검토
-# verify와 test를 모두 실행하여 PR 준비 상태 확인
-pre-pr = {
-    run = "echo '✅ Ready for PR'",
-    description = "Final check before creating PR",
-    deps = ["verify", "test"]
-}
+# pre-pr 태스크: PR 생성 전 최종 검토 (verify와 test를 모두 실행하여 PR 준비 상태 확인)
+pre-pr = { run = "echo '✅ Ready for PR'", description = "Final check before creating PR", depends = ["verify", "test"] }
 
 # gui 태스크: Boilerplate Injector GUI 실행 (백엔드 + 프론트엔드)
-gui = {
-    run = "scripts/gui/start.sh",
-    description = "Start Boilerplate Injector GUI (backend + frontend)"
-}
+gui = { run = "scripts/gui/start.sh", description = "Start Boilerplate Injector GUI (backend + frontend)" }
+
+# infra:setup 태스크: 인프라 설정 자동화 (kubefwd, certifi 확인)
+infra-setup = { run = "scripts/core/setup_infra.sh", description = "Check infrastructure setup (kubefwd, certifi)" }
 
 # 주의: scripts/core/ 하위 스크립트들이 Phase 4에서 구현될 예정입니다.
 # 현재는 기본 구조만 정의되어 있으며, 실제 실행 시 경고 메시지가 출력됩니다.

@@ -46,8 +46,47 @@ DETECTED_PYTHON_VERSION=""
 
 echo "${BLUE}🔍 [Stack Detection] Scanning project root: $PROJECT_ROOT${NC}"
 
-# 1. Python/Poetry 스택 감지 (사내 표준 우선)
-if [ -f "$PROJECT_ROOT/pyproject.toml" ] && [ -f "$PROJECT_ROOT/poetry.lock" ]; then
+# 1. Python/uv 스택 감지 (uv 우선, Poetry는 마이그레이션 대상)
+if [ -f "$PROJECT_ROOT/pyproject.toml" ] && [ -f "$PROJECT_ROOT/uv.lock" ]; then
+	DETECTED_STACK="python"
+	DETECTED_PACKAGE_MANAGER="uv"
+	
+	# uv 가상 환경 경로 확인
+	if [ -d "$PROJECT_ROOT/.venv" ]; then
+		DETECTED_VENV_PATH=".venv"
+	fi
+	
+	# pyproject.toml에서 Python 버전 추출
+	if command -v grep >/dev/null 2>&1; then
+		PYTHON_VERSION=$(grep -E "^python\s*=|^requires-python\s*=" "$PROJECT_ROOT/pyproject.toml" 2>/dev/null | head -1 | sed 's/.*=\s*"\([^"]*\)".*/\1/' | sed "s/.*=\s*'\([^']*\)'.*/\1/" || echo "")
+		if [ -n "$PYTHON_VERSION" ]; then
+			# 버전 범위에서 최소 버전 추출 (예: ">=3.11,<4.0" -> "3.11")
+			DETECTED_PYTHON_VERSION=$(echo "$PYTHON_VERSION" | sed 's/[^0-9.]*\([0-9]\+\.[0-9]\+\).*/\1/' | head -1)
+		fi
+	fi
+	
+	echo "${GREEN}✅ Detected: Python/uv stack${NC}"
+	echo "   Package Manager: uv"
+	
+	if [ -n "$DETECTED_VENV_PATH" ]; then
+		echo "   Virtual Environment: $DETECTED_VENV_PATH"
+	else
+		echo "${YELLOW}   ⚠️  Virtual environment not found. Run 'uv sync' to create.${NC}"
+	fi
+	
+	# 사내망 인증서 설치 여부 확인 (certifi 패키지 확인)
+	if [ -f "$PROJECT_ROOT/pyproject.toml" ]; then
+		if grep -q "certifi" "$PROJECT_ROOT/pyproject.toml" 2>/dev/null || grep -q "certifi" "$PROJECT_ROOT/uv.lock" 2>/dev/null; then
+			echo "   Certificate: certifi package detected"
+		else
+			echo "${YELLOW}   ⚠️  certifi package not found. Consider installing for self-signed certificates.${NC}"
+		fi
+	fi
+	
+	echo "${BLUE}   💡 Tip: Use 'uv run <command>' to run commands in the virtual environment.${NC}"
+	
+elif [ -f "$PROJECT_ROOT/pyproject.toml" ] && [ -f "$PROJECT_ROOT/poetry.lock" ]; then
+	# Poetry 프로젝트 감지 (마이그레이션 대상)
 	DETECTED_STACK="python"
 	DETECTED_PACKAGE_MANAGER="poetry"
 	
@@ -77,6 +116,17 @@ if [ -f "$PROJECT_ROOT/pyproject.toml" ] && [ -f "$PROJECT_ROOT/poetry.lock" ]; 
 	
 	echo "${GREEN}✅ Detected: Python/Poetry stack${NC}"
 	echo "   Package Manager: Poetry"
+	
+	# uv 마이그레이션 확인 (poetry.lock이 있으면 uv로 마이그레이션 제안)
+	if [ -f "$PROJECT_ROOT/poetry.lock" ]; then
+		if command -v uv >/dev/null 2>&1; then
+			if [ ! -f "$PROJECT_ROOT/uv.lock" ]; then
+				echo "${YELLOW}   ⚠️  poetry.lock detected. Consider migrating to uv:${NC}"
+				echo "${YELLOW}      Run: scripts/core/migrate_to_uv.sh${NC}"
+			fi
+		fi
+	fi
+	
 	if [ -n "$DETECTED_VENV_PATH" ]; then
 		echo "   Virtual Environment: $DETECTED_VENV_PATH"
 	else
@@ -144,9 +194,9 @@ fi
 # 5. 스택을 감지하지 못한 경우
 if [ -z "$DETECTED_STACK" ]; then
 	echo "${YELLOW}⚠️  No supported stack detected.${NC}"
-	echo "   Supported stacks: Python/Poetry, Node.js (pnpm/npm/yarn), Go, Rust"
+	echo "   Supported stacks: Python/uv (Poetry → uv 마이그레이션 지원), Node.js (pnpm/npm/yarn), Go, Rust"
 	echo "   Please ensure project root contains:"
-	echo "     - Python: pyproject.toml + poetry.lock"
+	echo "     - Python: pyproject.toml + uv.lock (우선) 또는 pyproject.toml + poetry.lock (마이그레이션 대상)"
 	echo "     - Node.js: package.json + pnpm-lock.yaml or package-lock.json"
 	echo "     - Go: go.mod"
 	echo "     - Rust: Cargo.toml"

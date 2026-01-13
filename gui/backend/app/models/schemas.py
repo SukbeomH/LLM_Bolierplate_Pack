@@ -63,7 +63,10 @@ class InjectRequest(BaseModel):
 	@classmethod
 	def validate_assets(cls, v: List[str]) -> List[str]:
 		"""자산 목록 유효성 검증"""
-		valid_assets = [".claude/", "scripts/", "CLAUDE.md", "mise.toml", "docs/ai-onboarding.md"]
+		valid_assets = [
+			".claude/", "scripts/", "CLAUDE.md", "mise.toml", "docs/ai-onboarding.md",
+			"logging.conf", "zmp-branch-policy.json", ".pre-commit-config.yaml"
+		]
 		for asset in v:
 			if asset not in valid_assets:
 				raise ValueError(f"Invalid asset: {asset}. Valid assets: {valid_assets}")
@@ -76,6 +79,13 @@ class PostDiagnosis(BaseModel):
 	git_status: Optional[Dict[str, Any]] = Field(None, description="Git 상태 확인 결과")
 
 
+class PostProcess(BaseModel):
+	"""후처리 결과 모델"""
+	executed: bool = Field(..., description="후처리 실행 여부")
+	success: bool = Field(..., description="후처리 성공 여부")
+	message: str = Field(..., description="후처리 메시지")
+
+
 class InjectResponse(BaseModel):
 	"""파일 주입 API 응답 모델"""
 	status: str = Field(..., description="주입 상태 (success, partial, error)")
@@ -84,5 +94,6 @@ class InjectResponse(BaseModel):
 	skipped_files: List[str] = Field(default_factory=list, description="건너뛴 파일 목록")
 	merged_files: List[str] = Field(default_factory=list, description="병합된 파일 목록")
 	post_diagnosis: Optional[PostDiagnosis] = Field(None, description="사후 진단 결과")
+	post_process: Optional[PostProcess] = Field(None, description="후처리 결과 (Poetry 설정 등)")
 	error: Optional[str] = Field(None, description="에러 메시지 (실패 시)")
 

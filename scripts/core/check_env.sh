@@ -214,3 +214,34 @@ else
 	exit 0
 fi
 
+# 5. .env_sample 생성 로직 (없는 경우)
+if [ ! -f "$ENV_SAMPLE" ] && [ -f "$ENV_FILE" ]; then
+	echo ""
+	echo "${YELLOW}💡 .env_sample file not found.${NC}"
+	echo "${YELLOW}   Creating .env_sample from .env (with dummy values)...${NC}"
+	
+	# .env 파일에서 KEY=Value 형식의 라인만 추출하여 .env_sample 생성
+	# 보안: 실제 값은 dummy로 대체하고 KEY만 유지
+	if [ -t 0 ]; then
+		echo "${YELLOW}   Create .env_sample from .env? (y/N):${NC}"
+		read -r response || true
+		if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
+			# .env 파일 읽기 (주석과 빈 라인 제외)
+			# KEY=Value 형식의 라인만 추출하여 KEY=xxxxxx 형식으로 변환
+			grep -E "^[A-Z_][A-Z0-9_]*=" "$ENV_FILE" 2>/dev/null | while IFS='=' read -r key value || [ -n "$key" ]; do
+				# KEY 부분만 추출 (보안: value는 무시)
+				key_only=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+				if [ -n "$key_only" ]; then
+					# .env_sample에 KEY=xxxxxx 형식으로 추가
+					echo "${key_only}=xxxxxx" >> "$ENV_SAMPLE" 2>/dev/null
+				fi
+			done
+			
+			if [ -f "$ENV_SAMPLE" ]; then
+				echo "${GREEN}✅ .env_sample created successfully${NC}"
+				echo "${YELLOW}   Please review and update dummy values (xxxxxx) in .env_sample${NC}"
+			fi
+		fi
+	fi
+fi
+

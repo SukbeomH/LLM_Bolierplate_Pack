@@ -37,6 +37,8 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 - **비효율적 검색 (Grep-and-Hope Loops)**: 파일 전체 읽기나 `grep` 사용을 금지하며, Serena의 `find_symbol`, `find_referencing_symbols` 또는 Codanna의 Semantic Search 도구를 사용하여 필요한 정보만 신속하게 찾을 것.
 - **증분 수정 도구 사용**: `edit_file` 및 `replace_regex`와 같은 증분 수정 도구는 신뢰할 수 없고 위험하므로 사용이 금지됨. 대신 Serena의 정밀 편집 도구(`replace_symbol_body` 등)를 사용할 것.
 - **검증 생략**: 코드 수정 후 검증 단계를 생략하는 것은 금지됨. Fourth Principle에 따라 반드시 `read_file`로 변경 내용을 확인할 것.
+- **커밋 메시지 철자 오류**: 커밋 메시지에서 "Resolved"를 "Resovled"로 잘못 작성하는 것은 금지됨. 정확한 철자 "Resolved"를 사용할 것.
+- **표준 외 로깅 사용**: Python 프로젝트에서 `logging.conf` 파일을 사용하지 않고 직접 로깅 설정을 하거나 표준 외 로깅 라이브러리를 사용하는 것은 금지됨. 프로젝트 루트의 `logging.conf` 파일을 사용하여 정형화된 로깅을 적용할 것.
 
 ### ✅ Best Practices (모범 사례)
 
@@ -71,13 +73,21 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 
 ## 🚀 Workflow Control (RIPER-5 프로토콜)
 
+**⚠️ 중요: 모든 변경 작업 전 GitHub Issue 생성 필수**
+
+모든 코드 변경, 버그 수정, 기능 추가는 반드시 GitHub Issue를 먼저 생성한 후에 시작해야 합니다. 이슈 없이 브랜치를 생성하거나 커밋을 수행하는 것은 금지됩니다.
+
+**워크플로우 순서**:
+1. **GitHub Issue 생성** (필수) → 2. 브랜치 생성 (feature/{issue_number}-{description}) → 3. 코드 작성 → 4. 커밋 (Resolved #{issue_number} - {description}) → 5. PR 생성 → 6. Squash and merge
+
 모든 작업은 **RIPER-5 프로토콜**을 엄격히 준수해야 합니다. 이 프로토콜은 업계 최고 수준의 AI-Native 개발 환경을 구축하기 위한 표준 워크플로우입니다.
 
 ### 핵심 원칙
 
-1. **모드 선언 의무**: 모든 응답은 반드시 `[MODE: MODE_NAME]` 형식을 명시해야 합니다.
-2. **추측 금지 (No Guesswork)**: 불확실한 문제나 오류 발생 시 추측하지 말고, 반드시 Serena/Codanna의 심볼 검색 도구를 사용하여 정확한 사실을 확인할 것.
-3. **SDD 승인 게이트**: [MODE: PLAN]에서 생성된 상세 기술 명세는 반드시 **사용자의 명시적 승인**을 받아야만 EXECUTE 모드로 전환 가능.
+1. **이슈 선행 생성 의무**: 모든 변경 작업은 반드시 GitHub Issue를 먼저 생성해야 함. 이슈 번호 없이 브랜치를 생성하거나 커밋을 수행하는 것은 금지됨.
+2. **모드 선언 의무**: 모든 응답은 반드시 `[MODE: MODE_NAME]` 형식을 명시해야 합니다.
+3. **추측 금지 (No Guesswork)**: 불확실한 문제나 오류 발생 시 추측하지 말고, 반드시 Serena/Codanna의 심볼 검색 도구를 사용하여 정확한 사실을 확인할 것.
+4. **SDD 승인 게이트**: [MODE: PLAN]에서 생성된 상세 기술 명세는 반드시 **사용자의 명시적 승인**을 받아야만 EXECUTE 모드로 전환 가능.
 
 ### RIPER-5 모드별 상세 워크플로우
 
@@ -249,6 +259,49 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 - **POSIX 호환성**: 모든 스크립트는 `/bin/sh`에서 실행 가능하도록 작성되어 다양한 환경에서 동작한다.
 - **mise 통합**: `mise.toml`을 통해 툴체인 버전을 관리하고, 모든 태스크는 `mise run <task>` 형식으로 실행한다.
 - **이유**: 환경 차이(맥OS, Linux, Windows WSL 등)로 인한 에러를 방지하고, 팀 전체가 동일한 환경에서 작업할 수 있도록 보장한다.
+
+## 📋 Team Standards (팀 표준)
+
+### Git Flow 및 브랜치 정책
+
+**워크플로우**: 이슈 선행 생성 → 브랜치 생성(Prefix 필수) → Squash & Merge
+
+1. **이슈 선행 생성**: 모든 변경사항은 반드시 GitHub Issue를 먼저 생성해야 함
+2. **브랜치 명명 규칙**: 
+   - `feature/{issue_number}-{description}` (신규 기능)
+   - `bugfix/{issue_number}-{description}` (버그 수정)
+   - 브랜치명 위반 시 스크립트가 자동으로 반려함
+3. **커밋 메시지 형식**: `Resolved #{Issue No} - {Description}` (정확한 형식 강제)
+   - 주의: "Resovled"가 아닌 "Resolved"로 정확히 작성
+4. **PR 병합 전략**: 
+   - `feature/bugfix` → `develop`: 반드시 **Squash and merge**
+   - `develop` → `main`: **Merge pull request** (Create merge commit)
+
+### Python 표준
+
+1. **uv 환경 설정** (Poetry 대체): 
+   - Python 버전 관리: `uv python install <version>` (예: `uv python install 3.11`)
+   - 의존성 동기화: `uv sync` (uv.lock과 .venv 자동 생성)
+   - 명령 실행: `uv run <command>` (예: `uv run pytest`, `uv run python main.py`)
+   - Poetry 프로젝트 마이그레이션: `scripts/core/migrate_to_uv.sh` 실행
+   - `detect_stack.sh`가 uv.lock을 우선 감지하고, poetry.lock이 있으면 마이그레이션 제안
+2. **Ruff 사용**: 
+   - 포매팅 및 린팅에 `ruff` 사용 (Black 대신)
+   - 실행: `uv run ruff check`, `uv run ruff format`
+   - `pre-commit` 훅에 `ruff` 및 `ruff-format` 포함
+3. **로깅 표준**: 
+   - 프로젝트 전반에 `logging.conf` 기반의 정형화된 로깅 사용
+   - `colorlog`를 사용한 컬러 로깅 지원
+   - 로거 이름: `appLogger` (qualname=appLogger)
+
+### Pre-commit 훅
+
+- `.pre-commit-config.yaml`에 다음 훅 포함:
+  - `trailing-whitespace`: 공백 제거
+  - `end-of-file-fixer`: 파일 끝 개행 정리
+  - `debug-statements`: 디버그 문 제거
+  - `ruff`: Python 린팅 (자동 수정)
+  - `ruff-format`: Python 포매팅
 
 ---
 

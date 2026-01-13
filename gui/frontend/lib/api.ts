@@ -34,3 +34,60 @@ export const injectBoilerplate = async (
 	return response.data;
 };
 
+// Config API
+export interface ClaudeSections {
+	lessons_learned: string;
+	team_standards: string;
+}
+
+export interface ToolStatus {
+	mise: { installed: boolean; version: string | null };
+	uv: { installed: boolean; version: string | null };
+	mcp: { installed: boolean; config_exists: boolean };
+}
+
+export const getClaudeSections = async (): Promise<ClaudeSections> => {
+	const response = await api.get<ClaudeSections>("/api/v1/config/claude/sections");
+	return response.data;
+};
+
+export const updateClaudeSection = async (
+	section: string,
+	content: string,
+	action: "append" | "replace" = "append",
+): Promise<{ status: string; message: string }> => {
+	const response = await api.post("/api/v1/config/claude/sections", {
+		section,
+		content,
+		action,
+	});
+	return response.data;
+};
+
+export const checkEnv = async (targetPath: string): Promise<{
+	return_code: number;
+	output: string;
+	error?: string;
+}> => {
+	const response = await api.get("/api/v1/config/env/check", {
+		params: { target_path: targetPath },
+	});
+	return response.data;
+};
+
+export const updateEnv = async (
+	targetPath: string,
+	envVars: Record<string, string>,
+): Promise<{ status: string; message: string }> => {
+	const response = await api.post("/api/v1/config/env/update", {
+		target_path: targetPath,
+		env_vars: envVars,
+	});
+	return response.data;
+};
+
+export const checkTools = async (): Promise<ToolStatus> => {
+	const response = await api.get<ToolStatus>("/api/v1/config/tools/check");
+	return response.data;
+};
+

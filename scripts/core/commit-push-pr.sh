@@ -10,10 +10,11 @@
 #   또는
 #   .claude/commands/commit-push-pr.sh [DESCRIPTION]
 #
-# Git 컨벤션:
+# Git 컨벤션 (팀 표준):
 #   - 브랜치명: feature/{issue_number}-{description} 또는 bugfix/{issue_number}-{description}
-#   - 커밋 메시지: "Resolved #{ISSUE_NUMBER} - {DESCRIPTION}"
-#   - PR: feature/bugfix 브랜치 → develop (Squash and merge)
+#   - 커밋 메시지: "Resolved #{ISSUE_NUMBER} - {DESCRIPTION}" (정확한 형식 강제)
+#   - PR: feature/bugfix 브랜치 → develop (반드시 Squash and merge)
+#   - 이슈 선행 생성 필수: 모든 변경사항은 먼저 GitHub Issue를 생성해야 함
 #
 # POSIX 표준을 준수하여 다양한 환경에서 동작하도록 작성되었습니다.
 
@@ -46,6 +47,7 @@ fi
 echo "${BLUE}📋 Current branch: ${GREEN}$CURRENT_BRANCH${NC}"
 
 # 브랜치명 패턴 매칭: feature/{issue_number}-{description} 또는 bugfix/{issue_number}-{description}
+# 팀 표준: 브랜치명은 반드시 이 형식을 따라야 하며, 위반 시 스크립트가 종료됨
 ISSUE_NUMBER=""
 BRANCH_PREFIX=""
 DESCRIPTION=""
@@ -59,23 +61,18 @@ if [ -n "$BRANCH_PATTERN" ]; then
 	ISSUE_NUMBER=$(echo "$BRANCH_PATTERN" | cut -d'|' -f2)
 	DESCRIPTION=$(echo "$BRANCH_PATTERN" | cut -d'|' -f3)
 else
-	# 패턴이 매칭되지 않은 경우 경고
-	echo "${YELLOW}⚠️  Warning: Branch name does not follow convention.${NC}"
-	echo "${YELLOW}   Expected format: feature/{issue_number}-{description} or bugfix/{issue_number}-{description}${NC}"
-	echo "${YELLOW}   Example: feature/50-cli-command-support-specific-page${NC}"
-	
-	# 사용자에게 수정 제안
-	echo "${YELLOW}   💡 Tip: Rename branch with: git branch -m feature/{issue_number}-{description}${NC}"
-	
-	# 이슈 번호를 수동으로 입력받을지 물어봄 (비대화형 모드에서는 건너뜀)
-	if [ -t 0 ]; then
-		echo "${YELLOW}   Enter issue number manually (or press Enter to skip):${NC}"
-		read -r MANUAL_ISSUE || true
-		if [ -n "$MANUAL_ISSUE" ]; then
-			ISSUE_NUMBER="$MANUAL_ISSUE"
-			DESCRIPTION=$(echo "$CURRENT_BRANCH" | sed 's/.*-//')
-		fi
-	fi
+	# 패턴이 매칭되지 않은 경우: 팀 표준 위반으로 스크립트 종료
+	echo "${RED}❌ Error: Branch name does not follow team convention.${NC}"
+	echo "${RED}   Required format: feature/{issue_number}-{description} or bugfix/{issue_number}-{description}${NC}"
+	echo "${RED}   Example: feature/50-cli-command-support-specific-page${NC}"
+	echo ""
+	echo "${YELLOW}💡 [Team Standard]${NC}"
+	echo "${YELLOW}   1. Create GitHub Issue first (required)${NC}"
+	echo "${YELLOW}   2. Create branch from Issue using 'Development > Create a branch'${NC}"
+	echo "${YELLOW}   3. Use branch prefix: 'feature' for new features, 'bugfix' for bug fixes${NC}"
+	echo ""
+	echo "${YELLOW}   To fix: git branch -m feature/{issue_number}-{description}${NC}"
+	exit 1
 fi
 
 # 2. 브랜치 접두사 검증
@@ -108,7 +105,8 @@ if [ -z "$DESCRIPTION" ]; then
 	fi
 fi
 
-# 커밋 메시지 형식: "Resolved #{ISSUE_NUMBER} - {DESCRIPTION}"
+# 커밋 메시지 형식: "Resolved #{ISSUE_NUMBER} - {DESCRIPTION}" (팀 표준 강제)
+# 주의: "Resovled"가 아닌 "Resolved"로 정확히 작성해야 함
 COMMIT_MSG="Resolved #$ISSUE_NUMBER - $DESCRIPTION"
 
 echo "${BLUE}📝 Commit message: ${GREEN}$COMMIT_MSG${NC}"

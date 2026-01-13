@@ -44,20 +44,44 @@ fi
 # 백엔드 시작
 echo "${BLUE}📦 Starting backend (FastAPI)...${NC}"
 cd "$BACKEND_DIR"
-if [ ! -d "venv" ] && command -v python3 >/dev/null 2>&1; then
+
+# uv 또는 venv 사용 확인
+if command -v uv >/dev/null 2>&1 && [ -f "uv.lock" ]; then
+	# uv 프로젝트인 경우
+	echo "${BLUE}📥 Syncing backend dependencies (uv)...${NC}"
+	uv sync
+elif [ -f "pyproject.toml" ] && [ -f "poetry.lock" ]; then
+	# Poetry 프로젝트인 경우 (마이그레이션 대상)
+	if command -v poetry >/dev/null 2>&1; then
+		echo "${BLUE}📥 Installing backend dependencies (poetry)...${NC}"
+		poetry install
+		echo "${YELLOW}💡 Consider migrating to uv: scripts/core/migrate_to_uv.sh${NC}"
+	else
+		echo "${YELLOW}⚠️  Poetry not found. Creating venv...${NC}"
+		if [ ! -d "venv" ] && command -v python3 >/dev/null 2>&1; then
+			python3 -m venv venv
+		fi
+		if [ -f "venv/bin/activate" ]; then
+			. venv/bin/activate
+		fi
+		if [ ! -f ".installed" ] || [ "requirements.txt" -nt ".installed" ]; then
+			echo "${BLUE}📥 Installing backend dependencies...${NC}"
+			pip install -q -r requirements.txt
+			touch .installed
+		fi
+	fi
+elif [ ! -d "venv" ] && command -v python3 >/dev/null 2>&1; then
+	# 기본 venv 생성
 	echo "${YELLOW}⚠️  Virtual environment not found. Creating...${NC}"
 	python3 -m venv venv
-fi
-
-if [ -f "venv/bin/activate" ]; then
-	. venv/bin/activate
-fi
-
-# 의존성 설치 확인
-if [ ! -f ".installed" ] || [ "requirements.txt" -nt ".installed" ]; then
-	echo "${BLUE}📥 Installing backend dependencies...${NC}"
-	pip install -q -r requirements.txt
-	touch .installed
+	if [ -f "venv/bin/activate" ]; then
+		. venv/bin/activate
+	fi
+	if [ ! -f ".installed" ] || [ "requirements.txt" -nt ".installed" ]; then
+		echo "${BLUE}📥 Installing backend dependencies...${NC}"
+		pip install -q -r requirements.txt
+		touch .installed
+	fi
 fi
 
 # 백엔드 실행 (백그라운드)

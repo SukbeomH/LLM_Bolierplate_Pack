@@ -13,7 +13,7 @@ backend_root = Path(__file__).parent.parent.parent
 boilerplate_root = backend_root.parent.parent
 sys.path.insert(0, str(backend_root))
 
-from app.models.schemas import DetectRequest, DetectResponse, InjectRequest, InjectResponse
+from app.models.schemas import DetectRequest, DetectResponse, InjectRequest, InjectResponse, PostProcess
 from app.core.detector import StackDetector
 
 router = APIRouter(prefix="/api/v1", tags=["injector"])
@@ -78,6 +78,15 @@ async def inject_boilerplate(request: InjectRequest) -> InjectResponse:
 		validator = PostDiagnosisValidator(boilerplate_root)
 		diagnosis_result = validator.validate(request.target_path)
 
+		post_process_data = inject_result.get("post_process", {})
+		post_process = None
+		if post_process_data:
+			post_process = PostProcess(
+				executed=post_process_data.get("executed", False),
+				success=post_process_data.get("success", False),
+				message=post_process_data.get("message", ""),
+			)
+		
 		return InjectResponse(
 			status=inject_result.get("status", "success"),
 			injected_files=inject_result.get("injected_files", []),
@@ -88,6 +97,7 @@ async def inject_boilerplate(request: InjectRequest) -> InjectResponse:
 				env_check=diagnosis_result.get("env_check"),
 				git_status=diagnosis_result.get("git_status"),
 			),
+			post_process=post_process,
 			error=inject_result.get("error"),
 		)
 	except Exception as e:
