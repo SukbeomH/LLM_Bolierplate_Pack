@@ -21,6 +21,7 @@ class BoilerplateInjector:
 		"scripts/": "scripts/",
 		"CLAUDE.md": "CLAUDE.md",
 		"mise.toml": "mise.toml",
+		".mcp.json": ".mcp.json",
 		"docs/ai-onboarding.md": "docs/ai-onboarding.md",
 		"logging.conf": "logging.conf",
 		"zmp-branch-policy.json": "zmp-branch-policy.json",

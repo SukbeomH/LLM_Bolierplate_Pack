@@ -331,8 +331,24 @@ function main() {
 	log('1. Detecting stack...', 'blue');
 	const stackInfo = detectStack();
 	if (!stackInfo.stack) {
-		log('❌ Could not detect project stack.', 'red');
-		process.exit(1);
+		log('⚠️  Stack detection failed.', 'yellow');
+		log('   Skipping visual verification.', 'yellow');
+
+		// 스택이 없을 경우 경고만 표시하고 종료 코드 0 반환
+		const jsonOutput = {
+			timestamp: new Date().toISOString(),
+			stack: null,
+			packageManager: null,
+			isWebProject: false,
+			status: 'no_stack',
+			message: 'No supported stack detected. Visual verification skipped.',
+			guide: null,
+		};
+
+		console.log('\n--- Visual Verification Results (JSON) ---');
+		console.log(JSON.stringify(jsonOutput, null, 2));
+		log('\n⚠️  Visual verification skipped (no stack detected).', 'yellow');
+		process.exit(0);
 	}
 	log(`   Detected stack: ${stackInfo.stack} (${stackInfo.packageManager})`, 'green');
 

@@ -18,7 +18,7 @@ AI를 단순한 도구가 아닌 '함께 성장하는 페어 프로그래머'로
 export TARGET_PROJECT_PATH=/path/to/target/project
 
 # 2. Docker Compose로 GUI 실행
-mise run docker:up
+mise run docker-up
 # 또는 직접 실행
 docker-compose up -d
 
@@ -35,7 +35,7 @@ docker-compose up -d
 #    - AI 초기화 프롬프트 복사하여 Cursor/Claude Code에 붙여넣기
 
 # 5. 종료
-mise run docker:down
+mise run docker-down
 ```
 
 **Docker 사용 시 장점**:

@@ -157,7 +157,7 @@ export const readLogs = async (
 
 // Agents API
 export interface AgentRunRequest {
-	agent_name: "simplifier" | "visual_verifier" | "security_audit" | "log_analyzer";
+	agent_name: "simplifier" | "visual_verifier" | "security_audit" | "log_analyzer" | "git_guard";
 	target_path?: string;
 	options?: Record<string, any>;
 }

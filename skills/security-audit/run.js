@@ -38,8 +38,8 @@ function log(message, color = 'reset') {
 
 // 프로젝트 루트 디렉토리 찾기 (skills/security-audit 기준)
 const SCRIPT_DIR = __dirname;
-const PROJECT_ROOT = process.argv[2] 
-	? path.resolve(process.argv[2]) 
+const PROJECT_ROOT = process.argv[2]
+	? path.resolve(process.argv[2])
 	: path.resolve(SCRIPT_DIR, '../..');
 const CORE_DIR = path.join(PROJECT_ROOT, 'scripts/core');
 
@@ -74,7 +74,7 @@ function detectStack() {
  */
 function auditPython(stackInfo) {
 	log('🔍 Running Python security audit (safety check)...', 'blue');
-	
+
 	const results = {
 		stack: 'python',
 		tool: 'safety',
@@ -86,11 +86,11 @@ function auditPython(stackInfo) {
 	try {
 		// uv 또는 poetry로 safety check 실행
 		let command = '';
-		
+
 		// uv.lock이 있으면 uv 사용, poetry.lock이 있으면 poetry 사용
 		const uvLock = path.join(PROJECT_ROOT, 'uv.lock');
 		const poetryLock = path.join(PROJECT_ROOT, 'poetry.lock');
-		
+
 		if (fs.existsSync(uvLock)) {
 			command = 'uv run safety check --json';
 		} else if (fs.existsSync(poetryLock)) {
@@ -159,7 +159,7 @@ function auditPython(stackInfo) {
  */
 function auditNodejs(stackInfo) {
 	log('🔍 Running Node.js security audit...', 'blue');
-	
+
 	const results = {
 		stack: 'node',
 		tool: stackInfo.packageManager || 'npm',
@@ -170,8 +170,8 @@ function auditNodejs(stackInfo) {
 
 	try {
 		// npm/pnpm audit 실행
-		const command = stackInfo.packageManager === 'pnpm' 
-			? 'pnpm audit --json' 
+		const command = stackInfo.packageManager === 'pnpm'
+			? 'pnpm audit --json'
 			: 'npm audit --json';
 
 		const output = execSync(command, {
@@ -184,7 +184,7 @@ function auditNodejs(stackInfo) {
 		// npm/pnpm audit는 JSON 형식으로 출력
 		try {
 			const auditData = JSON.parse(output);
-			
+
 			// npm audit 출력 구조 분석
 			if (auditData.vulnerabilities) {
 				const vulnCount = Object.keys(auditData.vulnerabilities).length;
@@ -248,8 +248,28 @@ function main() {
 	log('1. Detecting stack...', 'blue');
 	const stackInfo = detectStack();
 	if (!stackInfo.stack) {
-		log('❌ Could not detect project stack.', 'red');
-		process.exit(1);
+		log('⚠️  Stack detection failed.', 'yellow');
+		log('   Skipping security audit.', 'yellow');
+
+		// 스택이 없을 경우 경고만 표시하고 종료 코드 0 반환
+		const jsonOutput = {
+			timestamp: new Date().toISOString(),
+			stack: null,
+			packageManager: null,
+			audit: {
+				stack: null,
+				tool: null,
+				status: 'no_stack',
+				message: 'No supported stack detected. Security audit skipped.',
+				vulnerabilities: [],
+				errors: [],
+			},
+		};
+
+		console.log('\n--- Security Audit Results (JSON) ---');
+		console.log(JSON.stringify(jsonOutput, null, 2));
+		log('\n⚠️  Security audit skipped (no stack detected).', 'yellow');
+		process.exit(0);
 	}
 	log(`   Detected stack: ${stackInfo.stack} (${stackInfo.packageManager})`, 'green');
 

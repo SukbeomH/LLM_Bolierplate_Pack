@@ -361,7 +361,7 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 **표준 워크플로우**:
 
 1. **GUI Control Plane 실행**:
-   - **Docker 사용 (권장)**: `mise run docker:up` 또는 `docker-compose up -d`
+   - **Docker 사용 (권장)**: `mise run docker-up` 또는 `docker-compose up -d`
    - **로컬 실행**: `mise run gui` (Node.js, Python, uv 등 로컬 설치 필요)
    - Docker 사용 시 로컬 도구 설치 불필요하며, 팀원 모두 동일한 환경 보장
 
@@ -379,11 +379,11 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 - 격리된 검증: `log_analyzer`나 `security-audit` 스킬이 호스트 시스템에 영향을 주지 않고 안전하게 작동
 
 **Docker 태스크 (mise.toml)**:
-- `mise run docker:up`: GUI 서비스 시작
-- `mise run docker:down`: GUI 서비스 종료
-- `mise run docker:logs`: 컨테이너 로그 확인
-- `mise run docker:build`: 이미지 빌드
-- `mise run docker:restart`: 컨테이너 재시작
+- `mise run docker-up`: GUI 서비스 시작
+- `mise run docker-down`: GUI 서비스 종료
+- `mise run docker-logs`: 컨테이너 로그 확인
+- `mise run docker-build`: 이미지 빌드
+- `mise run docker-restart`: 컨테이너 재시작
 
 ### Git Flow 및 브랜치 정책
 

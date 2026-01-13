@@ -162,7 +162,7 @@ export TARGET_PROJECT_PATH=/absolute/path/to/target/project
 # 주의: 상대 경로는 사용하지 마세요. Docker 볼륨 마운트는 절대 경로를 요구합니다.
 
 # 2. Docker Compose로 GUI 실행
-mise run docker:up
+mise run docker-up
 # 또는 직접 실행
 docker-compose up -d
 
@@ -171,12 +171,12 @@ docker-compose up -d
 # - 백엔드 API: http://localhost:8000
 
 # 4. 로그 확인
-mise run docker:logs
+mise run docker-logs
 # 또는
 docker-compose logs -f
 
 # 5. 종료
-mise run docker:down
+mise run docker-down
 # 또는
 docker-compose down
 ```

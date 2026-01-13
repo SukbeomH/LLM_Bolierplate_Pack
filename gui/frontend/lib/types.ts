@@ -46,7 +46,7 @@ export interface InjectResponse {
 	error?: string | null;
 }
 
-export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | "docs/ai-onboarding.md" | "logging.conf" | "zmp-branch-policy.json" | ".pre-commit-config.yaml" | ".github/workflows/";
+export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | ".mcp.json" | "docs/ai-onboarding.md" | "logging.conf" | "zmp-branch-policy.json" | ".pre-commit-config.yaml" | ".github/workflows/";
 
 export const ASSETS: Array<{
 	id: AssetType;
@@ -75,20 +75,26 @@ export const ASSETS: Array<{
 	{
 		id: "mise.toml",
 		label: "mise.toml (툴체인 관리)",
-		description: "통합 툴체인 관리 설정 (선택)",
-		required: false,
+		description: "통합 툴체인 관리 설정 (필수)",
+		required: true,
+	},
+	{
+		id: ".mcp.json",
+		label: ".mcp.json (MCP 서버 설정)",
+		description: "Model Context Protocol 서버 설정 (필수)",
+		required: true,
 	},
 	{
 		id: "docs/ai-onboarding.md",
 		label: "docs/ai-onboarding.md (온보딩 가이드)",
-		description: "AI 팀 온보딩 가이드 (선택)",
-		required: false,
+		description: "AI 팀 온보딩 가이드 (필수)",
+		required: true,
 	},
 	{
 		id: "logging.conf",
 		label: "logging.conf (로깅 설정)",
-		description: "표준 로깅 설정 파일 (Python 프로젝트 권장)",
-		required: false,
+		description: "표준 로깅 설정 파일 (필수)",
+		required: true,
 	},
 	{
 		id: "zmp-branch-policy.json",

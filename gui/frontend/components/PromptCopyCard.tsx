@@ -1,15 +1,12 @@
 /**
  * PromptCopyCard 컴포넌트
  * LLM 어시스턴트 초기 동기화 프롬프트를 표시하고 복사할 수 있는 카드
- * InitialSync와 McpStatus 컴포넌트를 통합
  */
 
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "./ToastProvider";
-import InitialSync from "./InitialSync";
-import McpStatus from "./McpStatus";
 
 interface PromptCopyCardProps {
 	prompt: string;
@@ -37,12 +34,6 @@ export default function PromptCopyCard({ prompt, onCopy }: PromptCopyCardProps) 
 
 	return (
 		<div className="space-y-6">
-			{/* 초기 분석 및 구성 단계 */}
-			<InitialSync />
-
-			{/* MCP 서버 상태 */}
-			<McpStatus />
-
 			{/* 프롬프트 복사 카드 */}
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
