@@ -9,7 +9,7 @@ import AssetSelection from "./AssetSelection";
 import ProgressReport from "./ProgressReport";
 import EnvDiagnosis from "./EnvDiagnosis";
 import PromptCopyCard from "./PromptCopyCard";
-import { injectBoilerplate } from "@/lib/api";
+import { injectBoilerplate, injectBoilerplateStream, type InjectStreamUpdate } from "@/lib/api";
 import type { StackInfo, InjectResponse, InjectionOptions, PostDiagnosis } from "@/lib/types";
 
 interface InjectorStepProps {
@@ -35,7 +35,7 @@ export default function InjectorStep({ onStackDetected, onDiagnosisUpdate }: Inj
 	const [logs, setLogs] = useState<string[]>([]);
 	const [injectResult, setInjectResult] = useState<InjectResponse | null>(null);
 	const [loading, setLoading] = useState(false);
-	const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+	const abortControllerRef = useRef<AbortController | null>(null);
 
 	const handleDetected = (info: StackInfo) => {
 		setStackInfo(info);
@@ -59,88 +59,133 @@ export default function InjectorStep({ onStackDetected, onDiagnosisUpdate }: Inj
 		setLogs([]);
 		setInjectResult(null);
 
-		// 기존 인터벌 정리
-		if (progressIntervalRef.current) {
-			clearInterval(progressIntervalRef.current);
-			progressIntervalRef.current = null;
+		// 기존 스트림 정리
+		if (abortControllerRef.current) {
+			abortControllerRef.current.abort();
+			abortControllerRef.current = null;
 		}
+
+		// 새로운 AbortController 생성
+		const abortController = new AbortController();
+		abortControllerRef.current = abortController;
 
 		try {
 			setLogs((prev) => [...prev, "주입 프로세스 시작..."]);
-			setProgress(10);
+			setProgress(5);
 
 			setLogs((prev) => [...prev, `대상 경로: ${targetPath}`]);
-			setProgress(20);
+			setProgress(10);
 
 			setLogs((prev) => [...prev, `선택된 자산: ${selectedAssets.join(", ")}`]);
-			setProgress(30);
+			setProgress(15);
 
-			// 백엔드 응답을 기다리는 동안 프로그레스 시뮬레이션
-			let currentProgress = 30;
-			progressIntervalRef.current = setInterval(() => {
-				// 30%에서 90%까지 천천히 증가 (최대 2분)
-				if (currentProgress < 90) {
-					currentProgress += Math.random() * 5 + 1; // 1-6%씩 증가
-					if (currentProgress > 90) {
-						currentProgress = 90;
-					}
-					setProgress(Math.floor(currentProgress));
-					setLogs((prev) => {
-						// 중복 로그 방지
-						if (prev.length === 0 || !prev[prev.length - 1].includes("주입 중...")) {
-							return [...prev, "주입 중..."];
+			// SSE 스트리밍으로 주입 수행
+			const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/inject/stream`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					target_path: targetPath,
+					assets: selectedAssets,
+					options: injectionOptions,
+				}),
+				signal: abortController.signal,
+			});
+
+			if (!response.body) {
+				throw new Error("Response body is null");
+			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = "";
+			let finalResult: InjectResponse | null = null;
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split("\n");
+				buffer = lines.pop() || "";
+
+				for (const line of lines) {
+					if (line.startsWith("data: ")) {
+						try {
+							const update: InjectStreamUpdate = JSON.parse(line.slice(6));
+
+							// 진행률 업데이트
+							if (update.progress !== undefined) {
+								setProgress(update.progress);
+							}
+
+							// 로그 메시지 추가
+							if (update.message) {
+								setLogs((prev) => [...prev, update.message]);
+							}
+
+							// 완료 처리
+							if (update.type === "complete" || update.type === "final") {
+								if (update.result) {
+									finalResult = update.result as InjectResponse;
+									setInjectResult(finalResult);
+								}
+
+								// 최종 결과 요약
+								if (update.result) {
+									const result = update.result as InjectResponse;
+									if (result.injected_files.length > 0) {
+										setLogs((prev) => [...prev, `✅ 주입된 파일: ${result.injected_files.length}개`]);
+									}
+									if (result.backed_up_files.length > 0) {
+										setLogs((prev) => [...prev, `📦 백업된 파일: ${result.backed_up_files.length}개`]);
+									}
+									if (result.skipped_files.length > 0) {
+										setLogs((prev) => [...prev, `⏭️ 건너뛴 파일: ${result.skipped_files.length}개`]);
+									}
+									if (result.merged_files.length > 0) {
+										setLogs((prev) => [...prev, `🔀 병합된 파일: ${result.merged_files.length}개`]);
+									}
+								}
+
+								// 사후 진단 및 프롬프트 처리
+								if (update.type === "final") {
+									if (update.post_diagnosis) {
+										onDiagnosisUpdate?.(update.post_diagnosis);
+									}
+								}
+							}
+
+							// 에러 처리
+							if (update.type === "error") {
+								setLogs((prev) => [...prev, `❌ ${update.message}`]);
+								setProgress(0);
+							}
+						} catch (error) {
+							console.error("Failed to parse SSE message:", error);
 						}
-						return prev;
-					});
+					}
 				}
-			}, 500); // 0.5초마다 업데이트
-
-			const result = await injectBoilerplate(targetPath, selectedAssets, injectionOptions);
-
-			// 인터벌 정리
-			if (progressIntervalRef.current) {
-				clearInterval(progressIntervalRef.current);
-				progressIntervalRef.current = null;
 			}
 
-			setLogs((prev) => [...prev, "주입 완료"]);
 			setProgress(100);
-
-			if (result.injected_files.length > 0) {
-				setLogs((prev) => [...prev, `✅ 주입된 파일: ${result.injected_files.length}개`]);
-			}
-			if (result.backed_up_files.length > 0) {
-				setLogs((prev) => [...prev, `📦 백업된 파일: ${result.backed_up_files.length}개`]);
-			}
-			if (result.skipped_files.length > 0) {
-				setLogs((prev) => [...prev, `⏭️ 건너뛴 파일: ${result.skipped_files.length}개`]);
-			}
-			if (result.merged_files.length > 0) {
-				setLogs((prev) => [...prev, `🔀 병합된 파일: ${result.merged_files.length}개`]);
-			}
-
-			setInjectResult(result);
-			if (result.post_diagnosis) {
-				onDiagnosisUpdate?.(result.post_diagnosis);
-			}
 		} catch (error: any) {
-			// 인터벌 정리
-			if (progressIntervalRef.current) {
-				clearInterval(progressIntervalRef.current);
-				progressIntervalRef.current = null;
+			if (error.name !== "AbortError") {
+				setLogs((prev) => [...prev, `❌ 에러: ${error.message}`]);
+				setProgress(0);
 			}
-			setLogs((prev) => [...prev, `❌ 에러: ${error.message}`]);
-			setProgress(0);
 		} finally {
 			setLoading(false);
+			abortControllerRef.current = null;
 		}
 	};
 
-	// 컴포넌트 언마운트 시 인터벌 정리
+	// 컴포넌트 언마운트 시 스트림 정리
 	useEffect(() => {
 		return () => {
-			if (progressIntervalRef.current) {
-				clearInterval(progressIntervalRef.current);
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
 			}
 		};
 	}, []);

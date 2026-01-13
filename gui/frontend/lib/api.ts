@@ -34,6 +34,92 @@ export const injectBoilerplate = async (
 	return response.data;
 };
 
+export interface InjectStreamUpdate {
+	type: "progress" | "log" | "complete" | "error" | "final";
+	progress?: number;
+	message: string;
+	current_asset?: string;
+	asset_index?: number;
+	total_assets?: number;
+	result?: InjectResponse;
+	post_diagnosis?: any;
+	setup_prompt?: string | null;
+}
+
+export const injectBoilerplateStream = (
+	targetPath: string,
+	assets: string[],
+	options: InjectionOptions,
+	onUpdate: (update: InjectStreamUpdate) => void,
+): EventSource => {
+	// POST 요청을 위한 body를 URL에 포함시키기 위해 fetch 사용
+	const eventSource = new EventSource(
+		`${API_BASE_URL}/api/v1/inject/stream?${new URLSearchParams({
+			target_path: targetPath,
+			assets: JSON.stringify(assets),
+			options: JSON.stringify(options),
+		})}`
+	);
+
+	// EventSource는 GET만 지원하므로 fetch + ReadableStream 사용
+	const controller = new AbortController();
+
+	fetch(`${API_BASE_URL}/api/v1/inject/stream`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			target_path: targetPath,
+			assets,
+			options,
+		}),
+		signal: controller.signal,
+	})
+		.then(async (response) => {
+			if (!response.body) {
+				throw new Error("Response body is null");
+			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = "";
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split("\n");
+				buffer = lines.pop() || "";
+
+				for (const line of lines) {
+					if (line.startsWith("data: ")) {
+						try {
+							const data = JSON.parse(line.slice(6));
+							onUpdate(data);
+						} catch (error) {
+							console.error("Failed to parse SSE message:", error);
+						}
+					}
+				}
+			}
+		})
+		.catch((error) => {
+			if (error.name !== "AbortError") {
+				onUpdate({
+					type: "error",
+					message: `스트림 오류: ${error.message}`,
+				});
+			}
+		});
+
+	// EventSource 대신 AbortController 반환 (정리용)
+	return {
+		close: () => controller.abort(),
+	} as any;
+};
+
 // Config API
 export interface ClaudeSections {
 	lessons_learned: string;

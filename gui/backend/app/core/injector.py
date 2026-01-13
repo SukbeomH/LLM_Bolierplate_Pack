@@ -212,6 +212,261 @@ class BoilerplateInjector:
 				"error": str(e),
 			}
 
+	def inject_stream(
+		self,
+		target_path: str,
+		assets: List[str],
+		options: InjectionOptions,
+	) -> Generator[Dict[str, Any], None, Dict[str, Any]]:
+		"""
+		보일러플레이트 자산 주입 (스트리밍)
+
+		Args:
+			target_path: 대상 프로젝트 경로
+			assets: 주입할 자산 목록
+			options: 주입 옵션
+
+		Yields:
+			진행 상황 업데이트 딕셔너리
+		"""
+		import json
+		target = Path(target_path).resolve()
+		injected_files = []
+		backed_up_files = []
+		skipped_files = []
+		merged_files = []
+		total_assets = len(assets)
+
+		try:
+			# 초기화 메시지
+			yield {
+				"type": "progress",
+				"progress": 0,
+				"message": f"주입 프로세스 시작... (총 {total_assets}개 자산)",
+			}
+
+			for idx, asset in enumerate(assets):
+				if asset not in self.ASSETS_MAP:
+					continue
+
+				# 진행률 계산 (각 자산 처리 시마다 업데이트)
+				progress = int((idx / total_assets) * 80) + 10  # 10% ~ 90%
+				yield {
+					"type": "progress",
+					"progress": progress,
+					"message": f"처리 중: {asset}",
+					"current_asset": asset,
+					"asset_index": idx + 1,
+					"total_assets": total_assets,
+				}
+
+				source_path = self.boilerplate_root / self.ASSETS_MAP[asset]
+				target_asset_path = target / asset.rstrip("/")
+
+				# 소스 파일이 존재하는지 확인
+				if not source_path.exists():
+					skipped_files.append(asset)
+					yield {
+						"type": "log",
+						"message": f"⏭️ 소스 파일 없음: {asset}",
+					}
+					continue
+
+				# 대상 경로에 이미 존재하는 경우
+				if target_asset_path.exists():
+					if options.skip_existing:
+						skipped_files.append(asset)
+						yield {
+							"type": "log",
+							"message": f"⏭️ 건너뛰기: {asset}",
+						}
+						continue
+
+					if options.backup_existing:
+						backup_path = self.backup_manager.create_backup(target_asset_path)
+						if backup_path:
+							backed_up_files.append(str(backup_path.relative_to(target)))
+							yield {
+								"type": "log",
+								"message": f"📦 백업: {asset}",
+							}
+
+					# .claude/ 설정 병합
+					if asset == ".claude/" and options.merge_claude_config:
+						if self._merge_claude_config(source_path, target_asset_path):
+							merged_files.append(asset)
+							yield {
+								"type": "log",
+								"message": f"🔀 병합 완료: {asset}",
+							}
+							continue
+
+				# scripts/ 주입 시 boilerplate/ 디렉토리로 복사하고 gui/도 boilerplate/gui/로 복사
+				if asset == "scripts/":
+					boilerplate_target = target / "boilerplate"
+					if self._copy_asset(source_path, boilerplate_target):
+						yield {
+							"type": "log",
+							"message": f"✅ 복사 완료: boilerplate/",
+						}
+						# gui/ 디렉토리 복사
+						gui_source = self.boilerplate_root / "gui"
+						gui_target = boilerplate_target / "gui"
+						if gui_source.exists() and gui_source.is_dir():
+							gui_target.mkdir(parents=True, exist_ok=True)
+
+							if (gui_source / "backend").exists():
+								backend_target = gui_target / "backend"
+								if backend_target.exists():
+									if options.skip_existing:
+										skipped_files.append("boilerplate/gui/backend")
+									else:
+										if options.backup_existing:
+											backup_path = self.backup_manager.create_backup(backend_target)
+											if backup_path:
+												backed_up_files.append(str(backup_path.relative_to(target)))
+										if self._copy_asset(gui_source / "backend", backend_target):
+											injected_files.append("boilerplate/gui/backend")
+											yield {
+												"type": "log",
+												"message": "✅ 복사 완료: boilerplate/gui/backend",
+											}
+								else:
+									if self._copy_asset(gui_source / "backend", backend_target):
+										injected_files.append("boilerplate/gui/backend")
+										yield {
+											"type": "log",
+											"message": "✅ 복사 완료: boilerplate/gui/backend",
+										}
+
+							if (gui_source / "frontend").exists():
+								frontend_target = gui_target / "frontend"
+								if frontend_target.exists():
+									if options.skip_existing:
+										skipped_files.append("boilerplate/gui/frontend")
+									else:
+										if options.backup_existing:
+											backup_path = self.backup_manager.create_backup(frontend_target)
+											if backup_path:
+												backed_up_files.append(str(backup_path.relative_to(target)))
+										if self._copy_asset(gui_source / "frontend", frontend_target):
+											injected_files.append("boilerplate/gui/frontend")
+											yield {
+												"type": "log",
+												"message": "✅ 복사 완료: boilerplate/gui/frontend",
+											}
+								else:
+									if self._copy_asset(gui_source / "frontend", frontend_target):
+										injected_files.append("boilerplate/gui/frontend")
+										yield {
+											"type": "log",
+											"message": "✅ 복사 완료: boilerplate/gui/frontend",
+										}
+
+							# Dockerfile 복사
+							if (gui_target / "backend").exists() and (gui_source / "backend" / "Dockerfile").exists():
+								dockerfile_backend_source = gui_source / "backend" / "Dockerfile"
+								dockerfile_backend_target = gui_target / "backend" / "Dockerfile"
+								if not dockerfile_backend_target.exists() or not options.skip_existing:
+									if dockerfile_backend_target.exists() and options.backup_existing:
+										backup_path = self.backup_manager.create_backup(dockerfile_backend_target)
+										if backup_path:
+											backed_up_files.append(str(backup_path.relative_to(target)))
+									if self._copy_asset(dockerfile_backend_source, dockerfile_backend_target):
+										injected_files.append("boilerplate/gui/backend/Dockerfile")
+										yield {
+											"type": "log",
+											"message": "✅ 복사 완료: boilerplate/gui/backend/Dockerfile",
+										}
+
+							if (gui_target / "frontend").exists() and (gui_source / "frontend" / "Dockerfile").exists():
+								dockerfile_frontend_source = gui_source / "frontend" / "Dockerfile"
+								dockerfile_frontend_target = gui_target / "frontend" / "Dockerfile"
+								if not dockerfile_frontend_target.exists() or not options.skip_existing:
+									if dockerfile_frontend_target.exists() and options.backup_existing:
+										backup_path = self.backup_manager.create_backup(dockerfile_frontend_target)
+										if backup_path:
+											backed_up_files.append(str(backup_path.relative_to(target)))
+									if self._copy_asset(dockerfile_frontend_source, dockerfile_frontend_target):
+										injected_files.append("boilerplate/gui/frontend/Dockerfile")
+										yield {
+											"type": "log",
+											"message": "✅ 복사 완료: boilerplate/gui/frontend/Dockerfile",
+										}
+						injected_files.append("boilerplate/")
+					else:
+						skipped_files.append(asset)
+				# docker-compose.yml 주입
+				elif asset == "docker-compose.yml":
+					target_docker_compose = target / "boilerplate" / "docker-compose.yml"
+					success, backup_path = self._inject_docker_compose(source_path, target_docker_compose, target, options)
+					if success:
+						injected_files.append("boilerplate/docker-compose.yml")
+						if backup_path:
+							backed_up_files.append(str(backup_path.relative_to(target)))
+						yield {
+							"type": "log",
+							"message": "✅ 복사 완료: boilerplate/docker-compose.yml",
+						}
+					else:
+						skipped_files.append(asset)
+				# .gitignore 주입
+				elif asset == ".gitignore":
+					target_gitignore = target / "boilerplate" / ".gitignore"
+					success, backup_path = self._inject_gitignore(source_path, target_gitignore, target, options)
+					if success:
+						injected_files.append("boilerplate/.gitignore")
+						if backup_path:
+							backed_up_files.append(str(backup_path.relative_to(target)))
+						yield {
+							"type": "log",
+							"message": "✅ 복사 완료: boilerplate/.gitignore",
+						}
+					else:
+						skipped_files.append(asset)
+				# 파일/디렉토리 복사
+				elif self._copy_asset(source_path, target_asset_path):
+					injected_files.append(asset)
+					yield {
+						"type": "log",
+						"message": f"✅ 복사 완료: {asset}",
+					}
+				else:
+					skipped_files.append(asset)
+
+			# 최종 결과 반환
+			result = {
+				"status": "success" if injected_files else "partial",
+				"injected_files": injected_files,
+				"backed_up_files": backed_up_files,
+				"skipped_files": skipped_files,
+				"merged_files": merged_files,
+			}
+			yield {
+				"type": "complete",
+				"progress": 100,
+				"message": "주입 완료",
+				"result": result,
+			}
+			return result
+
+		except Exception as e:
+			error_result = {
+				"status": "error",
+				"injected_files": injected_files,
+				"backed_up_files": backed_up_files,
+				"skipped_files": skipped_files,
+				"merged_files": merged_files,
+				"error": str(e),
+			}
+			yield {
+				"type": "error",
+				"progress": 0,
+				"message": f"에러 발생: {str(e)}",
+				"result": error_result,
+			}
+			return error_result
+
 	def _copy_asset(self, source: Path, target: Path) -> bool:
 		"""
 		자산 복사

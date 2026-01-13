@@ -5,8 +5,11 @@ Injector API 라우터
 """
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pathlib import Path
 import sys
+import json
+import asyncio
 
 # 프로젝트 루트를 Python 경로에 추가
 backend_root = Path(__file__).parent.parent.parent
@@ -65,6 +68,90 @@ async def detect_stack(request: DetectRequest) -> DetectResponse:
 		)
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/inject/stream")
+async def inject_boilerplate_stream(request: InjectRequest):
+	"""
+	파일 주입 API (Server-Sent Events 스트리밍)
+
+	선택된 보일러플레이트 자산을 대상 경로로 복사하며 진행 상황을 실시간으로 스트리밍합니다.
+
+	Args:
+		request: 파일 주입 요청 (target_path, assets, options 포함)
+
+	Returns:
+		Server-Sent Events 스트림
+	"""
+	from app.core.injector import BoilerplateInjector
+	from app.core.validator import PostDiagnosisValidator
+	from app.core.prompts import generate_setup_prompt
+	from app.models.schemas import PostDiagnosis
+
+	async def generate_stream():
+		try:
+			injector = BoilerplateInjector(boilerplate_root)
+
+			# 주입 작업 스트리밍 (동기 제너레이터를 async로 래핑)
+			# 동기 제너레이터를 직접 사용하되, 각 업데이트를 async로 전송
+			for update in injector.inject_stream(
+				target_path=request.target_path,
+				assets=request.assets,
+				options=request.options,
+			):
+				# SSE 형식으로 전송
+				data = json.dumps(update, ensure_ascii=False)
+				yield f"data: {data}\n\n"
+				# 비동기 작업을 위해 약간의 지연 (이벤트 루프에 제어권 반환)
+				await asyncio.sleep(0.01)
+
+			# 사후 진단 수행
+			yield f"data: {json.dumps({'type': 'progress', 'progress': 95, 'message': '사후 진단 수행 중...'}, ensure_ascii=False)}\n\n"
+			validator = PostDiagnosisValidator(boilerplate_root)
+			diagnosis_result = validator.validate(request.target_path)
+
+			# 프롬프트 생성
+			setup_prompt = None
+			try:
+				detector = StackDetector(boilerplate_root)
+				stack_result = detector.detect(request.target_path)
+				setup_prompt = generate_setup_prompt(
+					target_path=request.target_path,
+					stack_info=stack_result,
+				)
+			except Exception:
+				pass
+
+			# 최종 결과 전송
+			final_result = {
+				"type": "final",
+				"progress": 100,
+				"message": "모든 작업 완료",
+				"post_diagnosis": {
+					"env_check": diagnosis_result.get("env_check"),
+					"git_status": diagnosis_result.get("git_status"),
+				},
+				"setup_prompt": setup_prompt,
+			}
+			yield f"data: {json.dumps(final_result, ensure_ascii=False)}\n\n"
+
+		except Exception as e:
+			error_data = {
+				"type": "error",
+				"progress": 0,
+				"message": f"에러 발생: {str(e)}",
+			}
+			yield f"data: {json.dumps(error_data, ensure_ascii=False)}\n\n"
+
+	return StreamingResponse(
+		generate_stream(),
+		media_type="text/event-stream",
+		headers={
+			"Cache-Control": "no-cache",
+			"Connection": "keep-alive",
+			"X-Accel-Buffering": "no",  # nginx 버퍼링 비활성화
+		},
+	)
 
 
 @router.post("/inject", response_model=InjectResponse)
