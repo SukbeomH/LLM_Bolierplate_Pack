@@ -46,7 +46,7 @@ export interface InjectResponse {
 	error?: string | null;
 }
 
-export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | ".mcp.json" | "docs/ai-onboarding.md" | "logging.conf" | "zmp-branch-policy.json" | ".pre-commit-config.yaml" | ".github/workflows/";
+export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | ".mcp.json" | "docs/ai-onboarding.md" | "logging.conf" | "zmp-branch-policy.json" | ".pre-commit-config.yaml" | ".github/workflows/" | "docker-compose.yml" | ".gitignore";
 
 export const ASSETS: Array<{
 	id: AssetType;
@@ -112,6 +112,18 @@ export const ASSETS: Array<{
 		id: ".github/workflows/",
 		label: ".github/workflows/ (GitHub Actions)",
 		description: "GitHub Actions 워크플로우 (PR 검증, CLAUDE.md 동기화 등)",
+		required: false,
+	},
+	{
+		id: "docker-compose.yml",
+		label: "docker-compose.yml (Docker 설정)",
+		description: "Docker Compose 설정 파일 (GUI 실행용)",
+		required: false,
+	},
+	{
+		id: ".gitignore",
+		label: ".gitignore (Git 무시 파일)",
+		description: "Git 무시 파일 (boilerplate/ 디렉토리용)",
 		required: false,
 	},
 ];

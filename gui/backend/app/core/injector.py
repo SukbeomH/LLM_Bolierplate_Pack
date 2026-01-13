@@ -27,6 +27,8 @@ class BoilerplateInjector:
 		"zmp-branch-policy.json": "zmp-branch-policy.json",
 		".pre-commit-config.yaml": ".pre-commit-config.yaml",
 		".github/workflows/": ".github/workflows/",
+		"docker-compose.yml": "docker-compose.yml",
+		".gitignore": ".gitignore",
 	}
 
 	def __init__(self, boilerplate_root: Path):
@@ -92,51 +94,92 @@ class BoilerplateInjector:
 							merged_files.append(asset)
 							continue
 
-				# scripts/ 주입 시 gui/ 디렉토리도 scripts/gui/로 복사
+				# scripts/ 주입 시 boilerplate/ 디렉토리로 복사하고 gui/도 boilerplate/gui/로 복사
 				if asset == "scripts/":
-					if self._copy_asset(source_path, target_asset_path):
-						# gui/ 디렉토리를 scripts/gui/로 복사
+					# scripts/를 boilerplate/로 복사
+					boilerplate_target = target / "boilerplate"
+					if self._copy_asset(source_path, boilerplate_target):
+						# gui/ 디렉토리를 boilerplate/gui/로 복사
 						gui_source = self.boilerplate_root / "gui"
-						gui_target = target / "scripts" / "gui"
+						gui_target = boilerplate_target / "gui"
 						if gui_source.exists() and gui_source.is_dir():
-							# scripts/gui/ 디렉토리 생성
+							# boilerplate/gui/ 디렉토리 생성
 							gui_target.mkdir(parents=True, exist_ok=True)
 
-							# scripts/gui/start.sh는 이미 있으므로 backend와 frontend만 복사
+							# boilerplate/gui/start.sh는 이미 있으므로 backend와 frontend만 복사
 							if (gui_source / "backend").exists():
 								backend_target = gui_target / "backend"
 								# 기존 파일 처리 (백업 옵션 확인)
 								if backend_target.exists():
 									if options.skip_existing:
-										skipped_files.append("scripts/gui/backend")
+										skipped_files.append("boilerplate/gui/backend")
 									else:
 										if options.backup_existing:
 											backup_path = self.backup_manager.create_backup(backend_target)
 											if backup_path:
 												backed_up_files.append(str(backup_path.relative_to(target)))
 										if self._copy_asset(gui_source / "backend", backend_target):
-											injected_files.append("scripts/gui/backend")
+											injected_files.append("boilerplate/gui/backend")
 								else:
 									if self._copy_asset(gui_source / "backend", backend_target):
-										injected_files.append("scripts/gui/backend")
+										injected_files.append("boilerplate/gui/backend")
 
 							if (gui_source / "frontend").exists():
 								frontend_target = gui_target / "frontend"
 								# 기존 파일 처리 (백업 옵션 확인)
 								if frontend_target.exists():
 									if options.skip_existing:
-										skipped_files.append("scripts/gui/frontend")
+										skipped_files.append("boilerplate/gui/frontend")
 									else:
 										if options.backup_existing:
 											backup_path = self.backup_manager.create_backup(frontend_target)
 											if backup_path:
 												backed_up_files.append(str(backup_path.relative_to(target)))
 										if self._copy_asset(gui_source / "frontend", frontend_target):
-											injected_files.append("scripts/gui/frontend")
+											injected_files.append("boilerplate/gui/frontend")
 								else:
 									if self._copy_asset(gui_source / "frontend", frontend_target):
-										injected_files.append("scripts/gui/frontend")
-						injected_files.append(asset)
+										injected_files.append("boilerplate/gui/frontend")
+
+							# Dockerfile 복사 (backend와 frontend가 성공적으로 복사된 경우)
+							if (gui_target / "backend").exists() and (gui_source / "backend" / "Dockerfile").exists():
+								dockerfile_backend_source = gui_source / "backend" / "Dockerfile"
+								dockerfile_backend_target = gui_target / "backend" / "Dockerfile"
+								if not dockerfile_backend_target.exists() or not options.skip_existing:
+									if dockerfile_backend_target.exists() and options.backup_existing:
+										backup_path = self.backup_manager.create_backup(dockerfile_backend_target)
+										if backup_path:
+											backed_up_files.append(str(backup_path.relative_to(target)))
+									if self._copy_asset(dockerfile_backend_source, dockerfile_backend_target):
+										injected_files.append("boilerplate/gui/backend/Dockerfile")
+
+							if (gui_target / "frontend").exists() and (gui_source / "frontend" / "Dockerfile").exists():
+								dockerfile_frontend_source = gui_source / "frontend" / "Dockerfile"
+								dockerfile_frontend_target = gui_target / "frontend" / "Dockerfile"
+								if not dockerfile_frontend_target.exists() or not options.skip_existing:
+									if dockerfile_frontend_target.exists() and options.backup_existing:
+										backup_path = self.backup_manager.create_backup(dockerfile_frontend_target)
+										if backup_path:
+											backed_up_files.append(str(backup_path.relative_to(target)))
+									if self._copy_asset(dockerfile_frontend_source, dockerfile_frontend_target):
+										injected_files.append("boilerplate/gui/frontend/Dockerfile")
+						injected_files.append("boilerplate/")
+					else:
+						skipped_files.append(asset)
+				# docker-compose.yml 주입 시 boilerplate/ 경로로 복사 및 경로 수정
+				elif asset == "docker-compose.yml":
+					# boilerplate/docker-compose.yml로 복사
+					target_docker_compose = target / "boilerplate" / "docker-compose.yml"
+					if self._inject_docker_compose(source_path, target_docker_compose, target, options):
+						injected_files.append("boilerplate/docker-compose.yml")
+					else:
+						skipped_files.append(asset)
+				# .gitignore 주입 시 boilerplate/.gitignore로 복사 및 병합
+				elif asset == ".gitignore":
+					# boilerplate/.gitignore로 복사
+					target_gitignore = target / "boilerplate" / ".gitignore"
+					if self._inject_gitignore(source_path, target_gitignore, target, options):
+						injected_files.append("boilerplate/.gitignore")
 					else:
 						skipped_files.append(asset)
 				# 파일/디렉토리 복사
@@ -237,6 +280,107 @@ class BoilerplateInjector:
 
 		except Exception as e:
 			print(f"Error merging .claude config: {e}")
+			return False
+
+	def _inject_docker_compose(
+		self, source: Path, target: Path, target_project: Path, options: InjectionOptions
+	) -> bool:
+		"""
+		docker-compose.yml 주입 (경로 수정)
+
+		Args:
+			source: 소스 docker-compose.yml 경로
+			target: 대상 docker-compose.yml 경로
+			target_project: 대상 프로젝트 루트 경로
+			options: 주입 옵션
+
+		Returns:
+			주입 성공 여부
+		"""
+		try:
+			if not source.exists():
+				return False
+
+			# 기존 파일 처리
+			if target.exists():
+				if options.skip_existing:
+					return False
+				if options.backup_existing:
+					backup_path = self.backup_manager.create_backup(target)
+					if backup_path:
+						pass  # backed_up_files는 상위에서 처리
+
+			# docker-compose.yml 읽기
+			with open(source, "r", encoding="utf-8") as f:
+				content = f.read()
+
+			# 경로 수정
+			# docker-compose.yml이 boilerplate/에 있으므로 상대 경로는 그대로 유지
+			# boilerplate/docker-compose.yml에서 boilerplate/gui/backend를 참조하려면 ./gui/backend
+			# (boilerplate/ 디렉토리에서 상대 경로로 ./gui/backend는 boilerplate/gui/backend를 가리킴)
+			# 컨테이너 이름도 프로젝트별로 변경
+			project_name = target_project.name.lower().replace(" ", "-").replace("_", "-")
+
+			# 경로는 이미 ./gui/backend 형식이므로 그대로 유지 (boilerplate/에서 실행 시 올바른 경로)
+			# 컨테이너 이름만 변경
+			content = content.replace("boilerplate-backend", f"{project_name}-backend")
+			content = content.replace("boilerplate-frontend", f"{project_name}-frontend")
+
+			# 주석 업데이트: boilerplate/ 경로에 맞게 수정
+			content = content.replace(
+				"#   docker-compose up -d",
+				"#   cd boilerplate && docker-compose -f docker-compose.yml up -d"
+			)
+
+			# 대상 디렉토리 생성
+			target.parent.mkdir(parents=True, exist_ok=True)
+
+			# 수정된 내용 저장
+			with open(target, "w", encoding="utf-8") as f:
+				f.write(content)
+
+			return True
+		except Exception as e:
+			print(f"Error injecting docker-compose.yml: {e}")
+			return False
+
+	def _inject_gitignore(
+		self, source: Path, target: Path, target_project: Path, options: InjectionOptions
+	) -> bool:
+		"""
+		.gitignore 주입 (boilerplate/.gitignore로 복사)
+
+		Args:
+			source: 소스 .gitignore 경로
+			target: 대상 .gitignore 경로 (boilerplate/.gitignore)
+			target_project: 대상 프로젝트 루트 경로
+			options: 주입 옵션
+
+		Returns:
+			주입 성공 여부
+		"""
+		try:
+			if not source.exists():
+				return False
+
+			# 기존 파일 처리
+			if target.exists():
+				if options.skip_existing:
+					return False
+				if options.backup_existing:
+					backup_path = self.backup_manager.create_backup(target)
+					if backup_path:
+						pass  # backed_up_files는 상위에서 처리
+
+			# 대상 디렉토리 생성
+			target.parent.mkdir(parents=True, exist_ok=True)
+
+			# .gitignore 복사
+			shutil.copy2(source, target)
+
+			return True
+		except Exception as e:
+			print(f"Error injecting .gitignore: {e}")
 			return False
 
 	def _merge_json_config(self, target: Dict, source: Dict) -> Dict:

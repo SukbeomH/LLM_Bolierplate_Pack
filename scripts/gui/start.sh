@@ -10,13 +10,13 @@ set -e
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 
-# GUI 디렉토리 위치 확인 (주입된 프로젝트는 scripts/gui/, 원본은 gui/)
+# GUI 디렉토리 위치 확인 (주입된 프로젝트는 boilerplate/gui/, 원본은 gui/)
 if [ -d "$PROJECT_ROOT/gui/backend" ]; then
 	# 원본 보일러플레이트 구조
 	BACKEND_DIR="$PROJECT_ROOT/gui/backend"
 	FRONTEND_DIR="$PROJECT_ROOT/gui/frontend"
 elif [ -d "$SCRIPT_DIR/backend" ]; then
-	# 주입된 프로젝트 구조 (scripts/gui/)
+	# 주입된 프로젝트 구조 (boilerplate/gui/)
 	BACKEND_DIR="$SCRIPT_DIR/backend"
 	FRONTEND_DIR="$SCRIPT_DIR/frontend"
 else
