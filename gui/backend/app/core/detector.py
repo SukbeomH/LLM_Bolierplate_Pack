@@ -40,13 +40,20 @@ class StackDetector:
 		if not target.exists() or not target.is_dir():
 			raise ValueError(f"Invalid target path: {target_path}")
 
-		if not self.detect_script.exists():
-			raise FileNotFoundError(f"detect_stack.sh not found: {self.detect_script}")
+		# 대상 프로젝트에서 detect_stack.sh를 먼저 찾기 (주입된 프로젝트의 경우)
+		target_detect_script = target / "scripts" / "core" / "detect_stack.sh"
+		if target_detect_script.exists():
+			detect_script = target_detect_script
+		elif self.detect_script.exists():
+			# 대상 프로젝트에 없으면 보일러플레이트의 스크립트 사용
+			detect_script = self.detect_script
+		else:
+			raise FileNotFoundError(f"detect_stack.sh not found in target ({target_detect_script}) or boilerplate ({self.detect_script})")
 
 		# detect_stack.sh 실행
 		try:
 			# 환경 변수를 파싱하기 위해 bash -c 사용
-			cmd = f"bash -c 'source {self.detect_script} && echo \"STACK=$DETECTED_STACK\" && echo \"PM=$DETECTED_PACKAGE_MANAGER\" && echo \"VENV=$DETECTED_VENV_PATH\" && echo \"PYVER=$DETECTED_PYTHON_VERSION\"'"
+			cmd = f"bash -c 'source {detect_script} && echo \"STACK=$DETECTED_STACK\" && echo \"PM=$DETECTED_PACKAGE_MANAGER\" && echo \"VENV=$DETECTED_VENV_PATH\" && echo \"PYVER=$DETECTED_PYTHON_VERSION\"'"
 			result = subprocess.run(
 				cmd,
 				shell=True,

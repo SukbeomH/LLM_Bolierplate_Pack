@@ -102,13 +102,13 @@ export default function LogMonitor({ targetPath, logFile }: LogMonitorProps) {
 	// 타임라인 데이터 생성
 	const timelineData = filteredLogs
 		.map((line, index) => {
-			const parsed = parseLogLine(line);
+		const parsed = parseLogLine(line);
 			if (!parsed) return null;
-			return {
-				index,
-				...parsed,
-				line,
-			};
+		return {
+			index,
+			...parsed,
+			line,
+		};
 		})
 		.filter((entry): entry is LogEntry & { index: number; line: string } => entry !== null);
 

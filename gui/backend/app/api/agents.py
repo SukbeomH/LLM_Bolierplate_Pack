@@ -113,24 +113,30 @@ async def run_agent(request: AgentRunRequest) -> Dict:
 		raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/run/stream")
-async def run_agent_stream(request: AgentRunRequest) -> StreamingResponse:
+@router.get("/run/stream")
+async def run_agent_stream(
+	agent_name: str,
+	target_path: Optional[str] = None,
+	options: Optional[str] = None,  # JSON string from query params
+) -> StreamingResponse:
 	"""
 	에이전트를 실행하고 실시간 로그를 스트리밍합니다.
 
 	Args:
-		request: 에이전트 실행 요청
+		agent_name: 에이전트 이름
+		target_path: 대상 프로젝트 경로 (선택사항)
+		options: 옵션 JSON 문자열 (선택사항)
 
 	Returns:
 		실시간 로그 스트림 (Server-Sent Events)
 	"""
-	if request.agent_name not in AGENT_SCRIPTS:
+	if agent_name not in AGENT_SCRIPTS:
 		raise HTTPException(
 			status_code=400,
-			detail=f"Invalid agent name: {request.agent_name}"
+			detail=f"Invalid agent name: {agent_name}"
 		)
 
-	script_path = AGENT_SCRIPTS[request.agent_name]
+	script_path = AGENT_SCRIPTS[agent_name]
 
 	if not script_path.exists():
 		raise HTTPException(
@@ -143,13 +149,21 @@ async def run_agent_stream(request: AgentRunRequest) -> StreamingResponse:
 		try:
 			cmd = ["node", str(script_path)]
 
-			if request.options:
+			# options 파싱
+			parsed_options = None
+			if options:
+				try:
+					parsed_options = json.loads(options)
+				except json.JSONDecodeError:
+					pass
+
+			if parsed_options:
 				import tempfile
 				with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-					json.dump(request.options, f)
+					json.dump(parsed_options, f)
 					cmd.append(f.name)
 
-			cwd = request.target_path if request.target_path else boilerplate_root
+			cwd = target_path if target_path else boilerplate_root
 
 			process = subprocess.Popen(
 				cmd,

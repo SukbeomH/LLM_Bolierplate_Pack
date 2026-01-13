@@ -10,8 +10,27 @@ import sys
 
 # 프로젝트 루트를 Python 경로에 추가
 backend_root = Path(__file__).parent.parent.parent
-boilerplate_root = backend_root.parent.parent
 sys.path.insert(0, str(backend_root))
+
+# boilerplate_root 계산: detect_stack.sh가 있는 프로젝트 루트 찾기
+# 주입된 프로젝트: scripts/gui/backend -> scripts/core/detect_stack.sh
+# 원본 보일러플레이트: gui/backend -> scripts/core/detect_stack.sh
+def find_boilerplate_root(start_path: Path) -> Path:
+	"""detect_stack.sh를 찾아 프로젝트 루트 반환"""
+	current = start_path
+	# 최대 5단계 상위로 탐색
+	for _ in range(5):
+		detect_script = current / "scripts" / "core" / "detect_stack.sh"
+		if detect_script.exists():
+			return current
+		parent = current.parent
+		if parent == current:  # 루트 디렉토리에 도달
+			break
+		current = parent
+	# 찾지 못한 경우 기본값 (원본 보일러플레이트 구조 가정)
+	return backend_root.parent.parent
+
+boilerplate_root = find_boilerplate_root(backend_root)
 
 from app.models.schemas import DetectRequest, DetectResponse, InjectRequest, InjectResponse, PostProcess
 from app.core.detector import StackDetector
