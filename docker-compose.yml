@@ -8,9 +8,6 @@
 #
 # 주의: TARGET_PROJECT_PATH는 반드시 절대 경로를 사용해야 합니다.
 #       상대 경로를 사용하면 볼륨 마운트가 실패할 수 있습니다.
-
-version: '3.8'
-
 services:
   backend:
     build:
@@ -57,4 +54,3 @@ services:
 networks:
   boilerplate-network:
     driver: bridge
-
