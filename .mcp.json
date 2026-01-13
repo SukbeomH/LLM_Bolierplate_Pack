@@ -43,33 +43,6 @@
 			"env": {},
 			"comment_usage": "검증 피드백 루프에서: 대규모 코드베이스에서 작업할 때 필요한 컨텍스트만 선별하여 토큰을 절약하고 응답 품질을 향상시킵니다."
 		},
-		"slack": {
-			"comment": "Slack MCP - 팀 채널 알림 및 메시지 검색용. 중대한 오류 해결 후 요약 리포트를 공유하여 팀의 지식을 복리로 축적합니다.",
-			"command": "npx",
-			"args": [
-				"-y",
-				"@modelcontextprotocol/server-slack"
-			],
-			"env": {
-				"SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
-				"SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
-			},
-			"comment_usage": "검증 피드백 루프에서: 중요한 버그 수정, 아키텍처 변경, 성능 개선 등의 요약을 #dev-alerts 채널에 자동 공유하여 팀 전체가 학습할 수 있도록 합니다."
-		},
-		"sentry": {
-			"comment": "Sentry MCP - 런타임 에러 로그 분석 및 디버깅용. 프로덕션 환경의 실제 에러를 가져와서 AI가 디버깅 프롬프트에 활용합니다.",
-			"command": "npx",
-			"args": [
-				"-y",
-				"@modelcontextprotocol/server-sentry"
-			],
-			"env": {
-				"SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}",
-				"SENTRY_ORG": "${SENTRY_ORG}",
-				"SENTRY_PROJECT": "${SENTRY_PROJECT}"
-			},
-			"comment_usage": "검증 피드백 루프에서: 프로덕션 에러를 직접 가져와서 AI가 실제 문제를 이해하고, 유사한 버그가 다시 발생하지 않도록 코드를 작성하도록 돕습니다."
-		},
 		"chrome-devtools": {
 			"comment": "Chrome DevTools MCP - 브라우저 UI 검증, 콘솔 에러 확인, 네트워크 분석용. UI 변경 시 반드시 사용하여 렌더링 결과와 런타임 에러를 확인합니다.",
 			"command": "npx",

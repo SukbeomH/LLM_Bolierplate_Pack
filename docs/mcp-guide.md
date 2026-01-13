@@ -52,20 +52,11 @@ mcp_serena_onboarding
 
 **이유**: 코드베이스에 대한 tight context를 확보하고 grep-and-hope loops를 방지합니다.
 
-### 4. 환경 변수 설정
+### 4. 환경 변수 설정 (선택사항)
 
-프로젝트 루트에 `.env` 파일을 생성하고 다음 환경 변수를 설정하세요:
+일부 MCP 서버는 환경 변수가 필요할 수 있습니다. 필요한 경우 프로젝트 루트에 `.env` 파일을 생성하세요:
 
 ```bash
-# Slack MCP
-SLACK_BOT_TOKEN=xoxb-your-bot-token
-SLACK_TEAM_ID=T1234567890
-
-# Sentry MCP
-SENTRY_AUTH_TOKEN=your-sentry-auth-token
-SENTRY_ORG=your-org-slug
-SENTRY_PROJECT=your-project-slug
-
 # Proxymock MCP (선택사항)
 PROXYMOCK_API_KEY=your-proxymock-api-key
 PROXYMOCK_ENDPOINT=https://api.proxymock.com
@@ -75,25 +66,6 @@ PROXYMOCK_ENDPOINT=https://api.proxymock.com
 - `.env` 파일은 절대 git에 커밋하지 마세요.
 - `.gitignore`에 `.env`가 포함되어 있는지 확인하세요.
 - 팀원들과 공유해야 하는 환경 변수 목록은 `.env.sample` 파일에 플레이스홀더로 저장하세요.
-
-### 5. .env.sample 파일 생성
-
-팀원들이 필요한 환경 변수를 파악할 수 있도록 `.env.sample` 파일을 생성하세요:
-
-```bash
-# Slack MCP
-SLACK_BOT_TOKEN=
-SLACK_TEAM_ID=
-
-# Sentry MCP
-SENTRY_AUTH_TOKEN=
-SENTRY_ORG=
-SENTRY_PROJECT=
-
-# Proxymock MCP (선택사항)
-PROXYMOCK_API_KEY=
-PROXYMOCK_ENDPOINT=
-```
 
 ### 초기 구성 완료 확인
 
@@ -251,53 +223,7 @@ PROXYMOCK_ENDPOINT=
 
 ## MCP 서버별 설정 및 활용
 
-### 5. Slack MCP
-
-**목적**: 팀 채널 알림 및 메시지 검색
-
-**설정 방법**:
-1. Slack API에서 Bot Token 생성: https://api.slack.com/apps
-2. `chat:write`, `channels:read`, `channels:history` 권한 부여
-3. 환경 변수에 토큰 설정
-
-**검증 피드백 루프에서의 역할**:
-- **중대한 오류 해결 후**: 요약 리포트를 `#dev-alerts` 채널에 자동 공유
-- **아키텍처 변경 시**: 변경 사항과 이유를 팀과 공유하여 지식 복리화
-- **성능 개선 후**: 개선 결과와 방법을 공유하여 팀 전체가 학습
-
-**사용 예시**:
-```
-AI가 중요한 버그를 수정한 후:
-1. 수정 내용 요약 작성
-2. Slack MCP를 통해 #dev-alerts 채널에 공유
-3. 팀 전체가 학습할 수 있도록 지식 축적
-```
-
-### 2. Sentry MCP
-
-**목적**: 런타임 에러 로그 분석 및 디버깅
-
-**설정 방법**:
-1. Sentry 계정 생성: https://sentry.io
-2. Organization 및 Project 생성
-3. Auth Token 생성: Settings > Auth Tokens
-4. 환경 변수에 토큰 및 조직/프로젝트 정보 설정
-
-**검증 피드백 루프에서의 역할**:
-- **프로덕션 에러 분석**: 실제 프로덕션 환경의 에러를 가져와서 AI가 디버깅 프롬프트에 활용
-- **에러 패턴 학습**: 반복되는 에러 패턴을 분석하여 유사한 버그가 다시 발생하지 않도록 코드 작성
-- **에러 예방**: 과거 에러 패턴을 기반으로 새로운 코드에서 유사한 문제를 사전에 방지
-
-**사용 예시**:
-```
-AI가 에러를 수정할 때:
-1. Sentry MCP를 통해 관련 에러 로그 조회
-2. 에러 패턴 분석 및 원인 파악
-3. 수정 후 유사한 에러가 재발하지 않도록 코드 작성
-4. CLAUDE.md에 에러 패턴 및 해결 방법 기록
-```
-
-### 3. Chrome DevTools MCP
+### 1. Chrome DevTools MCP
 
 **목적**: 브라우저 UI 검증, 콘솔 에러 확인, 네트워크 분석
 
@@ -325,7 +251,7 @@ AI가 UI 컴포넌트를 수정한 후:
 5. 모든 것이 정상인지 확인 후 완료
 ```
 
-### 4. Proxymock MCP
+### 2. Proxymock MCP
 
 **목적**: 실제 운영 트래픽 재현 및 API 엣지 케이스 검증
 
@@ -352,7 +278,7 @@ AI가 API 엔드포인트를 수정한 후:
 4. 모든 케이스가 통과하는지 확인 후 완료
 ```
 
-### 9. Playwright MCP
+### 3. Playwright MCP
 
 **목적**: 자동화된 E2E 테스트 실행
 
@@ -420,7 +346,6 @@ RIPER-5 프로토콜의 각 모드에서 어떤 MCP 도구를 어떤 타이밍�
 
 **보조 도구**:
 - **Context7 MCP**: 관련 라이브러리 문서 검색
-- **Sentry MCP**: 실제 에러 패턴을 분석하여 계획에 반영
 
 **명세 필수 구성 요소**:
 - 개요 및 문제 설명
@@ -466,8 +391,6 @@ RIPER-5 프로토콜의 각 모드에서 어떤 MCP 도구를 어떤 타이밍�
    - 최종 구현이 최종 계획과 완벽하게 일치하는지 확인
    - 사소한 편차도 명시적으로 플래그 지정
 
-**보조 도구**:
-- **Slack MCP**: 검증 결과를 팀과 공유하여 지식 복리화
 
 ## 검증 피드백 루프 통합 활용
 
@@ -482,8 +405,6 @@ RIPER-5 프로토콜의 각 모드에서 어떤 MCP 도구를 어떤 타이밍�
 ### PLAN 단계
 - **Shrimp Task Manager**: 작업 구조화 및 계획 수립
 - **Codanna MCP**: 영향 분석
-- **Sentry MCP**: 실제 에러 패턴을 분석하여 계획에 반영
-- **Slack MCP**: 계획을 팀과 공유하여 피드백 수집
 
 ### EXECUTE 단계
 - **Serena MCP**: 정밀 편집 (필수)
@@ -494,21 +415,18 @@ RIPER-5 프로토콜의 각 모드에서 어떤 MCP 도구를 어떤 타이밍�
 - **Chrome DevTools MCP**: UI 및 런타임 검증
 - **Proxymock MCP**: 실제 데이터 패턴 검증
 - **Playwright MCP**: E2E 시나리오 검증
-- **Sentry MCP**: 프로덕션 에러 패턴과 비교
 - **Serena MCP**: Fourth Principle 검증 (read_file)
 - **Codanna MCP**: 로그 분석 시 에러 위치 정확히 찾기 (log_analyzer 스킬 연계)
 
 ### REVIEW 단계
 - **Shrimp Task Manager**: 작업 검토 및 개선 (필수)
-- **Slack MCP**: 검증 결과를 팀과 공유하여 지식 복리화
 
 ## 트러블슈팅
 
 ### MCP 서버가 시작되지 않는 경우
 
-1. **환경 변수 확인**: `.env` 파일에 필요한 환경 변수가 모두 설정되어 있는지 확인
+1. **환경 변수 확인**: `.env` 파일에 필요한 환경 변수가 모두 설정되어 있는지 확인 (해당 MCP 서버가 환경 변수를 요구하는 경우)
 2. **의존성 확인**: `npx`가 정상적으로 작동하는지 확인 (`node --version`)
-3. **권한 확인**: Slack Bot Token에 필요한 권한이 부여되어 있는지 확인
 
 ### Chrome DevTools MCP가 브라우저를 열지 않는 경우
 
@@ -531,8 +449,6 @@ RIPER-5 프로토콜의 각 모드에서 어떤 MCP 도구를 어떤 타이밍�
 ## 참고 자료
 
 - [MCP 공식 문서](https://modelcontextprotocol.io)
-- [Slack API 문서](https://api.slack.com)
-- [Sentry API 문서](https://docs.sentry.io/api/)
 - [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/)
 - [Playwright 문서](https://playwright.dev)
 
