@@ -169,7 +169,12 @@ export default function InjectorStep({ onStackDetected, onDiagnosisUpdate }: Inj
 
 			{/* 진행 리포트 */}
 			{(loading || injectResult) && (
-				<ProgressReport progress={progress} logs={logs} error={injectResult?.error || null} />
+				<ProgressReport
+					progress={progress}
+					logs={logs}
+					error={injectResult?.error || null}
+					targetPath={injectResult?.status === "success" ? targetPath : undefined}
+				/>
 			)}
 
 			{/* 프롬프트 복사 카드 (인젝션 성공 시) */}

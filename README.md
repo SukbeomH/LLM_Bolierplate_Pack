@@ -422,6 +422,61 @@ sequenceDiagram
    # 또는 기본 검증만
    mise run verify
    # 또는
+
+## 🔄 Post-Injection Workflow (주입 후 워크플로우)
+
+보일러플레이트 주입이 완료된 후, **주입된 프로젝트는 자생적인 AI-Native 생태계로 동작**해야 합니다. 원본 보일러플레이트와 분리되어 독립적으로 운영됩니다.
+
+### 핵심 원칙
+
+**주입된 프로젝트 내부에서 GUI를 실행해야 합니다.**
+
+인젝션 완료 후에는 다음 단계를 수행하세요:
+
+1. **원본 보일러플레이트 GUI 종료**
+   - 현재 실행 중인 보일러플레이트 GUI를 종료합니다.
+
+2. **주입된 프로젝트로 이동**
+   ```bash
+   cd /path/to/injected/project
+   ```
+
+3. **프로젝트 전용 GUI 실행**
+   ```bash
+   mise run gui
+   ```
+
+### 독립적인 Control Plane
+
+주입된 프로젝트 내부에서 GUI를 실행하면:
+
+- **로컬 로그 매핑**: 프로젝트의 `app.log` 파일이 실시간으로 GUI에 표시됩니다
+- **프로젝트 전용 Agent Hub**: 해당 프로젝트에 맞게 커스터마이징된 `instructions.md`와 `schema.json`을 기반으로 에이전트 스킬을 관리할 수 있습니다
+- **지식 업데이트**: GUI를 통해 수정된 `CLAUDE.md`의 내용이 해당 프로젝트 폴더 내에 즉시 저장되어 AI의 다음 작업에 반영됩니다
+- **독립적 환경**: 주입된 `gui/backend`는 이제 원본 프로젝트가 아닌 **현재 프로젝트의 루트**를 기준으로 동작합니다
+
+### 워크플로우 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant B as Boilerplate GUI
+    participant T as Target Project
+    participant P as Project GUI
+
+    U->>B: 보일러플레이트 주입 실행
+    B->>T: 파일 복사 (.claude/, scripts/, CLAUDE.md 등)
+    B-->>U: 인젝션 완료 + 프롬프트 제공
+    U->>B: 원본 GUI 종료
+    U->>T: 프로젝트로 이동
+    U->>P: mise run gui 실행
+    P->>P: 프로젝트 전용 Control Plane 시작
+    P->>U: 로컬 로그, Agent Hub, 지식 베이스 제공
+```
+
+**이유**: 각 프로젝트는 독립적인 AI-Native 생태계로 동작해야 하며, 원본 보일러플레이트와의 혼선을 방지하기 위함입니다.
+
+   # 또는
    .claude/commands/verify-app.sh
    ```
 
