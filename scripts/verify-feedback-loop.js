@@ -48,6 +48,8 @@ function log(message, color = 'reset') {
 const SCRIPT_DIR = __dirname;
 const BOILERPLATE_ROOT = path.resolve(SCRIPT_DIR, '..');
 const CORE_DIR = path.join(BOILERPLATE_ROOT, 'scripts/core');
+const SKILLS_DIR = path.join(BOILERPLATE_ROOT, 'skills');
+// 레거시 호환성: scripts/agents도 확인 (하위 호환성 유지)
 const AGENTS_DIR = path.join(BOILERPLATE_ROOT, 'scripts/agents');
 
 // 검증 결과 수집
@@ -185,6 +187,28 @@ async function runBasicVerification(targetDir = null) {
 }
 
 /**
+ * 스킬 스크립트 경로 찾기 (skills/ 우선, scripts/agents 폴백)
+ *
+ * @param {string} skillName - 스킬 이름 (예: 'simplifier', 'log-analyzer')
+ * @returns {string|null} 스크립트 경로 또는 null
+ */
+function findSkillScript(skillName) {
+	// skills/ 디렉토리 우선 확인
+	const skillPath = path.join(SKILLS_DIR, skillName, 'run.js');
+	if (fs.existsSync(skillPath)) {
+		return skillPath;
+	}
+
+	// 레거시 scripts/agents 폴백
+	const legacyPath = path.join(AGENTS_DIR, skillName === 'log-analyzer' ? 'log_analyzer.js' : `${skillName}.js`);
+	if (fs.existsSync(legacyPath)) {
+		return legacyPath;
+	}
+
+	return null;
+}
+
+/**
  * Step 3b: 코드 단순화 검증 (simplifier.js)
  *
  * @param {string|null} targetDir - 대상 프로젝트 경로
@@ -194,12 +218,12 @@ async function runSimplifierVerification(targetDir = null) {
 	log('===========================================================\n', 'cyan');
 
 	try {
-		const simplifierScript = path.join(AGENTS_DIR, 'simplifier.js');
-		if (!fs.existsSync(simplifierScript)) {
-			throw new Error('simplifier.js not found');
+		const simplifierScript = findSkillScript('simplifier');
+		if (!simplifierScript) {
+			throw new Error('simplifier skill not found in skills/ or scripts/agents/');
 		}
 
-		log('Running simplifier.js...', 'blue');
+		log('Running simplifier skill...', 'blue');
 		const command = targetDir ? `node ${simplifierScript} "${targetDir}"` : `node ${simplifierScript}`;
 		const output = execSync(command, {
 			cwd: BOILERPLATE_ROOT,
@@ -241,12 +265,12 @@ async function runSecurityAudit(stackInfo, targetDir = null) {
 	log('=============================================\n', 'cyan');
 
 	try {
-		const securityScript = path.join(AGENTS_DIR, 'security-audit.js');
-		if (!fs.existsSync(securityScript)) {
-			throw new Error('security-audit.js not found');
+		const securityScript = findSkillScript('security-audit');
+		if (!securityScript) {
+			throw new Error('security-audit skill not found in skills/ or scripts/agents/');
 		}
 
-		log('Running security-audit.js...', 'blue');
+		log('Running security-audit skill...', 'blue');
 		const command = targetDir ? `node ${securityScript} "${targetDir}"` : `node ${securityScript}`;
 		const output = execSync(command, {
 			cwd: BOILERPLATE_ROOT,
@@ -311,12 +335,12 @@ async function runLogAnalysis(stackInfo, targetDir = null) {
 	log('================================================\n', 'cyan');
 
 	try {
-		const logAnalyzerScript = path.join(AGENTS_DIR, 'log_analyzer.js');
-		if (!fs.existsSync(logAnalyzerScript)) {
-			throw new Error('log_analyzer.js not found');
+		const logAnalyzerScript = findSkillScript('log-analyzer');
+		if (!logAnalyzerScript) {
+			throw new Error('log-analyzer skill not found in skills/ or scripts/agents/');
 		}
 
-		log('Running log_analyzer.js...', 'blue');
+		log('Running log-analyzer skill...', 'blue');
 		const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
 		const output = execSync(`node ${logAnalyzerScript} "${projectRoot}"`, {
 			cwd: BOILERPLATE_ROOT,
@@ -388,7 +412,22 @@ async function runVisualVerification(stackInfo, targetDir = null) {
 
 	// 웹 프로젝트인지 확인
 	const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
-	const { isWebProject } = require(path.join(AGENTS_DIR, 'visual_verifier.js'));
+
+	// visual-verifier 스킬 로드 (skills/ 우선, scripts/agents 폴백)
+	let isWebProject;
+	const visualVerifierPath = findSkillScript('visual-verifier');
+	if (visualVerifierPath) {
+		try {
+			const visualVerifierModule = require(visualVerifierPath);
+			isWebProject = visualVerifierModule.isWebProject || (() => false);
+		} catch (e) {
+			// 모듈 로드 실패 시 기본값
+			isWebProject = () => false;
+		}
+	} else {
+		isWebProject = () => false;
+	}
+
 	if (!isWebProject(stackInfo)) {
 		verificationResults.steps.verify.visual.status = 'skipped';
 		verificationResults.steps.verify.visual.message = 'Not a web project, skipping visual verification';
@@ -397,13 +436,12 @@ async function runVisualVerification(stackInfo, targetDir = null) {
 	}
 
 	try {
-		const visualVerifierScript = path.join(AGENTS_DIR, 'visual_verifier.js');
-		if (!fs.existsSync(visualVerifierScript)) {
-			throw new Error('visual_verifier.js not found');
+		if (!visualVerifierPath) {
+			throw new Error('visual-verifier skill not found in skills/ or scripts/agents/');
 		}
 
-		log('Running visual_verifier.js...', 'blue');
-		const command = targetDir ? `node ${visualVerifierScript} "${targetDir}"` : `node ${visualVerifierScript}`;
+		log('Running visual-verifier skill...', 'blue');
+		const command = targetDir ? `node ${visualVerifierPath} "${targetDir}"` : `node ${visualVerifierPath}`;
 		const output = execSync(command, {
 			cwd: BOILERPLATE_ROOT,
 			encoding: 'utf-8',
@@ -540,9 +578,14 @@ async function runApproveStep() {
 		// CLAUDE.md 업데이트
 		try {
 			log('\n📝 Updating CLAUDE.md with verification results...', 'blue');
-			const { updateClaudeMD } = require(path.join(AGENTS_DIR, 'update_claude_knowledge.js'));
-			updateClaudeMD(verificationResults);
-			log('✅ CLAUDE.md updated successfully', 'green');
+			const claudeUpdaterPath = findSkillScript('claude-knowledge-updater');
+			if (claudeUpdaterPath) {
+				const { updateClaudeMD } = require(claudeUpdaterPath);
+				updateClaudeMD(verificationResults);
+				log('✅ CLAUDE.md updated successfully', 'green');
+			} else {
+				throw new Error('claude-knowledge-updater skill not found');
+			}
 		} catch (error) {
 			log(`⚠️  Failed to update CLAUDE.md: ${error.message}`, 'yellow');
 			log('   Verification results are still available in JSON output.', 'yellow');

@@ -98,12 +98,20 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 **필수 도구**: Codanna (X-ray vision 제공, grep-and-hope loops 방지)
 
 **행동 규칙**:
+- **초기 분석 필수**: 프로젝트와의 첫 대화 또는 보일러플레이트 주입 직후에는 반드시 Codanna의 `get_index_info` 또는 `index_project`를 먼저 호출하여 프로젝트 전체 구조를 인덱싱하고 파악할 것. 이는 모든 후속 작업의 기반이 됩니다.
 - 비효율적인 파일 전체 읽기나 `grep` 사용 금지
 - Codanna의 Semantic Search 도구와 <10ms lookups 기능 사용
 - 연구 초기 단계에는 Shrimp Task Manager의 `research [topic]` 명령 사용
 - 추측 금지: 불확실한 문제에 직면할 때 추측하지 말고 Codanna로 정확한 사실 확인
 
-**이유**: 코드베이스에 대한 tight context를 확보하고 맹목적인 코드 생성(blind code generation)을 방지합니다.
+**초기 분석 시퀀스 (보일러플레이트 주입 직후)**:
+1. `Codanna MCP`의 `get_index_info` 호출하여 프로젝트 인덱스 상태 확인
+2. 인덱스가 없거나 오래된 경우 `index_project` 또는 `semantic_search_with_context`로 전체 프로젝트 구조 스캔
+3. 핵심 설정 파일(`pyproject.toml`, `package.json`, `mise.toml`, `CLAUDE.md` 등)의 위치와 내용 확인
+4. 주입된 보일러플레이트 자산과 기존 코드베이스의 통합 상태 분석
+5. 발견된 구조적 특이사항을 기록하고 보고
+
+**이유**: 코드베이스에 대한 tight context를 확보하고 맹목적인 코드 생성(blind code generation)을 방지합니다. 초기 분석 없이는 프로젝트의 실제 구조를 파악할 수 없어 잘못된 가정에 기반한 코드를 작성할 위험이 있습니다.
 
 #### MODE 2: INNOVATE
 

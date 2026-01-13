@@ -157,8 +157,9 @@ boilerplate/
 로컬에 Node.js나 Python을 설치하지 않고도 Docker로 즉시 시작할 수 있습니다:
 
 ```bash
-# 1. 주입 대상 프로젝트 경로를 환경 변수로 설정 (선택사항)
-export TARGET_PROJECT_PATH=/path/to/target/project
+# 1. 주입 대상 프로젝트 경로를 환경 변수로 설정 (절대 경로 필수)
+export TARGET_PROJECT_PATH=/absolute/path/to/target/project
+# 주의: 상대 경로는 사용하지 마세요. Docker 볼륨 마운트는 절대 경로를 요구합니다.
 
 # 2. Docker Compose로 GUI 실행
 mise run docker:up
