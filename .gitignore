@@ -1,2 +1,5 @@
 .cursor
 .DS_Store
+venv
+.venv
+node_modules
