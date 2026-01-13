@@ -204,6 +204,7 @@ function findSkillScript(skillName) {
 		'log-analyzer': 'log_analyzer.js',
 		'visual-verifier': 'visual_verifier.js',
 		'claude-knowledge-updater': 'update_claude_knowledge.js',
+		'security-audit': 'security-audit.js', // 하이픈 유지 (다른 파일들과 다름)
 		// 다른 스킬들은 하이픈을 언더스코어로 변환
 	};
 
