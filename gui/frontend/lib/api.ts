@@ -91,3 +91,65 @@ export const checkTools = async (): Promise<ToolStatus> => {
 	return response.data;
 };
 
+// Logs API
+export interface LogAnalysisResult {
+	status: string;
+	summary: {
+		error_count: number;
+		critical_count: number;
+		warning_count: number;
+		has_severe_errors: boolean;
+	};
+	errors: Array<{
+		timestamp: string;
+		level: string;
+		module: string | null;
+		funcName: string | null;
+		lineno: number | null;
+		message: string;
+	}>;
+	criticals: Array<{
+		timestamp: string;
+		level: string;
+		module: string | null;
+		funcName: string | null;
+		lineno: number | null;
+		message: string;
+	}>;
+	code_analysis_guides?: Array<{
+		log_entry: any;
+		analysis_guides: Array<{
+			tool: string;
+			action: string;
+			query?: string;
+			name_path?: string;
+			description: string;
+		}>;
+	}>;
+}
+
+export const analyzeLogs = async (
+	targetPath?: string,
+	logFile?: string,
+): Promise<LogAnalysisResult> => {
+	const params: Record<string, string> = {};
+	if (targetPath) params.target_path = targetPath;
+	if (logFile) params.log_file = logFile;
+	
+	const response = await api.get<LogAnalysisResult>("/api/v1/logs/analyze", { params });
+	return response.data;
+};
+
+export const readLogs = async (
+	targetPath?: string,
+	logFile?: string,
+	lines: number = 100,
+): Promise<{ status: string; total_lines: number; lines: string[] }> => {
+	const params: Record<string, string | number> = { lines };
+	if (targetPath) params.target_path = targetPath;
+	if (logFile) params.log_file = logFile;
+	
+	const response = await api.get("/api/v1/logs/read", { params });
+	return response.data;
+};
+

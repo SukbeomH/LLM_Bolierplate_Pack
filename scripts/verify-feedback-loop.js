@@ -286,7 +286,79 @@ async function runSecurityAudit(stackInfo) {
 }
 
 /**
- * Step 3d: 시각적 검증 (visual_verifier.js, 웹 프로젝트인 경우)
+ * Step 3d: 로컬 로그 분석 (log_analyzer.js)
+ */
+async function runLogAnalysis(stackInfo) {
+	log('\n📋 Step 3d: Local Log Analysis (log_analyzer.js)', 'cyan');
+	log('================================================\n', 'cyan');
+
+	try {
+		const logAnalyzerScript = path.join(AGENTS_DIR, 'log_analyzer.js');
+		if (!fs.existsSync(logAnalyzerScript)) {
+			throw new Error('log_analyzer.js not found');
+		}
+
+		log('Running log_analyzer.js...', 'blue');
+		const output = execSync(`node ${logAnalyzerScript} "${PROJECT_ROOT}"`, {
+			cwd: PROJECT_ROOT,
+			encoding: 'utf-8',
+			stdio: 'pipe',
+		});
+
+		// JSON 출력 부분 추출
+		const jsonMatch = output.match(/\{[\s\S]*\}/);
+		if (jsonMatch) {
+			try {
+				const jsonData = JSON.parse(jsonMatch[0]);
+				if (jsonData.status === 'failed') {
+					verificationResults.steps.verify.log_analysis = {
+						status: 'failed',
+						message: `Found ${jsonData.summary.error_count} error(s) and ${jsonData.summary.critical_count} critical(s) in logs`,
+						errors: jsonData.errors || [],
+						criticals: jsonData.criticals || [],
+						code_analysis_guides: jsonData.code_analysis_guides || [],
+					};
+					log(`❌ Log analysis: Found severe errors in logs`, 'red');
+					log(`   Errors: ${jsonData.summary.error_count}, Criticals: ${jsonData.summary.critical_count}`, 'red');
+				} else {
+					verificationResults.steps.verify.log_analysis = {
+						status: 'completed',
+						message: 'No severe errors found in logs',
+						summary: jsonData.summary,
+					};
+					log('✅ Log analysis: No severe errors found', 'green');
+				}
+			} catch (parseError) {
+				verificationResults.steps.verify.log_analysis = {
+					status: 'error',
+					message: 'Failed to parse log analysis output',
+				};
+				log('⚠️  Log analysis: Failed to parse output', 'yellow');
+			}
+		}
+
+		console.log(output);
+	} catch (error) {
+		// log_analyzer.js가 종료 코드 1을 반환한 경우 (심각한 에러 발견)
+		if (error.status === 1) {
+			verificationResults.steps.verify.log_analysis = {
+				status: 'failed',
+				message: 'Severe errors found in logs',
+			};
+			log('❌ Log analysis: Severe errors found', 'red');
+		} else {
+			verificationResults.steps.verify.log_analysis = {
+				status: 'failed',
+				message: error.message,
+			};
+			log('⚠️  Log analysis: Failed', 'yellow');
+			log(`   Error: ${error.message}`, 'yellow');
+		}
+	}
+}
+
+/**
+ * Step 3e: 시각적 검증 (visual_verifier.js, 웹 프로젝트인 경우)
  */
 async function runVisualVerification(stackInfo) {
 	log('\n👁️  Step 3c: Visual Verification (visual_verifier.js)', 'cyan');
@@ -392,6 +464,7 @@ async function runApproveStep() {
 	const hasErrors = verificationResults.steps.verify.basic.status === 'failed';
 	const hasSuggestions = verificationResults.steps.verify.simplifier.suggestions.length > 0;
 	const hasVulnerabilities = verificationResults.steps.verify.security.status === 'failed';
+	const hasLogErrors = verificationResults.steps.verify.log_analysis?.status === 'failed';
 	const hasLogErrors = verificationResults.steps.verify.log_analysis?.status === 'failed';
 
 	if (hasErrors) {
