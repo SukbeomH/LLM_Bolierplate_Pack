@@ -3,17 +3,69 @@
  * 인터랙티브 튜토리얼 - ai-onboarding.md와 mcp-guide.md 내용을 단계별로 시각화
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StepIndicator from "@/components/StepIndicator";
 import ToolChecker from "@/components/ToolChecker";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface TutorialStep {
 	title: string;
 	content: React.ReactNode;
+	completed?: boolean;
 }
 
 export default function Tutorial() {
 	const [currentStep, setCurrentStep] = useState(1);
+	const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+	// localStorage에서 진행 상황 로드
+	useEffect(() => {
+		const saved = localStorage.getItem("tutorial_progress");
+		if (saved) {
+			try {
+				const progress = JSON.parse(saved);
+				setCurrentStep(progress.currentStep || 1);
+				setCompletedSteps(new Set(progress.completedSteps || []));
+			} catch (e) {
+				console.error("Failed to load tutorial progress:", e);
+			}
+		}
+	}, []);
+
+	// 진행 상황 저장
+	const saveProgress = (step: number, completed: boolean) => {
+		const newCompleted = new Set(completedSteps);
+		if (completed) {
+			newCompleted.add(step);
+		} else {
+			newCompleted.delete(step);
+		}
+		setCompletedSteps(newCompleted);
+		localStorage.setItem(
+			"tutorial_progress",
+			JSON.stringify({
+				currentStep,
+				completedSteps: Array.from(newCompleted),
+			})
+		);
+	};
+
+	const handleNext = () => {
+		if (currentStep < steps.length) {
+			saveProgress(currentStep, true);
+			setCurrentStep(currentStep + 1);
+		}
+	};
+
+	const handlePrev = () => {
+		if (currentStep > 1) {
+			setCurrentStep(currentStep - 1);
+		}
+	};
+
+	const handleStepClick = (step: number) => {
+		setCurrentStep(step);
+	};
 
 	const steps: TutorialStep[] = [
 		{
@@ -262,46 +314,54 @@ uv run pytest`}</code>
 	const stepTitles = steps.map((step) => ({ title: step.title }));
 
 	return (
-		<div className="min-h-screen bg-gray-50 py-8">
+		<div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
 			<div className="max-w-5xl mx-auto px-4">
-				<div className="bg-white rounded-lg shadow-lg p-8">
-					<h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
-						🚀 AI-Native 팀 온보딩 튜토리얼
-					</h1>
+				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+					<div className="flex items-center justify-between mb-8">
+						<h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+							🚀 AI-Native 팀 온보딩 튜토리얼
+						</h1>
+						<ThemeToggle />
+					</div>
 					
 					<StepIndicator
 						currentStep={currentStep}
 						totalSteps={steps.length}
 						steps={stepTitles}
-						onStepClick={setCurrentStep}
+						onStepClick={handleStepClick}
+						completedSteps={Array.from(completedSteps)}
 					/>
 					
-					<div className="bg-gray-50 rounded-lg p-6 mb-6 min-h-[400px]">
+					<div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 mb-6 min-h-[400px]">
 						{steps[currentStep - 1]?.content}
 					</div>
 					
-					<div className="flex justify-between">
+					<div className="flex justify-between items-center">
 						<button
 							type="button"
-							onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+							onClick={handlePrev}
 							disabled={currentStep === 1}
 							className={`px-6 py-2 rounded-lg font-semibold ${
 								currentStep === 1
-									? "bg-gray-300 text-gray-500 cursor-not-allowed"
-									: "bg-gray-600 text-white hover:bg-gray-700"
+									? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+									: "bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600"
 							}`}
 						>
 							← 이전
 						</button>
 						
+						<div className="text-sm text-gray-600 dark:text-gray-400">
+							{completedSteps.size} / {steps.length} 단계 완료
+						</div>
+						
 						<button
 							type="button"
-							onClick={() => setCurrentStep(Math.min(steps.length, currentStep + 1))}
+							onClick={handleNext}
 							disabled={currentStep === steps.length}
 							className={`px-6 py-2 rounded-lg font-semibold ${
 								currentStep === steps.length
-									? "bg-gray-300 text-gray-500 cursor-not-allowed"
-									: "bg-blue-600 text-white hover:bg-blue-700"
+									? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+									: "bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600"
 							}`}
 						>
 							다음 →
@@ -311,7 +371,7 @@ uv run pytest`}</code>
 					<div className="mt-8 text-center">
 						<a
 							href="/"
-							className="text-blue-600 hover:text-blue-800 underline"
+							className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
 						>
 							← Boilerplate Injector로 돌아가기
 						</a>

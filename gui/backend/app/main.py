@@ -13,7 +13,7 @@ import sys
 backend_root = Path(__file__).parent
 sys.path.insert(0, str(backend_root))
 
-from app.api import injector, config, logs
+from app.api import injector, config, logs, agents
 
 app = FastAPI(
 	title="AI-Native Boilerplate Injector API",
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(injector.router)
 app.include_router(config.router)
 app.include_router(logs.router)
+app.include_router(agents.router)
 
 
 @app.get("/")

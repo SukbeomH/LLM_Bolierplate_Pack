@@ -5,7 +5,7 @@
 import axios from "axios";
 import type { StackInfo, InjectResponse, InjectionOptions } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const api = axios.create({
 	baseURL: API_BASE_URL,
@@ -151,5 +151,49 @@ export const readLogs = async (
 	
 	const response = await api.get("/api/v1/logs/read", { params });
 	return response.data;
+};
+
+// Agents API
+export interface AgentRunRequest {
+	agent_name: "simplifier" | "visual_verifier" | "security_audit" | "log_analyzer";
+	target_path?: string;
+	options?: Record<string, any>;
+}
+
+export interface AgentRunResponse {
+	status: "success" | "failed";
+	result?: any;
+	error?: string;
+	output?: string;
+}
+
+export const runAgent = async (
+	request: AgentRunRequest,
+): Promise<AgentRunResponse> => {
+	const response = await api.post<AgentRunResponse>("/api/v1/agents/run", request);
+	return response.data;
+};
+
+export const runAgentStream = (
+	request: AgentRunRequest,
+	onMessage: (data: { type: string; message: string }) => void,
+): EventSource => {
+	const eventSource = new EventSource(
+		`${API_BASE_URL}/api/v1/agents/run/stream?${new URLSearchParams({
+			agent_name: request.agent_name,
+			...(request.target_path && { target_path: request.target_path }),
+		})}`
+	);
+	
+	eventSource.onmessage = (event) => {
+		try {
+			const data = JSON.parse(event.data);
+			onMessage(data);
+		} catch (error) {
+			console.error("Failed to parse SSE message:", error);
+		}
+	};
+	
+	return eventSource;
 };
 

@@ -8,6 +8,7 @@ interface StepIndicatorProps {
 	totalSteps: number;
 	steps: Array<{ title: string; completed?: boolean }>;
 	onStepClick?: (step: number) => void;
+	completedSteps?: number[];
 }
 
 export default function StepIndicator({
@@ -15,13 +16,14 @@ export default function StepIndicator({
 	totalSteps,
 	steps,
 	onStepClick,
+	completedSteps = [],
 }: StepIndicatorProps) {
 	return (
 		<div className="flex items-center justify-between mb-8">
 			{steps.map((step, index) => {
 				const stepNumber = index + 1;
 				const isActive = stepNumber === currentStep;
-				const isCompleted = step.completed || stepNumber < currentStep;
+				const isCompleted = step.completed || stepNumber < currentStep || completedSteps.includes(stepNumber);
 				const isClickable = onStepClick !== undefined;
 
 				return (
@@ -37,10 +39,10 @@ export default function StepIndicator({
 									transition-all duration-200
 									${
 										isCompleted
-											? "bg-green-500 text-white"
+											? "bg-green-500 dark:bg-green-600 text-white"
 											: isActive
-											? "bg-blue-500 text-white ring-4 ring-blue-200"
-											: "bg-gray-200 text-gray-600"
+											? "bg-blue-500 dark:bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-800"
+											: "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
 									}
 									${isClickable ? "cursor-pointer hover:scale-110" : "cursor-default"}
 								`}
@@ -50,7 +52,9 @@ export default function StepIndicator({
 							{/* Step Title */}
 							<div
 								className={`mt-2 text-xs text-center max-w-[100px] ${
-									isActive ? "font-semibold text-blue-600" : "text-gray-600"
+									isActive
+										? "font-semibold text-blue-600 dark:text-blue-400"
+										: "text-gray-600 dark:text-gray-400"
 								}`}
 							>
 								{step.title}
@@ -60,7 +64,9 @@ export default function StepIndicator({
 						{index < steps.length - 1 && (
 							<div
 								className={`flex-1 h-1 mx-2 ${
-									isCompleted ? "bg-green-500" : "bg-gray-200"
+									isCompleted
+										? "bg-green-500 dark:bg-green-600"
+										: "bg-gray-200 dark:bg-gray-700"
 								}`}
 							/>
 						)}
