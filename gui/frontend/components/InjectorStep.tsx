@@ -3,7 +3,7 @@
  * 메인 인젝터 컴포넌트
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import StackDetection from "./StackDetection";
 import AssetSelection from "./AssetSelection";
 import ProgressReport from "./ProgressReport";
@@ -35,6 +35,7 @@ export default function InjectorStep({ onStackDetected, onDiagnosisUpdate }: Inj
 	const [logs, setLogs] = useState<string[]>([]);
 	const [injectResult, setInjectResult] = useState<InjectResponse | null>(null);
 	const [loading, setLoading] = useState(false);
+	const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
 	const handleDetected = (info: StackInfo) => {
 		setStackInfo(info);
@@ -58,6 +59,12 @@ export default function InjectorStep({ onStackDetected, onDiagnosisUpdate }: Inj
 		setLogs([]);
 		setInjectResult(null);
 
+		// 기존 인터벌 정리
+		if (progressIntervalRef.current) {
+			clearInterval(progressIntervalRef.current);
+			progressIntervalRef.current = null;
+		}
+
 		try {
 			setLogs((prev) => [...prev, "주입 프로세스 시작..."]);
 			setProgress(10);
@@ -68,7 +75,33 @@ export default function InjectorStep({ onStackDetected, onDiagnosisUpdate }: Inj
 			setLogs((prev) => [...prev, `선택된 자산: ${selectedAssets.join(", ")}`]);
 			setProgress(30);
 
+			// 백엔드 응답을 기다리는 동안 프로그레스 시뮬레이션
+			let currentProgress = 30;
+			progressIntervalRef.current = setInterval(() => {
+				// 30%에서 90%까지 천천히 증가 (최대 2분)
+				if (currentProgress < 90) {
+					currentProgress += Math.random() * 5 + 1; // 1-6%씩 증가
+					if (currentProgress > 90) {
+						currentProgress = 90;
+					}
+					setProgress(Math.floor(currentProgress));
+					setLogs((prev) => {
+						// 중복 로그 방지
+						if (prev.length === 0 || !prev[prev.length - 1].includes("주입 중...")) {
+							return [...prev, "주입 중..."];
+						}
+						return prev;
+					});
+				}
+			}, 500); // 0.5초마다 업데이트
+
 			const result = await injectBoilerplate(targetPath, selectedAssets, injectionOptions);
+
+			// 인터벌 정리
+			if (progressIntervalRef.current) {
+				clearInterval(progressIntervalRef.current);
+				progressIntervalRef.current = null;
+			}
 
 			setLogs((prev) => [...prev, "주입 완료"]);
 			setProgress(100);
@@ -91,12 +124,26 @@ export default function InjectorStep({ onStackDetected, onDiagnosisUpdate }: Inj
 				onDiagnosisUpdate?.(result.post_diagnosis);
 			}
 		} catch (error: any) {
+			// 인터벌 정리
+			if (progressIntervalRef.current) {
+				clearInterval(progressIntervalRef.current);
+				progressIntervalRef.current = null;
+			}
 			setLogs((prev) => [...prev, `❌ 에러: ${error.message}`]);
 			setProgress(0);
 		} finally {
 			setLoading(false);
 		}
 	};
+
+	// 컴포넌트 언마운트 시 인터벌 정리
+	useEffect(() => {
+		return () => {
+			if (progressIntervalRef.current) {
+				clearInterval(progressIntervalRef.current);
+			}
+		};
+	}, []);
 
 	return (
 		<div className="space-y-6">

@@ -7,7 +7,7 @@
 import shutil
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Generator
 from app.core.backup import BackupManager
 from app.models.schemas import InjectionOptions
 
@@ -170,16 +170,22 @@ class BoilerplateInjector:
 				elif asset == "docker-compose.yml":
 					# boilerplate/docker-compose.yml로 복사
 					target_docker_compose = target / "boilerplate" / "docker-compose.yml"
-					if self._inject_docker_compose(source_path, target_docker_compose, target, options):
+					success, backup_path = self._inject_docker_compose(source_path, target_docker_compose, target, options)
+					if success:
 						injected_files.append("boilerplate/docker-compose.yml")
+						if backup_path:
+							backed_up_files.append(str(backup_path.relative_to(target)))
 					else:
 						skipped_files.append(asset)
 				# .gitignore 주입 시 boilerplate/.gitignore로 복사 및 병합
 				elif asset == ".gitignore":
 					# boilerplate/.gitignore로 복사
 					target_gitignore = target / "boilerplate" / ".gitignore"
-					if self._inject_gitignore(source_path, target_gitignore, target, options):
+					success, backup_path = self._inject_gitignore(source_path, target_gitignore, target, options)
+					if success:
 						injected_files.append("boilerplate/.gitignore")
+						if backup_path:
+							backed_up_files.append(str(backup_path.relative_to(target)))
 					else:
 						skipped_files.append(asset)
 				# 파일/디렉토리 복사
@@ -284,7 +290,7 @@ class BoilerplateInjector:
 
 	def _inject_docker_compose(
 		self, source: Path, target: Path, target_project: Path, options: InjectionOptions
-	) -> bool:
+	) -> tuple[bool, Optional[Path]]:
 		"""
 		docker-compose.yml 주입 (경로 수정)
 
@@ -295,20 +301,19 @@ class BoilerplateInjector:
 			options: 주입 옵션
 
 		Returns:
-			주입 성공 여부
+			(주입 성공 여부, 백업 경로)
 		"""
 		try:
 			if not source.exists():
-				return False
+				return False, None
 
+			backup_path = None
 			# 기존 파일 처리
 			if target.exists():
 				if options.skip_existing:
-					return False
+					return False, None
 				if options.backup_existing:
 					backup_path = self.backup_manager.create_backup(target)
-					if backup_path:
-						pass  # backed_up_files는 상위에서 처리
 
 			# docker-compose.yml 읽기
 			with open(source, "r", encoding="utf-8") as f:
@@ -339,14 +344,14 @@ class BoilerplateInjector:
 			with open(target, "w", encoding="utf-8") as f:
 				f.write(content)
 
-			return True
+			return True, backup_path
 		except Exception as e:
 			print(f"Error injecting docker-compose.yml: {e}")
-			return False
+			return False, None
 
 	def _inject_gitignore(
 		self, source: Path, target: Path, target_project: Path, options: InjectionOptions
-	) -> bool:
+	) -> tuple[bool, Optional[Path]]:
 		"""
 		.gitignore 주입 (boilerplate/.gitignore로 복사)
 
@@ -357,20 +362,19 @@ class BoilerplateInjector:
 			options: 주입 옵션
 
 		Returns:
-			주입 성공 여부
+			(주입 성공 여부, 백업 경로)
 		"""
 		try:
 			if not source.exists():
-				return False
+				return False, None
 
+			backup_path = None
 			# 기존 파일 처리
 			if target.exists():
 				if options.skip_existing:
-					return False
+					return False, None
 				if options.backup_existing:
 					backup_path = self.backup_manager.create_backup(target)
-					if backup_path:
-						pass  # backed_up_files는 상위에서 처리
 
 			# 대상 디렉토리 생성
 			target.parent.mkdir(parents=True, exist_ok=True)
@@ -378,10 +382,10 @@ class BoilerplateInjector:
 			# .gitignore 복사
 			shutil.copy2(source, target)
 
-			return True
+			return True, backup_path
 		except Exception as e:
 			print(f"Error injecting .gitignore: {e}")
-			return False
+			return False, None
 
 	def _merge_json_config(self, target: Dict, source: Dict) -> Dict:
 		"""

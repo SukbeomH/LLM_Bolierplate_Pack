@@ -66,7 +66,7 @@ class InjectRequest(BaseModel):
 		valid_assets = [
 			".claude/", "scripts/", "CLAUDE.md", "mise.toml", ".mcp.json",
 			"docs/ai-onboarding.md", "logging.conf", "zmp-branch-policy.json",
-			".pre-commit-config.yaml", "docker-compose.yml", ".gitignore"
+			".pre-commit-config.yaml", ".github/workflows/", "docker-compose.yml", ".gitignore"
 		]
 		for asset in v:
 			if asset not in valid_assets:
