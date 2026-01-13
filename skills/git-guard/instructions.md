@@ -5,7 +5,7 @@
 이 스킬은 Git Guide 규칙 준수를 검증하고, 브랜치 명명 규칙, 커밋 메시지 형식, Issue 번호 포함 여부 등을 확인합니다. 팀의 Git 워크플로우 일관성을 유지하여 협업 효율성을 높입니다.
 
 ### 적용 범위
-- 브랜치 명명 규칙 검증 (bugfix/{issue_number}-{description}, feature/{issue_number}-{description})
+- 브랜치 명명 규칙 검증 (hotfix/{issue_number}-{description}, feature/{issue_number}-{description})
 - 커밋 메시지 형식 검증 (Resolved #{Issue No} - {Description})
 - Issue 번호 추출 및 검증
 - 현재 Git 상태 분석
@@ -70,9 +70,9 @@ JSON 형식으로 검증 결과를 반환합니다:
 다음 기준을 초과하면 제안이 생성됩니다:
 
 ### 브랜치 명명 규칙
-- **필수 Prefix**: `bugfix/` 또는 `feature/`
+- **필수 Prefix**: `hotfix/` 또는 `feature/`
 - **Issue 번호 포함**: `{prefix}/{issue_number}-{description}` 형식
-- **예시**: `feature/50-cli-command-support`, `bugfix/123-fix-login-error`
+- **예시**: `feature/50-cli-command-support`, `hotfix/123-fix-login-error`
 
 ### 커밋 메시지 규칙
 - **필수 형식**: `Resolved #{Issue No} - {Description}`

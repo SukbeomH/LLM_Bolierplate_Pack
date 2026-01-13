@@ -64,10 +64,10 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 
 팀 경험을 바탕으로 한 모델 선택 가이드:
 
-- **Opus 4.5 Thinking**: 
+- **Opus 4.5 Thinking**:
   - 애니메이션 구현, 복잡한 알고리즘 설계, 도구 활용이 많은 작업에 강함
   - 조정 비용이 적어 결과적으로 더 빠름
-- **Sonnet**: 
+- **Sonnet**:
   - 단순 리팩토링, 빠른 프로토타이핑에 적합
   - 간단한 작업에서는 Opus 4.5보다 빠를 수 있음
 
@@ -115,7 +115,7 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 
 **목적**: 포괄적인 **기술 사양(Technical Specification)** 생성 및 실행 체크리스트 작성.
 
-**필수 도구**: 
+**필수 도구**:
 - Shrimp Task Manager (구조화 및 지속적 메모리)
 - Codanna (영향 분석)
 
@@ -142,11 +142,11 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 **필수 도구**: Serena MCP (심볼 기반 정밀 편집)
 
 **행동 규칙**:
-1. **Serena 편집 도구 의무**: 
+1. **Serena 편집 도구 의무**:
    - **사용 금지**: `edit_file` 및 `replace_regex`와 같은 증분 수정 도구는 신뢰할 수 없고 위험하므로 사용이 금지됨
    - **권장 도구**: 리팩토링에는 `rename_symbol`, 함수 본문 수정에는 `replace_symbol_body` 또는 `insert_after_symbol` 사용
    - 복잡한 변경 시에는 `mcp_serena_create_text_file`로 전체 파일 덮어쓰기 (가장 안전한 방법)
-2. **Fourth Principle 의무화 (검증)**: 
+2. **Fourth Principle 의무화 (검증)**:
    - Serena의 수정 도구를 호출한 후 반드시 즉각적인 검증 단계 수행
    - 선호되는 검증 방법: `read_file` 도구를 통해 변경된 파일을 다시 읽어 들여 수정 내용 확인
 3. **Deviation 처리 의무**: 실행 중 계획을 벗어나는 중대한 구조적 문제 발생 시, 어떠한 코드 변경도 수행하지 않고 즉시 PLAN 모드로 복귀
@@ -278,7 +278,7 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 
 1. **Plan 단계**: 로컬 `app.log`를 분석하여 에러 패턴을 파악하고 계획에 반영 (Sentry는 선택적)
 2. **Execute 단계**: 코드 작성 중 실시간으로 Chrome DevTools로 확인
-3. **Verify 단계**: 
+3. **Verify 단계**:
    - **로컬 로그 분석 (필수)**: `app.log`에서 ERROR/CRITICAL 로그를 감지하고 Codanna/Serena MCP로 관련 코드 분석
    - Chrome DevTools로 UI 및 런타임 검증
    - Proxymock으로 실제 데이터 패턴 검증
@@ -322,29 +322,29 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
 **워크플로우**: 이슈 선행 생성 → 브랜치 생성(Prefix 필수) → Squash & Merge
 
 1. **이슈 선행 생성**: 모든 변경사항은 반드시 GitHub Issue를 먼저 생성해야 함
-2. **브랜치 명명 규칙**: 
+2. **브랜치 명명 규칙**:
    - `feature/{issue_number}-{description}` (신규 기능)
-   - `bugfix/{issue_number}-{description}` (버그 수정)
+   - `hotfix/{issue_number}-{description}` (버그 수정)
    - 브랜치명 위반 시 스크립트가 자동으로 반려함
 3. **커밋 메시지 형식**: `Resolved #{Issue No} - {Description}` (정확한 형식 강제)
    - 주의: "Resovled"가 아닌 "Resolved"로 정확히 작성
-4. **PR 병합 전략**: 
-   - `feature/bugfix` → `develop`: 반드시 **Squash and merge**
+4. **PR 병합 전략**:
+   - `feature/` 또는 `hotfix/` → `develop`: 반드시 **Squash and merge**
    - `develop` → `main`: **Merge pull request** (Create merge commit)
 
 ### Python 표준
 
-1. **uv 환경 설정** (Poetry 대체): 
+1. **uv 환경 설정** (Poetry 대체):
    - Python 버전 관리: `uv python install <version>` (예: `uv python install 3.11`)
    - 의존성 동기화: `uv sync` (uv.lock과 .venv 자동 생성)
    - 명령 실행: `uv run <command>` (예: `uv run pytest`, `uv run python main.py`)
    - Poetry 프로젝트 마이그레이션: `scripts/core/migrate_to_uv.sh` 실행
    - `detect_stack.sh`가 uv.lock을 우선 감지하고, poetry.lock이 있으면 마이그레이션 제안
-2. **Ruff 사용**: 
+2. **Ruff 사용**:
    - 포매팅 및 린팅에 `ruff` 사용 (Black 대신)
    - 실행: `uv run ruff check`, `uv run ruff format`
    - `pre-commit` 훅에 `ruff` 및 `ruff-format` 포함
-3. **로깅 표준**: 
+3. **로깅 표준**:
    - 프로젝트 전반에 `logging.conf` 기반의 정형화된 로깅 사용
    - `colorlog`를 사용한 컬러 로깅 지원
    - 로거 이름: `appLogger` (qualname=appLogger)

@@ -43,7 +43,7 @@ const TARGET_PATH = process.argv[2]
 
 // Git Guide 규칙
 const BRANCH_PATTERNS = {
-	bugfix: /^bugfix\/(\d+)-(.+)$/,
+	hotfix: /^hotfix\/(\d+)-(.+)$/,
 	feature: /^feature\/(\d+)-(.+)$/,
 };
 
@@ -114,7 +114,7 @@ function validateBranchName(branchName) {
 		};
 	}
 
-	// bugfix 또는 feature 패턴 확인
+	// hotfix 또는 feature 패턴 확인
 	for (const [type, pattern] of Object.entries(BRANCH_PATTERNS)) {
 		const match = branchName.match(pattern);
 		if (match) {
@@ -129,12 +129,12 @@ function validateBranchName(branchName) {
 		}
 	}
 
-	return {
-		valid: false,
-		message: `브랜치명이 규칙을 준수하지 않습니다. 형식: bugfix/{issue_number}-{description} 또는 feature/{issue_number}-{description}`,
-		current: branchName,
-		issue_number: null,
-	};
+		return {
+			valid: false,
+			message: `브랜치명이 규칙을 준수하지 않습니다. 형식: hotfix/{issue_number}-{description} 또는 feature/{issue_number}-{description}`,
+			current: branchName,
+			issue_number: null,
+		};
 }
 
 /**
@@ -181,7 +181,7 @@ function collectViolations(checks) {
 			type: 'branch_name',
 			severity: 'error',
 			message: checks.branch_name.message,
-			suggestion: `브랜치명을 다음 형식으로 변경하세요: feature/{issue_number}-{description} 또는 bugfix/{issue_number}-{description}`,
+			suggestion: `브랜치명을 다음 형식으로 변경하세요: feature/{issue_number}-{description} 또는 hotfix/{issue_number}-{description}`,
 		});
 	}
 

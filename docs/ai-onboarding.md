@@ -192,7 +192,7 @@ Boris Cherny처럼 여러 세션을 운영할 때 컨텍스트 혼선을 방지�
 3. **커밋 메시지**: `Resolved #{Issue No} - {Description}` 형식 강제
    - 주의: "Resovled"가 아닌 "Resolved"로 정확히 작성
 4. **PR 병합**:
-   - `feature/hotfix` → `develop`: 반드시 **Squash and merge**
+   - `feature/` 또는 `hotfix/` → `develop`: 반드시 **Squash and merge**
    - `develop` → `main`: **Merge pull request** (Create merge commit)
 5. **Git 규칙 검증**: `git-guard` Agent Skill을 사용하여 브랜치명, 커밋 메시지, Issue 번호 포함 여부를 자동으로 검증할 수 있습니다.
 
