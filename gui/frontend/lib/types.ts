@@ -46,7 +46,7 @@ export interface InjectResponse {
 	error?: string | null;
 }
 
-export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | "docs/ai-onboarding.md" | "logging.conf" | "zmp-branch-policy.json" | ".pre-commit-config.yaml";
+export type AssetType = ".claude/" | "scripts/" | "CLAUDE.md" | "mise.toml" | "docs/ai-onboarding.md" | "logging.conf" | "zmp-branch-policy.json" | ".pre-commit-config.yaml" | ".github/workflows/";
 
 export const ASSETS: Array<{
 	id: AssetType;
@@ -100,6 +100,12 @@ export const ASSETS: Array<{
 		id: ".pre-commit-config.yaml",
 		label: ".pre-commit-config.yaml (Pre-commit 훅)",
 		description: "Ruff 및 표준 훅 설정 (선택)",
+		required: false,
+	},
+	{
+		id: ".github/workflows/",
+		label: ".github/workflows/ (GitHub Actions)",
+		description: "GitHub Actions 워크플로우 (PR 검증, CLAUDE.md 동기화 등)",
 		required: false,
 	},
 ];

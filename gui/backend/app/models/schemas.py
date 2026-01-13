@@ -65,7 +65,8 @@ class InjectRequest(BaseModel):
 		"""자산 목록 유효성 검증"""
 		valid_assets = [
 			".claude/", "scripts/", "CLAUDE.md", "mise.toml", "docs/ai-onboarding.md",
-			"logging.conf", "zmp-branch-policy.json", ".pre-commit-config.yaml"
+			"logging.conf", "zmp-branch-policy.json", ".pre-commit-config.yaml",
+			".github/workflows/"
 		]
 		for asset in v:
 			if asset not in valid_assets:
