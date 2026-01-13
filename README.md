@@ -133,8 +133,16 @@ boilerplate/
    계획대로 구현해줘
    ```
 
-3. **Verify**: 자동 검증 실행
+3. **Verify**: 통합 검증 실행 (Agent Skills 표준 기반)
    ```bash
+   # 통합 검증 루프 (모든 에이전트 자동 실행)
+   # boilerplate 프로젝트에서 실행하고, 대상 프로젝트 경로를 인자로 전달
+   node scripts/verify-feedback-loop.js [target_directory]
+
+   # 예시: 다른 프로젝트에서 검증
+   node scripts/verify-feedback-loop.js /path/to/target/project
+
+   # 또는 기본 검증만
    mise run verify
    # 또는
    .claude/commands/verify-app.sh
@@ -149,12 +157,24 @@ boilerplate/
 mise run verify
 
 # 통합 검증 루프 (Agent Skills 기반)
-node scripts/verify-feedback-loop.js
+# 대상 프로젝트 경로를 인자로 전달하면 해당 프로젝트에서 검증
+node scripts/verify-feedback-loop.js [target_directory]
 
 # 개별 에이전트 실행
-node scripts/agents/simplifier.js      # 코드 단순화 분석
-node scripts/agents/security-audit.js  # 보안 감사
-node scripts/agents/log_analyzer.js    # 로그 분석
+# 대상 프로젝트 경로를 인자로 전달하면 해당 프로젝트에서 분석
+node scripts/agents/simplifier.js [target_directory]      # 코드 단순화 분석
+node scripts/agents/security-audit.js [target_directory]  # 보안 감사
+node scripts/agents/log_analyzer.js [target_directory] [log_file]    # 로그 분석
+node scripts/agents/visual_verifier.js [target_directory] [port]     # 시각적 검증 (웹 프로젝트)
+
+# 예시: 다른 프로젝트에서 개별 에이전트 실행
+node scripts/agents/security-audit.js /path/to/target/project
+node scripts/agents/log_analyzer.js /path/to/target/project /path/to/app.log
+
+# 주의사항:
+# - 모든 Agent는 boilerplate 프로젝트 디렉토리에서 실행해야 합니다
+# - 대상 프로젝트 경로를 인자로 전달하지 않으면 현재 작업 디렉토리를 사용합니다
+# - 스택이 감지되지 않은 경우, Agent는 경고만 표시하고 계속 진행합니다
 
 # 포매팅
 mise run format

@@ -38,20 +38,23 @@ function log(message, color = 'reset') {
 
 // 프로젝트 루트 디렉토리 찾기
 const SCRIPT_DIR = __dirname;
-const PROJECT_ROOT = process.argv[2] 
-	? path.resolve(process.argv[2]) 
-	: path.resolve(SCRIPT_DIR, '../..');
-const CORE_DIR = path.join(PROJECT_ROOT, 'scripts/core');
+const BOILERPLATE_ROOT = path.resolve(SCRIPT_DIR, '../..');
+const CORE_DIR = path.join(BOILERPLATE_ROOT, 'scripts/core');
 
 /**
  * detect_stack.sh를 실행하여 스택 정보를 가져옵니다.
+ *
+ * @param {string|null} targetDir - 대상 프로젝트 경로 (선택적)
+ * @returns {Object} 스택 정보
  */
-function detectStack() {
+function detectStack(targetDir = null) {
+	const targetProjectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
+
 	try {
 		const detectScript = path.join(CORE_DIR, 'detect_stack.sh');
 		const output = execSync(
 			`bash -c 'source ${detectScript} && echo "STACK=$DETECTED_STACK" && echo "PACKAGE_MANAGER=$DETECTED_PACKAGE_MANAGER" && echo "VENV=$DETECTED_VENV_PATH"'`,
-			{ cwd: PROJECT_ROOT, encoding: 'utf-8', stdio: 'pipe' }
+			{ cwd: targetProjectRoot, encoding: 'utf-8', stdio: 'pipe' }
 		);
 
 		const stackMatch = output.match(/STACK=(\w+)/);
@@ -71,10 +74,13 @@ function detectStack() {
 
 /**
  * Python 프로젝트 보안 감사 (safety check)
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string} projectRoot - 프로젝트 루트 경로
  */
-function auditPython(stackInfo) {
+function auditPython(stackInfo, projectRoot) {
 	log('🔍 Running Python security audit (safety check)...', 'blue');
-	
+
 	const results = {
 		stack: 'python',
 		tool: 'safety',
@@ -86,31 +92,31 @@ function auditPython(stackInfo) {
 	try {
 		// uv 또는 poetry로 safety check 실행
 		let command = '';
-		
+
 		// uv.lock이 있으면 uv 사용, poetry.lock이 있으면 poetry 사용
-		const uvLock = path.join(PROJECT_ROOT, 'uv.lock');
-		const poetryLock = path.join(PROJECT_ROOT, 'poetry.lock');
-		
+		const uvLock = path.join(projectRoot, 'uv.lock');
+		const poetryLock = path.join(projectRoot, 'poetry.lock');
+
 		if (fs.existsSync(uvLock)) {
 			command = 'uv run safety check --json';
 		} else if (fs.existsSync(poetryLock)) {
 			command = 'poetry run safety check --json';
 			// 가상 환경이 활성화되어 있지 않은 경우 직접 실행
 			if (!process.env.VIRTUAL_ENV && stackInfo.venvPath) {
-				if (stackInfo.venvPath.includes('.venv')) {
-					const venvSafety = path.join(PROJECT_ROOT, stackInfo.venvPath, 'bin', 'safety');
-					if (fs.existsSync(venvSafety)) {
-						command = `${venvSafety} check --json`;
-					}
+			if (stackInfo.venvPath.includes('.venv')) {
+				const venvSafety = path.join(projectRoot, stackInfo.venvPath, 'bin', 'safety');
+				if (fs.existsSync(venvSafety)) {
+					command = `${venvSafety} check --json`;
 				}
 			}
-		} else {
-			// lock 파일이 없으면 기본 safety 명령어 시도
-			command = 'safety check --json';
 		}
+	} else {
+		// lock 파일이 없으면 기본 safety 명령어 시도
+		command = 'safety check --json';
+	}
 
-		const output = execSync(command, {
-			cwd: PROJECT_ROOT,
+	const output = execSync(command, {
+		cwd: projectRoot,
 			encoding: 'utf-8',
 			stdio: 'pipe',
 			timeout: 60000, // 60초 타임아웃
@@ -156,10 +162,13 @@ function auditPython(stackInfo) {
 
 /**
  * Node.js 프로젝트 보안 감사 (npm/pnpm audit)
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string} projectRoot - 프로젝트 루트 경로
  */
-function auditNodejs(stackInfo) {
+function auditNodejs(stackInfo, projectRoot) {
 	log('🔍 Running Node.js security audit...', 'blue');
-	
+
 	const results = {
 		stack: 'node',
 		tool: stackInfo.packageManager || 'npm',
@@ -170,12 +179,12 @@ function auditNodejs(stackInfo) {
 
 	try {
 		// npm/pnpm audit 실행
-		const command = stackInfo.packageManager === 'pnpm' 
-			? 'pnpm audit --json' 
+		const command = stackInfo.packageManager === 'pnpm'
+			? 'pnpm audit --json'
 			: 'npm audit --json';
 
 		const output = execSync(command, {
-			cwd: PROJECT_ROOT,
+			cwd: projectRoot,
 			encoding: 'utf-8',
 			stdio: 'pipe',
 			timeout: 120000, // 120초 타임아웃
@@ -184,7 +193,7 @@ function auditNodejs(stackInfo) {
 		// npm/pnpm audit는 JSON 형식으로 출력
 		try {
 			const auditData = JSON.parse(output);
-			
+
 			// npm audit 출력 구조 분석
 			if (auditData.vulnerabilities) {
 				const vulnCount = Object.keys(auditData.vulnerabilities).length;
@@ -237,19 +246,48 @@ function auditNodejs(stackInfo) {
 
 /**
  * 메인 실행 함수
+ *
+ * 사용법:
+ *   node scripts/agents/security-audit.js [target_directory]
  */
 function main() {
 	const targetDir = process.argv[2] || null;
+	const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
 
 	log('🔒 Security Audit Agent', 'cyan');
 	log('========================\n', 'cyan');
 
+	if (targetDir) {
+		log(`📁 Target project: ${projectRoot}`, 'blue');
+	}
+
 	// 1. 스택 감지
 	log('1. Detecting stack...', 'blue');
-	const stackInfo = detectStack();
+	const stackInfo = detectStack(targetDir);
 	if (!stackInfo.stack) {
-		log('❌ Could not detect project stack.', 'red');
-		process.exit(1);
+		log('⚠️  Could not detect project stack.', 'yellow');
+		log('   Security audit requires a supported stack (Python or Node.js).', 'yellow');
+		log('   Skipping security audit.', 'yellow');
+
+		// 스택이 없을 경우 경고만 표시하고 종료 코드 0 반환
+		const jsonOutput = {
+			timestamp: new Date().toISOString(),
+			stack: null,
+			packageManager: null,
+			audit: {
+				stack: null,
+				tool: null,
+				status: 'no_stack',
+				message: 'No supported stack detected. Security audit skipped.',
+				vulnerabilities: [],
+				errors: [],
+			},
+		};
+
+		console.log('\n--- Security Audit Results (JSON) ---');
+		console.log(JSON.stringify(jsonOutput, null, 2));
+		log('\n⚠️  Security audit skipped (no stack detected).', 'yellow');
+		process.exit(0);
 	}
 	log(`   Detected stack: ${stackInfo.stack} (${stackInfo.packageManager})`, 'green');
 
@@ -258,9 +296,9 @@ function main() {
 	let auditResult;
 
 	if (stackInfo.stack === 'python') {
-		auditResult = auditPython(stackInfo);
+		auditResult = auditPython(stackInfo, projectRoot);
 	} else if (stackInfo.stack === 'node') {
-		auditResult = auditNodejs(stackInfo);
+		auditResult = auditNodejs(stackInfo, projectRoot);
 	} else {
 		log(`⚠️  Security audit not supported for stack: ${stackInfo.stack}`, 'yellow');
 		auditResult = {
@@ -279,6 +317,7 @@ function main() {
 		audit: auditResult,
 	};
 
+	console.log('\n--- Security Audit Results (JSON) ---');
 	console.log(JSON.stringify(jsonOutput, null, 2));
 
 	// 4. 취약점이 발견된 경우 종료 코드 1 반환

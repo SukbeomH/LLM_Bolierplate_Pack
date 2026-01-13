@@ -45,10 +45,37 @@ mise install
 
 ### **Step 3: Verify (자율 검증)**
 
-* **방법**: 구현 직후 `/verify-app` 커맨드를 실행합니다.
-* **핵심**: AI가 스스로 린트, 타입 체크, 유닛 테스트를 수행하고 실패 시 자가 수정을 반복하게 합니다.
+* **방법**: 구현 직후 `/verify-app` 커맨드 또는 통합 검증 루프를 실행합니다.
+* **통합 검증 루프**: `node scripts/verify-feedback-loop.js [target_directory]` 실행 시 다음 에이전트들이 자동 실행됩니다:
+  - **기본 검증** (`auto_verify.sh`): 린트, 타입 체크, 테스트
+  - **코드 단순화 분석** (`simplifier.js`): 복잡도 분석 및 리팩토링 제안
+  - **보안 감사** (`security-audit.js`): 취약점 스캔
+  - **로컬 로그 분석** (`log_analyzer.js`): ERROR/CRITICAL 로그 감지
+  - **시각적 검증** (`visual_verifier.js`): 웹 프로젝트의 경우 UI 검증 가이드
+* **사용 방법**:
+  ```bash
+  # boilerplate 프로젝트에서 실행하고, 대상 프로젝트 경로를 인자로 전달
+  cd /path/to/boilerplate
+  node scripts/verify-feedback-loop.js /path/to/target/project
 
-**이유**: 검증 피드백 루프가 있으면 최종 결과물 품질이 2~3배 향상됩니다. AI가 스스로 문제를 발견하고 수정하는 것이 인간이 하나씩 체크하는 것보다 효율적입니다.
+  # 인자를 전달하지 않으면 현재 작업 디렉토리를 사용
+  node scripts/verify-feedback-loop.js
+  ```
+* **개별 Agent 실행**:
+  ```bash
+  # 모든 Agent는 boilerplate 프로젝트 디렉토리에서 실행
+  cd /path/to/boilerplate
+
+  # 대상 프로젝트 경로를 인자로 전달
+  node scripts/agents/security-audit.js /path/to/target/project
+  node scripts/agents/simplifier.js /path/to/target/project
+  node scripts/agents/log_analyzer.js /path/to/target/project /path/to/app.log
+  node scripts/agents/visual_verifier.js /path/to/target/project 3000
+  ```
+* **스택 감지 실패 처리**: 스택이 감지되지 않은 경우, Agent는 경고만 표시하고 계속 진행합니다. 이는 정상적인 동작이며, 스택이 없는 프로젝트에서도 일부 검증을 수행할 수 있습니다.
+* **핵심**: 모든 검증 결과를 종합하여 사용자 승인을 요청하며, 심각한 에러가 발견되면 승인을 차단합니다.
+
+**이유**: 검증 피드백 루프가 있으면 최종 결과물 품질이 2~3배 향상됩니다. AI가 스스로 문제를 발견하고 수정하는 것이 인간이 하나씩 체크하는 것보다 효율적입니다. Agent Skills 표준 기반 통합 관리를 통해 모든 검증 단계를 일관되게 실행할 수 있습니다.
 
 ## 3. 팀의 뇌: CLAUDE.md 관리법
 
@@ -125,20 +152,20 @@ Boris Cherny처럼 여러 세션을 운영할 때 컨텍스트 혼선을 방지�
    - 형식: `feature/{issue_number}-{description}` 또는 `bugfix/{issue_number}-{description}`
 3. **커밋 메시지**: `Resolved #{Issue No} - {Description}` 형식 강제
    - 주의: "Resovled"가 아닌 "Resolved"로 정확히 작성
-4. **PR 병합**: 
+4. **PR 병합**:
    - `feature/bugfix` → `develop`: 반드시 **Squash and merge**
    - `develop` → `main`: **Merge pull request** (Create merge commit)
 
 ### Python 프로젝트 표준
 
-1. **uv 설정** (Poetry 대체): 
+1. **uv 설정** (Poetry 대체):
    ```bash
    # Python 버전 설치
    uv python install 3.11
-   
+
    # 의존성 동기화 (uv.lock 및 .venv 생성)
    uv sync
-   
+
    # 명령 실행
    uv run pytest
    uv run python main.py
@@ -146,7 +173,7 @@ Boris Cherny처럼 여러 세션을 운영할 때 컨텍스트 혼선을 방지�
    - Poetry 프로젝트 마이그레이션: `scripts/core/migrate_to_uv.sh` 실행
    - `detect_stack.sh`가 자동으로 uv.lock을 감지하고 마이그레이션 제안
 
-2. **로깅 설정**: 
+2. **로깅 설정**:
    - 프로젝트 루트에 `logging.conf` 파일 사용
    - `colorlog` 패키지 설치: `uv add colorlog`
    - 로거 사용 예시:
@@ -157,12 +184,12 @@ Boris Cherny처럼 여러 세션을 운영할 때 컨텍스트 혼선을 방지�
    logger.info("Application started")
    ```
 
-3. **Pre-commit 훅**: 
+3. **Pre-commit 훅**:
    - `.pre-commit-config.yaml` 파일 사용
    - 설치: `uv run pre-commit install`
    - 실행: `uv run pre-commit run --all-files`
 
-4. **Ruff 사용**: 
+4. **Ruff 사용**:
    - 포매팅: `uv run ruff format`
    - 린팅: `uv run ruff check --fix`
 

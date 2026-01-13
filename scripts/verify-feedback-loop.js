@@ -46,9 +46,9 @@ function log(message, color = 'reset') {
 
 // 프로젝트 루트 디렉토리 찾기
 const SCRIPT_DIR = __dirname;
-const PROJECT_ROOT = path.resolve(SCRIPT_DIR, '..');
-const CORE_DIR = path.join(PROJECT_ROOT, 'scripts/core');
-const AGENTS_DIR = path.join(PROJECT_ROOT, 'scripts/agents');
+const BOILERPLATE_ROOT = path.resolve(SCRIPT_DIR, '..');
+const CORE_DIR = path.join(BOILERPLATE_ROOT, 'scripts/core');
+const AGENTS_DIR = path.join(BOILERPLATE_ROOT, 'scripts/agents');
 
 // 검증 결과 수집
 const verificationResults = {
@@ -87,13 +87,18 @@ function askUser(question) {
 
 /**
  * detect_stack.sh를 실행하여 스택 정보를 가져옵니다.
+ *
+ * @param {string|null} targetDir - 대상 프로젝트 경로 (선택적)
+ * @returns {Object} 스택 정보
  */
-function detectStack() {
+function detectStack(targetDir = null) {
+	const targetProjectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
+
 	try {
 		const detectScript = path.join(CORE_DIR, 'detect_stack.sh');
 		const output = execSync(
 			`bash -c 'source ${detectScript} && echo "STACK=$DETECTED_STACK" && echo "PACKAGE_MANAGER=$DETECTED_PACKAGE_MANAGER"'`,
-			{ cwd: PROJECT_ROOT, encoding: 'utf-8', stdio: 'pipe' }
+			{ cwd: targetProjectRoot, encoding: 'utf-8', stdio: 'pipe' }
 		);
 
 		const stackMatch = output.match(/STACK=(\w+)/);
@@ -145,8 +150,10 @@ async function checkBuildStep() {
 
 /**
  * Step 3a: 기본 검증 (auto_verify.sh)
+ *
+ * @param {string|null} targetDir - 대상 프로젝트 경로
  */
-async function runBasicVerification() {
+async function runBasicVerification(targetDir = null) {
 	log('\n🔍 Step 3a: Basic Verification (auto_verify.sh)', 'cyan');
 	log('================================================\n', 'cyan');
 
@@ -157,8 +164,9 @@ async function runBasicVerification() {
 		}
 
 		log('Running auto_verify.sh...', 'blue');
+		const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
 		const output = execSync(`bash ${autoVerifyScript}`, {
-			cwd: PROJECT_ROOT,
+			cwd: projectRoot,
 			encoding: 'utf-8',
 			stdio: 'pipe',
 		});
@@ -178,8 +186,10 @@ async function runBasicVerification() {
 
 /**
  * Step 3b: 코드 단순화 검증 (simplifier.js)
+ *
+ * @param {string|null} targetDir - 대상 프로젝트 경로
  */
-async function runSimplifierVerification() {
+async function runSimplifierVerification(targetDir = null) {
 	log('\n🔧 Step 3b: Code Simplification Verification (simplifier.js)', 'cyan');
 	log('===========================================================\n', 'cyan');
 
@@ -190,8 +200,9 @@ async function runSimplifierVerification() {
 		}
 
 		log('Running simplifier.js...', 'blue');
-		const output = execSync(`node ${simplifierScript}`, {
-			cwd: PROJECT_ROOT,
+		const command = targetDir ? `node ${simplifierScript} "${targetDir}"` : `node ${simplifierScript}`;
+		const output = execSync(command, {
+			cwd: BOILERPLATE_ROOT,
 			encoding: 'utf-8',
 			stdio: 'pipe',
 		});
@@ -221,8 +232,11 @@ async function runSimplifierVerification() {
 
 /**
  * Step 3c: 보안 감사 (security-audit.js)
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string|null} targetDir - 대상 프로젝트 경로
  */
-async function runSecurityAudit(stackInfo) {
+async function runSecurityAudit(stackInfo, targetDir = null) {
 	log('\n🔒 Step 3c: Security Audit (security-audit.js)', 'cyan');
 	log('=============================================\n', 'cyan');
 
@@ -233,8 +247,9 @@ async function runSecurityAudit(stackInfo) {
 		}
 
 		log('Running security-audit.js...', 'blue');
-		const output = execSync(`node ${securityScript}`, {
-			cwd: PROJECT_ROOT,
+		const command = targetDir ? `node ${securityScript} "${targetDir}"` : `node ${securityScript}`;
+		const output = execSync(command, {
+			cwd: BOILERPLATE_ROOT,
 			encoding: 'utf-8',
 			stdio: 'pipe',
 		});
@@ -247,7 +262,7 @@ async function runSecurityAudit(stackInfo) {
 				if (jsonData.audit) {
 					verificationResults.steps.verify.security.vulnerabilities = jsonData.audit.vulnerabilities || [];
 					verificationResults.steps.verify.security.errors = jsonData.audit.errors || [];
-					
+
 					if (jsonData.audit.status === 'vulnerable') {
 						verificationResults.steps.verify.security.status = 'failed';
 						verificationResults.steps.verify.security.message = `Found ${jsonData.audit.vulnerabilities.length} vulnerability(ies)`;
@@ -287,8 +302,11 @@ async function runSecurityAudit(stackInfo) {
 
 /**
  * Step 3d: 로컬 로그 분석 (log_analyzer.js)
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string|null} targetDir - 대상 프로젝트 경로
  */
-async function runLogAnalysis(stackInfo) {
+async function runLogAnalysis(stackInfo, targetDir = null) {
 	log('\n📋 Step 3d: Local Log Analysis (log_analyzer.js)', 'cyan');
 	log('================================================\n', 'cyan');
 
@@ -299,8 +317,9 @@ async function runLogAnalysis(stackInfo) {
 		}
 
 		log('Running log_analyzer.js...', 'blue');
-		const output = execSync(`node ${logAnalyzerScript} "${PROJECT_ROOT}"`, {
-			cwd: PROJECT_ROOT,
+		const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
+		const output = execSync(`node ${logAnalyzerScript} "${projectRoot}"`, {
+			cwd: BOILERPLATE_ROOT,
 			encoding: 'utf-8',
 			stdio: 'pipe',
 		});
@@ -359,12 +378,16 @@ async function runLogAnalysis(stackInfo) {
 
 /**
  * Step 3e: 시각적 검증 (visual_verifier.js, 웹 프로젝트인 경우)
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string|null} targetDir - 대상 프로젝트 경로
  */
-async function runVisualVerification(stackInfo) {
+async function runVisualVerification(stackInfo, targetDir = null) {
 	log('\n👁️  Step 3c: Visual Verification (visual_verifier.js)', 'cyan');
 	log('====================================================\n', 'cyan');
 
 	// 웹 프로젝트인지 확인
+	const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
 	const { isWebProject } = require(path.join(AGENTS_DIR, 'visual_verifier.js'));
 	if (!isWebProject(stackInfo)) {
 		verificationResults.steps.verify.visual.status = 'skipped';
@@ -380,8 +403,9 @@ async function runVisualVerification(stackInfo) {
 		}
 
 		log('Running visual_verifier.js...', 'blue');
-		const output = execSync(`node ${visualVerifierScript}`, {
-			cwd: PROJECT_ROOT,
+		const command = targetDir ? `node ${visualVerifierScript} "${targetDir}"` : `node ${visualVerifierScript}`;
+		const output = execSync(command, {
+			cwd: BOILERPLATE_ROOT,
 			encoding: 'utf-8',
 			stdio: 'pipe',
 		});
@@ -553,18 +577,30 @@ function outputResults() {
 
 /**
  * 메인 실행 함수
+ *
+ * 사용법:
+ *   node scripts/verify-feedback-loop.js [target_directory]
  */
 async function main() {
+	const targetDir = process.argv[2] || null;
+	const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
+
 	log('🔄 Integrated Verification Feedback Loop', 'cyan');
 	log('========================================\n', 'cyan');
 
-	// 스택 감지
-	const stackInfo = detectStack();
-	if (!stackInfo.stack) {
-		log('❌ Could not detect project stack.', 'red');
-		process.exit(1);
+	if (targetDir) {
+		log(`📁 Target project: ${projectRoot}\n`, 'blue');
 	}
-	log(`📋 Detected stack: ${stackInfo.stack} (${stackInfo.packageManager})\n`, 'green');
+
+	// 스택 감지
+	const stackInfo = detectStack(targetDir);
+	if (!stackInfo.stack) {
+		log('⚠️  Could not detect project stack.', 'yellow');
+		log('   Some verification steps may be skipped or limited.', 'yellow');
+		log('   Continuing with available verification steps...\n', 'yellow');
+	} else {
+		log(`📋 Detected stack: ${stackInfo.stack} (${stackInfo.packageManager})\n`, 'green');
+	}
 
 	// Step 1: Plan 확인
 	await checkPlanStep();
@@ -576,20 +612,38 @@ async function main() {
 	log('\n🔍 Step 3: Verification', 'cyan');
 	log('========================\n', 'cyan');
 
-	// 3a. 기본 검증
-	await runBasicVerification();
+	// 3a. 기본 검증 (스택이 있어야만 실행)
+	if (stackInfo.stack) {
+		await runBasicVerification(targetDir);
+	} else {
+		verificationResults.steps.verify.basic.status = 'skipped';
+		verificationResults.steps.verify.basic.message = 'No stack detected, skipping basic verification';
+		log('⚠️  Basic verification: Skipped (no stack detected)', 'yellow');
+	}
 
 	// 3b. 코드 단순화 검증
-	await runSimplifierVerification();
+	await runSimplifierVerification(targetDir);
 
-	// 3c. 보안 감사
-	await runSecurityAudit(stackInfo);
+	// 3c. 보안 감사 (스택이 있어야만 실행)
+	if (stackInfo.stack) {
+		await runSecurityAudit(stackInfo, targetDir);
+	} else {
+		verificationResults.steps.verify.security.status = 'skipped';
+		verificationResults.steps.verify.security.message = 'No stack detected, skipping security audit';
+		log('⚠️  Security audit: Skipped (no stack detected)', 'yellow');
+	}
 
 	// 3d. 로컬 로그 분석
-	await runLogAnalysis(stackInfo);
+	await runLogAnalysis(stackInfo, targetDir);
 
 	// 3e. 시각적 검증 (웹 프로젝트인 경우)
-	await runVisualVerification(stackInfo);
+	if (stackInfo.stack) {
+		await runVisualVerification(stackInfo, targetDir);
+	} else {
+		verificationResults.steps.verify.visual.status = 'skipped';
+		verificationResults.steps.verify.visual.message = 'No stack detected, skipping visual verification';
+		log('⚠️  Visual verification: Skipped (no stack detected)', 'yellow');
+	}
 
 	// 3f. 데이터 기반 검증 (API 프로젝트인 경우)
 	await runProxymockVerification(stackInfo);
@@ -630,6 +684,8 @@ module.exports = {
 	checkBuildStep,
 	runBasicVerification,
 	runSimplifierVerification,
+	runSecurityAudit,
+	runLogAnalysis,
 	runVisualVerification,
 	runProxymockVerification,
 	runApproveStep,

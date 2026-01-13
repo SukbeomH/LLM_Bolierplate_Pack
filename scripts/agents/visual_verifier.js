@@ -43,18 +43,23 @@ function log(message, color = 'reset') {
 
 // 프로젝트 루트 디렉토리 찾기
 const SCRIPT_DIR = __dirname;
-const PROJECT_ROOT = path.resolve(SCRIPT_DIR, '../..');
-const CORE_DIR = path.join(PROJECT_ROOT, 'scripts/core');
+const BOILERPLATE_ROOT = path.resolve(SCRIPT_DIR, '../..');
+const CORE_DIR = path.join(BOILERPLATE_ROOT, 'scripts/core');
 
 /**
  * detect_stack.sh를 실행하여 스택 정보를 가져옵니다.
+ *
+ * @param {string|null} targetDir - 대상 프로젝트 경로 (선택적)
+ * @returns {Object} 스택 정보
  */
-function detectStack() {
+function detectStack(targetDir = null) {
+	const targetProjectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
+
 	try {
 		const detectScript = path.join(CORE_DIR, 'detect_stack.sh');
 		const output = execSync(
 			`bash -c 'source ${detectScript} && echo "STACK=$DETECTED_STACK" && echo "PACKAGE_MANAGER=$DETECTED_PACKAGE_MANAGER"'`,
-			{ cwd: PROJECT_ROOT, encoding: 'utf-8', stdio: 'pipe' }
+			{ cwd: targetProjectRoot, encoding: 'utf-8', stdio: 'pipe' }
 		);
 
 		const stackMatch = output.match(/STACK=(\w+)/);
@@ -72,13 +77,16 @@ function detectStack() {
 
 /**
  * 웹 프로젝트 여부 확인
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string} projectRoot - 프로젝트 루트 경로
  */
-function isWebProject(stackInfo) {
+function isWebProject(stackInfo, projectRoot) {
 	if (stackInfo.stack !== 'node') {
 		return false;
 	}
 
-	const packageJsonPath = path.join(PROJECT_ROOT, 'package.json');
+	const packageJsonPath = path.join(projectRoot, 'package.json');
 	if (!fs.existsSync(packageJsonPath)) {
 		return false;
 	}
@@ -132,9 +140,13 @@ function findDevServerPort() {
 
 /**
  * 개발 서버 시작 시도
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string} projectRoot - 프로젝트 루트 경로
+ * @param {number} port - 포트 번호
  */
-function startDevServer(stackInfo, port = 3000) {
-	const packageJsonPath = path.join(PROJECT_ROOT, 'package.json');
+function startDevServer(stackInfo, projectRoot, port = 3000) {
+	const packageJsonPath = path.join(projectRoot, 'package.json');
 	if (!fs.existsSync(packageJsonPath)) {
 		return null;
 	}
@@ -167,7 +179,7 @@ function startDevServer(stackInfo, port = 3000) {
 		const scriptName = devCommands.find((c) => scripts[c]);
 
 		const serverProcess = spawn(command, ['run', scriptName], {
-			cwd: PROJECT_ROOT,
+			cwd: projectRoot,
 			stdio: 'inherit',
 			detached: true,
 		});
@@ -278,13 +290,16 @@ function generateMCPVerificationGuide(url, port) {
 
 /**
  * 검증 리포트 생성
+ *
+ * @param {Object|null} guide - 검증 가이드 (null일 수 있음)
+ * @param {Object} results - 검증 결과
  */
 function generateReport(guide, results = {}) {
 	const report = {
 		timestamp: new Date().toISOString(),
-		url: guide.url,
-		verificationSteps: guide.steps,
-		checks: guide.checks,
+		url: guide?.url || null,
+		verificationSteps: guide?.steps || [],
+		checks: guide?.checks || {},
 		results: results,
 		recommendations: [],
 	};
@@ -319,28 +334,74 @@ function generateReport(guide, results = {}) {
 
 /**
  * 메인 실행 함수
+ *
+ * 사용법:
+ *   node scripts/agents/visual_verifier.js [target_directory] [port]
  */
 function main() {
-	const port = parseInt(process.argv[2]) || 3000;
+	// 첫 번째 인자가 숫자면 포트, 아니면 대상 프로젝트 경로
+	const firstArg = process.argv[2];
+	const secondArg = process.argv[3];
+
+	let targetDir = null;
+	let port = 3000;
+
+	if (firstArg && !isNaN(parseInt(firstArg))) {
+		// 첫 번째 인자가 포트인 경우
+		port = parseInt(firstArg);
+	} else if (firstArg) {
+		// 첫 번째 인자가 대상 프로젝트 경로인 경우
+		targetDir = firstArg;
+		if (secondArg && !isNaN(parseInt(secondArg))) {
+			port = parseInt(secondArg);
+		}
+	}
+
+	const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
 	const url = `http://localhost:${port}`;
 
 	log('🔍 Visual Verifier Agent', 'cyan');
 	log('========================\n', 'cyan');
 
+	if (targetDir) {
+		log(`📁 Target project: ${projectRoot}`, 'blue');
+	}
+
 	// 1. 스택 감지
 	log('1. Detecting stack...', 'blue');
-	const stackInfo = detectStack();
+	const stackInfo = detectStack(targetDir);
 	if (!stackInfo.stack) {
-		log('❌ Could not detect project stack.', 'red');
-		process.exit(1);
+		log('⚠️  Could not detect project stack.', 'yellow');
+		log('   Visual verification requires a web project (Node.js stack).', 'yellow');
+		log('   Skipping visual verification.', 'yellow');
+
+		const report = generateReport(null, {
+			status: 'no_stack',
+			message: 'No supported stack detected. Visual verification skipped.',
+		});
+
+		console.log('\n--- Visual Verification Report (JSON) ---');
+		console.log(JSON.stringify(report, null, 2));
+		log('\n⚠️  Visual verification skipped (no stack detected).', 'yellow');
+		process.exit(0);
 	}
 	log(`   Detected stack: ${stackInfo.stack} (${stackInfo.packageManager})`, 'green');
 
 	// 2. 웹 프로젝트 확인
 	log('\n2. Checking if this is a web project...', 'blue');
-	if (!isWebProject(stackInfo)) {
+	if (!isWebProject(stackInfo, projectRoot)) {
 		log('⚠️  This does not appear to be a web project.', 'yellow');
 		log('   Visual verification is only applicable to web projects.', 'yellow');
+		log('   Skipping visual verification.', 'yellow');
+
+		const report = generateReport(null, {
+			status: 'not_web_project',
+			message: 'Not a web project. Visual verification skipped.',
+		});
+
+		console.log('\n--- Visual Verification Report (JSON) ---');
+		console.log(JSON.stringify(report, null, 2));
+		log('\n⚠️  Visual verification skipped (not a web project).', 'yellow');
 		process.exit(0);
 	}
 	log('   ✅ Web project detected', 'green');
@@ -356,7 +417,7 @@ function main() {
 		}).on('error', () => {
 			// 서버가 없으면 시작 시도
 			log(`   ⚠️  Dev server not running. Attempting to start...`, 'yellow');
-			serverProcess = startDevServer(stackInfo, port);
+			serverProcess = startDevServer(stackInfo, projectRoot, port);
 			if (serverProcess) {
 				log(`   ⏳ Waiting for server to start...`, 'blue');
 				waitForServer(url, 30, 1000)
@@ -411,8 +472,8 @@ if (require.main === module) {
 
 module.exports = {
 	detectStack,
-	isWebProject,
-	startDevServer,
+	isWebProject: (stackInfo) => isWebProject(stackInfo, process.cwd()),
+	startDevServer: (stackInfo, port) => startDevServer(stackInfo, process.cwd(), port),
 	generateMCPVerificationGuide,
 	generateReport,
 };

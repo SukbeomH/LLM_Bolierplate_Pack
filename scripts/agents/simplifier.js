@@ -40,8 +40,8 @@ function log(message, color = 'reset') {
 
 // 프로젝트 루트 디렉토리 찾기
 const SCRIPT_DIR = __dirname;
-const PROJECT_ROOT = path.resolve(SCRIPT_DIR, '../..');
-const CORE_DIR = path.join(PROJECT_ROOT, 'scripts/core');
+const BOILERPLATE_ROOT = path.resolve(SCRIPT_DIR, '../..');
+const CORE_DIR = path.join(BOILERPLATE_ROOT, 'scripts/core');
 
 // 간결함 평가 기준 (Senior Engineer 관점)
 const SIMPLICITY_THRESHOLDS = {
@@ -53,14 +53,19 @@ const SIMPLICITY_THRESHOLDS = {
 
 /**
  * detect_stack.sh를 실행하여 스택 정보를 가져옵니다.
+ *
+ * @param {string|null} targetDir - 대상 프로젝트 경로 (선택적)
+ * @returns {Object} 스택 정보
  */
-function detectStack() {
+function detectStack(targetDir = null) {
+	const targetProjectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
+
 	try {
 		const detectScript = path.join(CORE_DIR, 'detect_stack.sh');
 		// 환경 변수를 파싱하기 위해 bash -c를 사용
 		const output = execSync(
 			`bash -c 'source ${detectScript} && echo "STACK=$DETECTED_STACK" && echo "PACKAGE_MANAGER=$DETECTED_PACKAGE_MANAGER"'`,
-			{ cwd: PROJECT_ROOT, encoding: 'utf-8', stdio: 'pipe' }
+			{ cwd: targetProjectRoot, encoding: 'utf-8', stdio: 'pipe' }
 		);
 
 		const stackMatch = output.match(/STACK=(\w+)/);
@@ -218,10 +223,13 @@ function analyzePythonComplexity(filePath) {
 
 /**
  * 스택별 코드 분석 실행
+ *
+ * @param {Object} stackInfo - 스택 정보
+ * @param {string} projectRoot - 프로젝트 루트 경로
  */
-function analyzeCodeComplexity(stackInfo, targetDir) {
+function analyzeCodeComplexity(stackInfo, projectRoot) {
 	const suggestions = [];
-	const analyzeDir = targetDir || path.join(PROJECT_ROOT, 'src');
+	const analyzeDir = path.join(projectRoot, 'src');
 
 	if (!fs.existsSync(analyzeDir)) {
 		log(`⚠️  Directory not found: ${analyzeDir}`, 'yellow');
@@ -312,25 +320,34 @@ function outputSuggestions(suggestions) {
 
 /**
  * 메인 실행 함수
+ *
+ * 사용법:
+ *   node scripts/agents/simplifier.js [target_directory]
  */
 function main() {
 	const targetDir = process.argv[2] || null;
+	const projectRoot = targetDir ? path.resolve(targetDir) : process.cwd();
 
 	log('🔧 Code Simplifier Agent', 'cyan');
 	log('========================\n', 'cyan');
 
+	if (targetDir) {
+		log(`📁 Target project: ${projectRoot}`, 'blue');
+	}
+
 	// 1. 스택 감지
 	log('1. Detecting stack...', 'blue');
-	const stackInfo = detectStack();
+	const stackInfo = detectStack(targetDir);
 	if (stackInfo.stack) {
 		log(`   Detected stack: ${stackInfo.stack} (${stackInfo.packageManager})`, 'green');
 	} else {
-		log('   No stack detected. Using default analysis.', 'yellow');
+		log('⚠️  No stack detected. Using default analysis.', 'yellow');
+		log('   Code complexity analysis may be limited without stack information.', 'yellow');
 	}
 
 	// 2. 코드 복잡도 분석
 	log('\n2. Analyzing code complexity...', 'blue');
-	const suggestions = analyzeCodeComplexity(stackInfo, targetDir);
+	const suggestions = analyzeCodeComplexity(stackInfo, projectRoot);
 
 	// 3. 제안 사항 출력
 	log('\n3. Generating suggestions...', 'blue');
