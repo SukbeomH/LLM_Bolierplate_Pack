@@ -1,9 +1,9 @@
-.cursor
+.cursor/
 .DS_Store
-venv
-.venv
-node_modules
-.next
+venv/
+.venv/
+node_modules/
+.next/
 
 # Python
 __pycache__/
