@@ -1,9 +1,9 @@
 {
   "id": 3639230,
-  "name": "zmp-branch-policy",
+  "name": "branch-policy",
   "target": "branch",
   "source_type": "Repository",
-  "source": "cloudz-mp/zmp-notion-exporter",
+  "source": "boilerplate",
   "enforcement": "active",
   "conditions": {
     "ref_name": {

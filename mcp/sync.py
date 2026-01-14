@@ -259,7 +259,7 @@ def main():
 	"""메인 함수"""
 	# 프로젝트 루트 찾기 (스크립트 위치 기준)
 	script_dir = Path(__file__).parent
-	project_root = script_dir.parent.parent
+	project_root = script_dir.parent
 
 	# 현재 작업 디렉토리 확인
 	cwd = Path.cwd()
