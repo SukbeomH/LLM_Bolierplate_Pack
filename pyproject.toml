@@ -25,6 +25,9 @@ dev = [
     "mypy>=1.13.0",
 ]
 
+[project.scripts]
+langchain-tools = "langchain_tools.cli:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

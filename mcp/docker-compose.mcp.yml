@@ -10,7 +10,7 @@
 #   docker-compose -f docker-compose.mcp.yml run --rm shrimp
 #
 # 환경 변수:
-#   TARGET_PROJECT_PATH: 분석 대상 프로젝트 경로 (기본값: 현재 디렉터리)
+#   TARGET_PROJECT_PATH: 분석 대상 프로젝트 경로 (기본값: 상위 디렉터리)
 #
 # 주의:
 #   - 각 컨테이너는 stdio를 통해 JSON-RPC 통신을 수행합니다.
@@ -27,7 +27,7 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ${TARGET_PROJECT_PATH:-.}:/workspace:ro
+      - ${TARGET_PROJECT_PATH:-..}:/workspace:ro
     working_dir: /workspace
     restart: "no"
 
@@ -41,7 +41,7 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ${TARGET_PROJECT_PATH:-.}:/workspace:ro
+      - ${TARGET_PROJECT_PATH:-..}:/workspace:ro
     working_dir: /workspace
     restart: "no"
 
@@ -55,7 +55,7 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ${TARGET_PROJECT_PATH:-.}:/workspace:ro
+      - ${TARGET_PROJECT_PATH:-..}:/workspace:ro
       - shrimp-data:/data
     environment:
       - DATA_DIR=/data
