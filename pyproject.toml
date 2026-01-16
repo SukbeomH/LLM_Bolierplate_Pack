@@ -1,11 +1,11 @@
 [project]
-name = "langchain-tools"
+name = "boilerplate"
 version = "0.1.0"
-description = "LangChain 1.0 기반 검증 도구 및 미들웨어"
+description = "AI Agent Boilerplate"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
-authors = [{ name = "Boilerplate Team" }]
+authors = [{ name = "SukbeomH" }]
 
 dependencies = [
     "langchain>=1.0.0",
@@ -30,7 +30,7 @@ dev = [
 ]
 
 [project.scripts]
-langchain-tools = "langchain_tools.cli:main"
+boilerplate = "boilerplate.cli:main"
 
 [build-system]
 requires = ["hatchling"]

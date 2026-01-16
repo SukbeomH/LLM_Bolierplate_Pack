@@ -8,3 +8,6 @@ __pycache__/
 *.pem
 .legacy/
 .env
+.pytest_cache/
+.ruff_cache/
+.logs/
