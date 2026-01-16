@@ -72,6 +72,15 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
   - 단순 리팩토링, 빠른 프로토타이핑에 적합
   - 간단한 작업에서는 Opus 4.5보다 빠를 수 있음
 
+### 💰 Multi-Model Tier Strategy (비용 최적화)
+
+에이전트 역할에 따라 최적의 모델을 자동으로 선택합니다:
+
+- **Planning (Architect)**: Claude 3.5 Sonnet (Reasoning & Code Structure)
+- **Coding (Artisan/Guardian)**: GPT-4o (Implementation & Verification)
+- **Routing/Simple Tasks**: GPT-4o-mini (Supervisor)
+- **Documentation (Librarian)**: Gemini Flash (High Volume, Low Cost)
+
 ## 🚀 Workflow Control (RIPER-5 프로토콜)
 
 **⚠️ 중요: 모든 변경 작업 전 GitHub Issue 생성 필수**
@@ -436,10 +445,11 @@ CLAUDE.md는 단순한 문서가 아닌, AI가 시간이 지날수록 더 똑똑
    - 포매팅 및 린팅에 `ruff` 사용 (Black 대신)
    - 실행: `uv run ruff check`, `uv run ruff format`
    - `pre-commit` 훅에 `ruff` 및 `ruff-format` 포함
-3. **로깅 표준**:
-   - 프로젝트 전반에 `logging.conf` 기반의 정형화된 로깅 사용
    - `colorlog`를 사용한 컬러 로깅 지원
    - 로거 이름: `appLogger` (qualname=appLogger)
+4. **Agent Observability**:
+   - 에이전트 개발 시 `langchain_tools.agent.logging_config.track_execution` 데코레이터 사용 필수
+   - `AgentLogger`를 통해 실행 시간, 비용, 상태 변경을 자동으로 추적
 
 ### Pre-commit 훅
 

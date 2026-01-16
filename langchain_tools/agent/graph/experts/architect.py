@@ -7,7 +7,9 @@ from langgraph.types import Command
 from langchain_tools.agent.graph.state import AgentState
 from langchain_tools.mcp.codanna_tool import CodannaMCPTool
 from langchain_tools.mcp.shrimp_tool import ShrimpMCPTool
+from langchain_tools.agent.logging_config import track_execution
 
+@track_execution("architect")
 def architect_node(state: AgentState) -> Command[Literal["supervisor"]]:
     """
     Lead Architect Agent.

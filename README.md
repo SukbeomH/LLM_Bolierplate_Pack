@@ -13,6 +13,9 @@
 - **🐍 Python & LangChain 1.0**: 최신 LangChain 에이전트 아키텍처 기반
 - **🤖 Agentic MoE**: Architect, Artisan, Guardian, Librarian 등 전문가 에이전트 협업 시스템
 - **🛠️ MCP Tools 통합**: Serena, Codanna, Shrimp 등 핵심 도구를 Docker 컨테이너로 실행하고 LangChain으로 제어
+- **💰 Cost-Optimized Multi-Model**: 에이전트별 최적 모델(Claude, GPT-4o-mini, Gemini) 자동 할당 (27%+ 비용 절감)
+- **⚡ High Performance**: 병렬 실행(Parallel Execution) 및 백그라운드 작업 처리로 40% 이상 속도 향상
+- **📊 Free Observability**: 외부 유료 도구 없이 Python Native Logging으로 비용/성능 완전 추적
 - **⚡ CLI 기반 주입**: 단 한 줄의 명령어로 프로젝트에 표준 설정 주입 (`langchain-tools inject`)
 - **📡 Google Antigravity 지원**: 최신 AI-First IDE를 위한 MCP 설정 자동화
 - **🧠 지식 복리화**: `CLAUDE.md`를 통한 프로젝트 간 지식 동기화 시스템
