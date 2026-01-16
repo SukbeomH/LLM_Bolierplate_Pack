@@ -56,7 +56,7 @@ def run_cli_task(task_id: str, prompt: str):
     """Background task to run the CLI worker."""
     context = TaskContext(
         task_id=task_id,
-        work_dir=PROJECT_PATH,
+        work_dir=str(PROJECT_PATH),
         user_input=prompt,
         file_paths=[]
     )

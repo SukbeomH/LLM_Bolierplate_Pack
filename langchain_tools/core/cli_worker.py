@@ -72,7 +72,8 @@ Commit your changes when complete.
                 cwd=self.project_path,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
+                bufsize=1  # Line buffered
             )
 
             # Stream output
