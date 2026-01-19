@@ -11,3 +11,12 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .logs/
+.env.mcp
+.env
+
+# GSD state management (project-specific)
+.gsd/
+
+# Injected boilerplate (when using this repo as injection source)
+.agent-booster/
+
