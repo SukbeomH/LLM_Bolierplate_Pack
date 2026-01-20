@@ -96,6 +96,46 @@ uv run python scripts/validate_spec.py
 docker-compose ps
 ```
 
+### GSD Slash Commands (25 Total)
+
+**Core Workflow**:
+| Command | Description |
+|---------|-------------|
+| `/map` | Analyze codebase → ARCHITECTURE.md, STACK.md |
+| `/plan [N]` | Create phase plan with XML tasks |
+| `/execute [N]` | Wave execution with atomic commits |
+| `/verify [N]` | Must-haves check with evidence |
+| `/debug [desc]` | Systematic debugging with state |
+
+**Project Setup**:
+| Command | Description |
+|---------|-------------|
+| `/new-project` | Deep questioning → SPEC.md finalized |
+| `/new-milestone` | Create new milestone with phases |
+| `/complete-milestone` | Archive and start next milestone |
+| `/audit-milestone` | Quality review before completion |
+
+**Phase Management**:
+| Command | Description |
+|---------|-------------|
+| `/add-phase` | Add phase to end of roadmap |
+| `/insert-phase` | Insert between existing phases |
+| `/remove-phase` | Remove with safety checks |
+| `/discuss-phase` | Clarify scope → DECISIONS.md |
+| `/research-phase` | Deep technical research |
+| `/list-phase-assumptions` | List assumptions made |
+| `/plan-milestone-gaps` | Find missing work |
+
+**Navigation & State**:
+| Command | Description |
+|---------|-------------|
+| `/progress` | Show current position and next steps |
+| `/pause` | State dump for clean session handoff |
+| `/resume` | Restore context from previous session |
+| `/add-todo` | Quick capture to TODO.md |
+| `/check-todos` | Review and process todos |
+| `/help` | Show all available commands |
+
 ---
 
 ## 4️⃣ CodeGraph Agentic Tools (7 Tools)

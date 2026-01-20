@@ -431,6 +431,7 @@ python scripts/validate_spec.py
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 - [Neo4j Graph Database](https://neo4j.com/)
 - [CodeGraph Rust](https://github.com/Jakedismo/codegraph-rust) - 100% Rust implementation with SurrealDB backend
+- [GSD for Antigravity](https://github.com/toonight/get-shit-done-for-antigravity) - 25 slash commands for context engineering
 - [GSD Methodology](https://gsd.dev/)
 
 ---
