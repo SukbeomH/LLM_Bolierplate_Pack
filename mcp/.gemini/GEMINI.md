@@ -1,8 +1,31 @@
 # GSD Methodology — Mission Control Rules
 
 > **Get Shit Done**: A spec-driven, context-engineered development methodology.
-> 
+>
 > These rules enforce disciplined, high-quality autonomous development.
+
+---
+
+## Rule 0: Python Environment Management 🐍
+
+**ALWAYS use `uv` for Python project management.**
+
+| Task | Command | ❌ Never Use |
+|------|---------|-------------|
+| Install dependencies | `uv sync` | `pip install`, `poetry install` |
+| Add dependency | `uv add <package>` | `pip install`, `poetry add` |
+| Run Python script | `uv run python <script>` | `python <script>` directly |
+| Run tests | `uv run pytest` | `pytest` directly |
+| Create virtual env | `uv venv` | `python -m venv` |
+
+**Rationale:**
+- `uv` is 10-100x faster than pip/poetry
+- Automatic lockfile management (`uv.lock`)
+- Consistent, reproducible environments across all machines
+
+**Exceptions:**
+- System Python for non-project scripts
+- Docker containers with pre-installed dependencies
 
 ---
 
@@ -12,6 +35,7 @@
 2. **State Is Sacred** — Every action updates persistent memory
 3. **Context Is Limited** — Prevent degradation through hygiene
 4. **Verify Empirically** — No "trust me, it works"
+5. **Use uv for Python** — Never pip install directly
 
 ---
 
@@ -69,7 +93,7 @@
 
 **Rationale:** Extended debugging in a polluted context leads to:
 - Circular reasoning
-- Missed obvious solutions  
+- Missed obvious solutions
 - Hallucinated fixes
 
 A fresh context with documented state often immediately sees the solution.

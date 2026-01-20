@@ -53,27 +53,44 @@ You are a **Senior Staff Engineer** specialized in the OmniGraph framework.
 
 These are the exact commands you MUST use. Do not invent or guess commands.
 
-### Development
+### Python Environment (uv ONLY)
+**⚠️ NEVER use `pip install` or `poetry` directly. Always use `uv`.**
+
 ```bash
-# Install dependencies
+# Install/sync dependencies
 uv sync
 
+# Add new dependency
+uv add <package>
+uv add <package> --dev  # for dev dependencies
+
+# Run Python scripts
+uv run python <script.py>
+uv run pytest tests/
+
+# Create new project
+uv init
+```
+
+### Development
+```bash
 # Index codebase for local context
 codegraph index --tier balanced
 
 # Run local MCP server
-python mcp/server.py
+uv run python mcp/server.py
 ```
 
 ### Verification
 ```bash
 # Run test suite
+uv run pytest tests/
+
+# OR for Node.js projects
 npm run test
-# OR
-pytest tests/
 
 # Validate SPEC.md integrity
-python scripts/validate_spec.py
+uv run python scripts/validate_spec.py
 
 # Check MCP server status
 docker-compose ps
