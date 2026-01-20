@@ -209,7 +209,63 @@ docker-compose ps
 
 ---
 
-## 5️⃣ Working Patterns (CodeGraph)
+## 5️⃣ Memory System (3 Tools)
+
+**Store and retrieve project knowledge that persists across sessions.**
+
+### Quick Reference
+
+| I want to... | Use... |
+|--------------|--------|
+| Save project knowledge | `memory_store` |
+| Recall past decisions | `memory_find` |
+| See all stored knowledge | `memory_list_categories` |
+
+### Categories
+
+| Category | Use For |
+|----------|---------|
+| `convention` | Code style, naming patterns, project standards |
+| `decision` | Architecture decisions, trade-off rationale |
+| `pattern` | Common patterns used in this codebase |
+| `issue` | Known bugs, workarounds, gotchas |
+| `general` | Other project knowledge |
+
+### Tool Usage
+
+#### `memory_store`
+**Save knowledge for future reference:**
+```
+✅ "Store: This project uses snake_case for Python, camelCase for JS"
+✅ "Store as decision: We chose Neo4j over PostgreSQL for graph queries"
+✅ "Store as pattern: Error handling always uses Result type"
+```
+
+#### `memory_find`
+**Retrieve stored knowledge:**
+```
+✅ "Find memories about authentication"
+✅ "Find all decisions"
+✅ "Find patterns related to error handling"
+```
+
+#### `memory_list_categories`
+**Overview of stored knowledge:**
+```
+✅ "List all memory categories"
+✅ "How many memories are stored?"
+```
+
+### When to Store Memories
+
+1. **After making a decision**: Store the rationale
+2. **When discovering a pattern**: Document it for consistency
+3. **When fixing a tricky bug**: Save the root cause
+4. **When learning a project convention**: Capture it
+
+---
+
+## 6️⃣ Working Patterns (CodeGraph)
 
 ### Pattern 1: Exploration First
 When starting work on an unfamiliar area:
@@ -238,7 +294,7 @@ When tracking down issues:
 
 ---
 
-## 6️⃣ Code Style
+## 7️⃣ Code Style
 
 Prefer showing examples over lengthy explanations.
 
@@ -275,7 +331,7 @@ async def get_tools():
 
 ---
 
-## 7️⃣ Boundaries (3-Tier Rule)
+## 8️⃣ Boundaries (3-Tier Rule)
 
 You MUST strictly adhere to these operational boundaries.
 
@@ -306,37 +362,49 @@ You MUST strictly adhere to these operational boundaries.
 
 ---
 
-## 8️⃣ Workflows
+## 9️⃣ Workflows
 
 Follow GSD methodology for all tasks.
 
 ### Feature Development
 ```
 1. /plan → Create SPEC.md
-2. agentic_context_builder → Gather context
-3. /execute → Implement with STATE.md updates
-4. /verify → Empirical validation
+2. memory_find → Check past decisions
+3. agentic_context_builder → Gather context
+4. /execute → Implement with STATE.md updates
+5. memory_store → Save new patterns/decisions
+6. /verify → Empirical validation
 ```
 
 ### Bug Fix
 ```
 1. Reproduce issue
-2. agentic_call_chain_analysis → Trace execution
-3. agentic_dependency_analysis → Check impact
-4. Implement fix
-5. Verify with tests
+2. memory_find → Check known issues
+3. agentic_call_chain_analysis → Trace execution
+4. agentic_dependency_analysis → Check impact
+5. Implement fix
+6. memory_store → Document the root cause
+7. Verify with tests
 ```
 
 ### Before Any Session
 ```
 1. Read .specs/SPEC.md
 2. Read .specs/PLAN.md
-3. agentic_architecture_analysis → If unfamiliar area
-4. Resume from last checkpoint
+3. memory_list_categories → Check stored knowledge
+4. agentic_architecture_analysis → If unfamiliar area
+5. Resume from last checkpoint
+```
+
+### After Major Decision
+```
+1. Document in DECISIONS.md
+2. memory_store category=decision → Persist for future sessions
 ```
 
 ---
 
-> **Note**: This specification follows the 6-Core structure validated across 2,500+ repositories.
+> **Note**: This specification follows the extended 9-section structure.
 > For tool-specific instructions, see `.claude/skills/` directory.
 > CodeGraph Reference: https://github.com/Jakedismo/codegraph-rust
+> Memory stored in: .agent/memory.jsonl
