@@ -404,9 +404,10 @@ python scripts/validate_spec.py
 - [ ] Boundaries 3-Tier 정의
 
 ### Phase 2 완료 조건
-- [ ] `codegraph.toml` 설정
-- [ ] `mcp/server.py` CodeGraph 연결
-- [ ] `impact-analysis.md` 스킬 정의
+- [x] `codegraph.toml` 설정
+- [x] `mcp/server.py` CodeGraph 연결
+- [x] `impact-analysis.md` 스킬 정의
+- [x] `codegraph` 바이너리 빌드 및 설치 (~/.local/bin)
 
 ### Phase 3 완료 조건
 - [ ] Neo4j Docker 실행
@@ -419,9 +420,11 @@ python scripts/validate_spec.py
 - [ ] Human-in-the-Loop 설정
 
 ### Phase 5 완료 조건
-- [ ] MCP 클라이언트 통합
+- [x] MCP 클라이언트 통합
 - [ ] NeoDash 대시보드 구성
-- [ ] E2E 테스트 통과
+- [x] E2E 테스트 통과 (Global Hub)
+
+> **Note**: CodeGraph DB(SurrealDB) 권한 설정 이슈가 남아있어, 추후 `~/.codegraph/config.toml` 및 DB 사용자 설정이 필요합니다.
 
 ---
 
