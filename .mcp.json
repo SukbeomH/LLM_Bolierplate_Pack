@@ -1,29 +1,22 @@
 {
   "mcpServers": {
-    "local-mcp": {
-      "type": "stdio",
-      "command": "uv",
-      "args": [
-        "run",
-        "python",
-        "mcp/server.py"
-      ],
-      "env": {}
-    },
     "codegraph": {
       "type": "stdio",
       "command": "codegraph",
-      "args": [
-        "start",
-        "stdio",
-        "--watch"
-      ],
+      "args": ["start", "stdio", "--watch"],
       "env": {
-        "CODEGRAPH_SURREALDB_URL": "ws://localhost:3004",
-        "CODEGRAPH_SURREALDB_NAMESPACE": "ouroboros",
-        "CODEGRAPH_SURREALDB_DATABASE": "codegraph",
-        "CODEGRAPH_SURREALDB_USERNAME": "root",
-        "CODEGRAPH_SURREALDB_PASSWORD": "root"
+        "CODEGRAPH_SURREALDB_URL": "${CODEGRAPH_SURREALDB_URL}",
+        "CODEGRAPH_SURREALDB_NAMESPACE": "${CODEGRAPH_SURREALDB_NAMESPACE}",
+        "CODEGRAPH_SURREALDB_DATABASE": "${CODEGRAPH_SURREALDB_DATABASE}",
+        "CODEGRAPH_SURREALDB_USERNAME": "${CODEGRAPH_SURREALDB_USERNAME}",
+        "CODEGRAPH_SURREALDB_PASSWORD": "${CODEGRAPH_SURREALDB_PASSWORD}"
+      }
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
     }
   }
