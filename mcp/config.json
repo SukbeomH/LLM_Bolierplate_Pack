@@ -1,7 +1,7 @@
 {
-  "server_name": "omnigraph-local",
+  "server_name": "local-mcp",
   "version": "1.3.0",
-  "description": "OmniGraph Local MCP Server (CodeGraph + Memory)",
+  "description": "Local MCP Server (CodeGraph + Memory)",
   "repository": "https://github.com/Jakedismo/codegraph-rust",
   "capabilities": {
     "tools": {

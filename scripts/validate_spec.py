@@ -10,9 +10,9 @@ REQUIRED_FILES = [
 
 def validate_project_structure():
     """
-    Validates that the current directory has proper OmniGraph structure.
+    Validates that the current directory has proper project structure.
     """
-    print("🔍 Validating OmniGraph Project Structure...")
+    print("🔍 Validating Project Structure...")
     missing = []
 
     for file_path in REQUIRED_FILES:

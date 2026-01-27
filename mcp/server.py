@@ -1,5 +1,5 @@
 """
-OmniGraph Local MCP Server
+Local MCP Server
 
 Provides:
 1. CodeGraph Rust integration (AST analysis, dependency analysis)
@@ -19,7 +19,7 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 
 # Initialize FastMCP server
-mcp = FastMCP("OmniGraph Local")
+mcp = FastMCP("Local MCP")
 
 # Memory file path (relative to project root)
 MEMORY_FILE = Path(".agent/memory.jsonl")
