@@ -4,7 +4,7 @@ description: Validates architectural rules and ensures design quality
 version: 1.2.0
 allowed-tools:
   - agentic_architecture
-  - read_file
+  - Read
 trigger: "Before merging PRs or completing major features"
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: GSD Planner
+name: planner
 description: Creates executable phase plans with task breakdown, dependency analysis, and goal-backward verification
 ---
 

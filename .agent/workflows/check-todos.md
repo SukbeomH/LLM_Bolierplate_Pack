@@ -22,13 +22,13 @@ Display pending todo items, optionally filtered by priority or status.
 
 ## 1. Load TODO.md
 
-```powershell
-if (-not (Test-Path ".gsd/TODO.md")) {
-    Write-Output "No todos found. Use /add-todo to create one."
-    exit
-}
+```bash
+if [ ! -f ".gsd/TODO.md" ]; then
+    echo "No todos found. Use /add-todo to create one."
+    exit 0
+fi
 
-Get-Content ".gsd/TODO.md"
+cat ".gsd/TODO.md"
 ```
 
 ---

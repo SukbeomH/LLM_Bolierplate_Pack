@@ -40,13 +40,6 @@ Orchestrator stays lean: discover plans, analyze dependencies, group into waves,
 
 ## 1. Validate Environment
 
-**PowerShell:**
-```powershell
-Test-Path ".gsd/ROADMAP.md"
-Test-Path ".gsd/STATE.md"
-```
-
-**Bash:**
 ```bash
 test -f ".gsd/ROADMAP.md"
 test -f ".gsd/STATE.md"
@@ -58,13 +51,6 @@ test -f ".gsd/STATE.md"
 
 ## 2. Validate Phase Exists
 
-**PowerShell:**
-```powershell
-# Check phase exists in roadmap
-Select-String -Path ".gsd/ROADMAP.md" -Pattern "Phase $PHASE:"
-```
-
-**Bash:**
 ```bash
 # Check phase exists in roadmap
 grep "Phase $PHASE:" ".gsd/ROADMAP.md"
@@ -76,15 +62,6 @@ grep "Phase $PHASE:" ".gsd/ROADMAP.md"
 
 ## 3. Ensure Phase Directory Exists
 
-**PowerShell:**
-```powershell
-$PHASE_DIR = ".gsd/phases/$PHASE"
-if (-not (Test-Path $PHASE_DIR)) {
-    New-Item -ItemType Directory -Path $PHASE_DIR
-}
-```
-
-**Bash:**
 ```bash
 PHASE_DIR=".gsd/phases/$PHASE"
 mkdir -p "$PHASE_DIR"
@@ -94,24 +71,12 @@ mkdir -p "$PHASE_DIR"
 
 ## 4. Discover Plans
 
-**PowerShell:**
-```powershell
-Get-ChildItem "$PHASE_DIR/*-PLAN.md"
-```
-
-**Bash:**
 ```bash
 ls "$PHASE_DIR"/*-PLAN.md 2>/dev/null
 ```
 
 **Check for existing summaries** (completed plans):
 
-**PowerShell:**
-```powershell
-Get-ChildItem "$PHASE_DIR/*-SUMMARY.md"
-```
-
-**Bash:**
 ```bash
 ls "$PHASE_DIR"/*-SUMMARY.md 2>/dev/null
 ```

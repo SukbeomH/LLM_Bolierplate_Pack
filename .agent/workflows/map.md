@@ -35,19 +35,9 @@ This workflow should be run BEFORE `/plan` on brownfield projects to give the pl
 
 Check this is a valid project:
 
-**PowerShell:**
-```powershell
-# Look for common project indicators
-$indicators = @(
-    "package.json", "requirements.txt", "Cargo.toml", 
-    "go.mod", "pom.xml", "*.csproj", "Gemfile"
-)
-```
-
-**Bash:**
 ```bash
 # Look for common project indicators
-indicators=("package.json" "requirements.txt" "Cargo.toml" 
+indicators=("package.json" "requirements.txt" "Cargo.toml"
     "go.mod" "pom.xml" "*.csproj" "Gemfile")
 ```
 
@@ -64,13 +54,6 @@ Display banner:
 
 ### 2a. Directory Analysis
 
-**PowerShell:**
-```powershell
-Get-ChildItem -Recurse -Directory | 
-    Where-Object { $_.Name -notmatch "node_modules|\.git|__pycache__|dist|build" }
-```
-
-**Bash:**
 ```bash
 find . -type d -not -path '*/node_modules/*' -not -path '*/.git/*' \
     -not -path '*/__pycache__/*' -not -path '*/dist/*' -not -path '*/build/*'
@@ -85,13 +68,6 @@ Identify:
 ### 2b. Entry Points
 
 Find main files:
-**PowerShell:**
-```powershell
-# Example for Node.js
-Get-Content "package.json" | ConvertFrom-Json | Select-Object -ExpandProperty main
-```
-
-**Bash:**
 ```bash
 # Example for Node.js (requires jq)
 cat package.json | jq -r '.main'
@@ -112,14 +88,6 @@ Scan for common patterns:
 
 ### 3a. Production Dependencies
 
-**PowerShell:**
-```powershell
-# Node.js example
-Get-Content "package.json" | ConvertFrom-Json | 
-    Select-Object -ExpandProperty dependencies
-```
-
-**Bash:**
 ```bash
 # Node.js example (requires jq)
 cat package.json | jq '.dependencies'
@@ -152,19 +120,6 @@ pip list --outdated
 ### 4a. External Integrations
 
 Search for:
-**PowerShell:**
-```powershell
-# API calls
-Select-String -Path "src/**/*" -Pattern "fetch\(|axios\.|http\."
-
-# Database connections
-Select-String -Path "**/*" -Pattern "DATABASE_URL|mongodb|postgres|mysql"
-
-# Third-party services
-Select-String -Path "**/*" -Pattern "stripe|sendgrid|twilio|aws-sdk"
-```
-
-**Bash:**
 ```bash
 # API calls
 grep -rE 'fetch\(|axios\.|http\.' src/
@@ -189,16 +144,6 @@ Trace how data moves:
 ### 5a. Code Smells
 
 Search for indicators:
-**PowerShell:**
-```powershell
-# TODOs and FIXMEs
-Select-String -Path "src/**/*" -Pattern "TODO|FIXME|HACK|XXX"
-
-# Deprecated markers
-Select-String -Path "**/*" -Pattern "@deprecated|DEPRECATED"
-```
-
-**Bash:**
 ```bash
 # TODOs and FIXMEs
 grep -rE 'TODO|FIXME|HACK|XXX' src/

@@ -12,13 +12,6 @@ Display all available GSD commands with descriptions and usage hints.
 
 **First, read and display the version:**
 
-**PowerShell:**
-```powershell
-$version = Get-Content "VERSION" -ErrorAction SilentlyContinue
-if (-not $version) { $version = "unknown" }
-```
-
-**Bash:**
 ```bash
 version=$(cat VERSION 2>/dev/null || echo "unknown")
 ```

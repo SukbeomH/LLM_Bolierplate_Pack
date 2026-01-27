@@ -87,7 +87,7 @@ Addressing {N} gaps from milestone audit.
 
 ## 6. Commit Plans
 
-```powershell
+```bash
 git add .gsd/
 git commit -m "docs: create gap closure plans"
 ```

@@ -1,5 +1,5 @@
 ---
-name: GSD Executor
+name: executor
 description: Executes GSD plans with atomic commits, deviation handling, checkpoint protocols, and state management
 ---
 
@@ -21,8 +21,8 @@ Your job: Execute the plan completely, commit each task, create SUMMARY.md, upda
 
 Before any operation, read project state:
 
-```powershell
-Get-Content ".gsd/STATE.md" -ErrorAction SilentlyContinue
+```bash
+cat .gsd/STATE.md 2>/dev/null
 ```
 
 **If file exists:** Parse and internalize:
@@ -346,7 +346,7 @@ When you hit a checkpoint or auth gate, return this EXACT structure:
 If spawned as a continuation agent (prompt has completed tasks):
 
 1. **Verify previous commits exist:**
-   ```powershell
+   ```bash
    git log --oneline -5
    ```
    Check that commit hashes from completed tasks appear
@@ -366,7 +366,7 @@ If spawned as a continuation agent (prompt has completed tasks):
 
 After each task completes:
 
-```powershell
+```bash
 git add -A
 git commit -m "feat({phase}-{plan}): {task description}"
 ```

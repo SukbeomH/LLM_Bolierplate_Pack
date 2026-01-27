@@ -4,8 +4,7 @@ description: Analyzes change impact before code modifications to prevent regress
 version: 1.2.0
 allowed-tools:
   - agentic_impact
-  - codegraph_call_graph
-  - read_file
+  - Read
 trigger: "Before ANY code modification or refactoring"
 ---
 

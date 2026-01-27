@@ -1,5 +1,5 @@
 ---
-name: GSD Verifier
+name: verifier
 description: Validates implemented work against spec requirements with empirical evidence
 ---
 
@@ -30,8 +30,8 @@ Your job: Verify must-haves, detect stubs, identify gaps, and produce VERIFICATI
 
 Before starting fresh, check if a previous VERIFICATION.md exists:
 
-```powershell
-Get-ChildItem ".gsd/phases/{N}/*-VERIFICATION.md" -ErrorAction SilentlyContinue
+```bash
+ls .gsd/phases/{N}/*-VERIFICATION.md 2>/dev/null
 ```
 
 **If previous verification exists with gaps → RE-VERIFICATION MODE:**
@@ -52,13 +52,13 @@ Set `is_re_verification = false`, proceed with Step 1.
 
 Gather verification context:
 
-```powershell
+```bash
 # Phase PLANs and SUMMARYs
-Get-ChildItem ".gsd/phases/{N}/*-PLAN.md"
-Get-ChildItem ".gsd/phases/{N}/*-SUMMARY.md"
+ls .gsd/phases/{N}/*-PLAN.md
+ls .gsd/phases/{N}/*-SUMMARY.md
 
 # Phase goal from ROADMAP
-Select-String -Path ".gsd/ROADMAP.md" -Pattern "Phase {N}"
+grep "Phase {N}" .gsd/ROADMAP.md
 ```
 
 Extract phase goal from ROADMAP.md. This is the outcome to verify, not the tasks.
@@ -120,15 +120,15 @@ For each truth:
 For each required artifact, verify three levels:
 
 #### Level 1: Existence
-```powershell
-Test-Path "src/components/Chat.tsx"
+```bash
+test -f "src/components/Chat.tsx" && echo "exists" || echo "missing"
 ```
 - File exists at expected path
 - **If missing:** FAILED at Level 1
 
 #### Level 2: Substantive
-```powershell
-Get-Content "src/components/Chat.tsx" | Select-String -Pattern "TODO|placeholder|stub"
+```bash
+grep -E "TODO|placeholder|stub" "src/components/Chat.tsx"
 ```
 - File contains real implementation
 - Not a stub, placeholder, or minimal scaffold
@@ -147,27 +147,27 @@ Get-Content "src/components/Chat.tsx" | Select-String -Pattern "TODO|placeholder
 For each key link, verify the connection exists:
 
 **Pattern: Component → API**
-```powershell
+```bash
 # Check Chat.tsx calls /api/chat
-Select-String -Path "src/components/Chat.tsx" -Pattern "fetch.*api/chat"
+grep "fetch.*api/chat" "src/components/Chat.tsx"
 ```
 
 **Pattern: API → Database**
-```powershell
+```bash
 # Check route calls prisma
-Select-String -Path "src/app/api/chat/route.ts" -Pattern "prisma\."
+grep "prisma\." "src/app/api/chat/route.ts"
 ```
 
 **Pattern: Form → Handler**
-```powershell
+```bash
 # Check onSubmit has implementation
-Select-String -Path "src/components/Form.tsx" -Pattern "onSubmit" -Context 0,5
+grep -A5 "onSubmit" "src/components/Form.tsx"
 ```
 
 **Pattern: State → Render**
-```powershell
+```bash
 # Check state is used in JSX
-Select-String -Path "src/components/Chat.tsx" -Pattern "messages\.map"
+grep "messages\.map" "src/components/Chat.tsx"
 ```
 
 ---
@@ -176,8 +176,8 @@ Select-String -Path "src/components/Chat.tsx" -Pattern "messages\.map"
 
 If REQUIREMENTS.md exists:
 
-```powershell
-Select-String -Path ".gsd/REQUIREMENTS.md" -Pattern "Phase {N}"
+```bash
+grep "Phase {N}" .gsd/REQUIREMENTS.md
 ```
 
 For each requirement:
@@ -195,18 +195,18 @@ For each requirement:
 
 Run anti-pattern detection on modified files:
 
-```powershell
+```bash
 # TODO/FIXME comments
-Select-String -Path "src/**/*.ts" -Pattern "TODO|FIXME|XXX|HACK"
+grep -r -E "TODO|FIXME|XXX|HACK" src/**/*.ts
 
 # Placeholder content
-Select-String -Path "src/**/*.tsx" -Pattern "placeholder|coming soon" 
+grep -r -E "placeholder|coming soon" src/**/*.tsx
 
 # Empty implementations
-Select-String -Path "src/**/*.ts" -Pattern "return null|return \{\}|return \[\]"
+grep -r -E "return null|return \{\}|return \[\]" src/**/*.ts
 
 # Console.log only
-Select-String -Path "src/**/*.ts" -Pattern "console\.log" -Context 2
+grep -r -C2 "console\.log" src/**/*.ts
 ```
 
 **Categorize findings:**
@@ -292,15 +292,15 @@ gaps:
 ## Stub Detection Patterns
 
 ### Universal Stub Patterns
-```powershell
+```bash
 # Comment-based stubs
-Select-String -Pattern "TODO|FIXME|XXX|HACK|PLACEHOLDER"
+grep -r -E "TODO|FIXME|XXX|HACK|PLACEHOLDER" .
 
 # Placeholder text
-Select-String -Pattern "placeholder|lorem ipsum|coming soon" 
+grep -r -E "placeholder|lorem ipsum|coming soon" .
 
 # Empty implementations
-Select-String -Pattern "return null|return undefined|return \{\}|return \[\]"
+grep -r -E "return null|return undefined|return \{\}|return \[\]" .
 ```
 
 ### React Component Stubs

@@ -13,14 +13,6 @@ Define a new milestone with goal, phases, and success criteria.
 
 ## 1. Validate SPEC Exists
 
-**PowerShell:**
-```powershell
-if (-not (Test-Path ".gsd/SPEC.md")) {
-    Write-Error "SPEC.md required. Run /new-project first."
-}
-```
-
-**Bash:**
 ```bash
 if [ ! -f ".gsd/SPEC.md" ]; then
     echo "Error: SPEC.md required. Run /new-project first." >&2

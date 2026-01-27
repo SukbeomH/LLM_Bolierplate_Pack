@@ -1,5 +1,5 @@
 ---
-name: Empirical Validation
+name: empirical-validation
 description: Requires proof before marking work complete — no "trust me, it works"
 ---
 

@@ -13,20 +13,21 @@ Add a new phase to the end of the current roadmap.
 
 ## 1. Validate Roadmap Exists
 
-```powershell
-if (-not (Test-Path ".gsd/ROADMAP.md")) {
-    Write-Error "ROADMAP.md required. Run /new-milestone first."
-}
+```bash
+if [ ! -f ".gsd/ROADMAP.md" ]; then
+    echo "Error: ROADMAP.md required. Run /new-milestone first." >&2
+    exit 1
+fi
 ```
 
 ---
 
 ## 2. Determine Next Phase Number
 
-```powershell
+```bash
 # Count existing phases
-$phases = Select-String -Path ".gsd/ROADMAP.md" -Pattern "### Phase \d+"
-$nextPhase = $phases.Count + 1
+phase_count=$(grep -c "### Phase [0-9]" ".gsd/ROADMAP.md")
+next_phase=$((phase_count + 1))
 ```
 
 ---
@@ -68,7 +69,7 @@ Note phase added.
 
 ## 6. Commit
 
-```powershell
+```bash
 git add .gsd/ROADMAP.md .gsd/STATE.md
 git commit -m "docs: add phase {N} - {name}"
 ```

@@ -1,5 +1,5 @@
 ---
-name: GSD Debugger
+name: debugger
 description: Systematic debugging with persistent state and fresh context advantages
 ---
 

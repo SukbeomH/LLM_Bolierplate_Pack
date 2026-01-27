@@ -1,5 +1,5 @@
 ---
-name: GSD Plan Checker
+name: plan-checker
 description: Validates plans before execution to catch issues early
 ---
 
