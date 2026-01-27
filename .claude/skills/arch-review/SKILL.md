@@ -1,6 +1,6 @@
 ---
 name: arch-review
-description: 아키텍처 규칙 위반을 검사하고 설계 품질을 보장합니다.
+description: Validates architectural rules and ensures design quality
 version: 1.2.0
 allowed-tools:
   - agentic_architecture

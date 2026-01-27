@@ -12,12 +12,14 @@ Conduct technical research to inform planning decisions for a phase.
 <discovery_levels>
 ## Discovery Levels
 
-| Level | Time | Use When |
-|-------|------|----------|
-| 0 | 0 min | Already know, just doing it |
-| 1 | 2-5 min | Single library, confirming syntax |
-| 2 | 15-30 min | Choosing between options, new integration |
-| 3 | 1+ hour | Architectural decision, novel problem |
+> Full definitions: see `/plan` workflow `<discovery_levels>` section.
+
+| Level | Use When |
+|-------|----------|
+| 0 — Skip | Pure internal work, no new dependencies |
+| 1 — Quick Verification | Single known library, confirming syntax/version |
+| 2 — Standard Research | Choosing between 2-3 options, new integration |
+| 3 — Deep Dive | Architectural decision, novel problem |
 
 **Default:** Level 2 unless specified.
 </discovery_levels>
@@ -127,7 +129,7 @@ researched_at: {date}
 
 ## 5. Commit Research
 
-```powershell
+```bash
 git add .gsd/phases/{N}/RESEARCH.md
 git commit -m "docs(phase-{N}): research complete"
 ```

@@ -88,4 +88,4 @@ When triggered, write to `.gsd/STATE.md`:
 This skill integrates with:
 - `/pause` — Triggers proper session handoff
 - `/resume` — Loads the state dump context
-- Rule 3 in `GEMINI.md` — Context Hygiene enforcement
+- `.gemini/GEMINI.md` Rule 3 (Context Hygiene) — After 3 failed debug attempts: STOP, summarize to STATE.md, document blocker in DECISIONS.md, recommend fresh session

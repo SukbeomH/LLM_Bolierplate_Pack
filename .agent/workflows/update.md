@@ -5,23 +5,13 @@ description: Update GSD to the latest version from GitHub
 # /update Workflow
 
 <objective>
-Update GSD for Antigravity to the latest version from GitHub.
+Update GSD to the latest version from GitHub.
 </objective>
 
 <process>
 
 ## 1. Check Current Version
 
-**PowerShell:**
-```powershell
-if (Test-Path "CHANGELOG.md") {
-    $version = Select-String -Path "CHANGELOG.md" -Pattern "## \[(\d+\.\d+\.\d+)\]" | 
-        Select-Object -First 1
-    Write-Output "Current version: $($version.Matches.Groups[1].Value)"
-}
-```
-
-**Bash:**
 ```bash
 if [ -f "CHANGELOG.md" ]; then
     version=$(grep -oP '## \[\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1)
@@ -42,15 +32,6 @@ git clone --depth 1 https://github.com/toonight/get-shit-done-for-antigravity.gi
 
 ## 3. Compare Versions
 
-**PowerShell:**
-```powershell
-$remoteVersion = Select-String -Path ".gsd-update-temp/CHANGELOG.md" -Pattern "## \[(\d+\.\d+\.\d+)\]" | 
-    Select-Object -First 1
-
-Write-Output "Remote version: $($remoteVersion.Matches.Groups[1].Value)"
-```
-
-**Bash:**
 ```bash
 remote_version=$(grep -oP '## \[\K[0-9]+\.[0-9]+\.[0-9]+' .gsd-update-temp/CHANGELOG.md | head -1)
 echo "Remote version: $remote_version"
@@ -100,24 +81,6 @@ B) No — Cancel
 
 **If user confirms:**
 
-**PowerShell:**
-```powershell
-# Backup current
-Copy-Item -Recurse ".agent" ".agent.backup"
-Copy-Item -Recurse ".gsd/templates" ".gsd/templates.backup"
-
-# Update workflows and skills (preserve user's .gsd docs)
-Copy-Item -Recurse -Force ".gsd-update-temp/.agent/*" ".agent/"
-
-# Update templates only
-Copy-Item -Recurse -Force ".gsd-update-temp/.gsd/templates/*" ".gsd/templates/"
-
-# Update root files
-Copy-Item -Force ".gsd-update-temp/GSD-STYLE.md" "./"
-Copy-Item -Force ".gsd-update-temp/CHANGELOG.md" "./"
-```
-
-**Bash:**
 ```bash
 # Backup current
 cp -r .agent .agent.backup
@@ -138,14 +101,6 @@ cp .gsd-update-temp/CHANGELOG.md ./
 
 ## 6. Cleanup
 
-**PowerShell:**
-```powershell
-Remove-Item -Recurse -Force ".gsd-update-temp"
-Remove-Item -Recurse -Force ".agent.backup"
-Remove-Item -Recurse -Force ".gsd/templates.backup"
-```
-
-**Bash:**
 ```bash
 rm -rf .gsd-update-temp
 rm -rf .agent.backup

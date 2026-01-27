@@ -10,12 +10,12 @@ Primary language is Python 3.11+. Documentation is bilingual (Korean/English).
 
 ## Repository Layout
 
-- **.agent/** — Agent symlinks, GSD workflows (25 commands)
+- **.agent/** — Agent symlinks, GSD workflows (27 commands)
 - **.claude/skills/** — Modular skill definitions (SKILL.md per skill)
 - **.github/agents/** — GitHub Agent specification (agent.md)
 - **.gsd/** — GSD methodology: templates, examples, state documents
-- **.specs/** — Project specs (SPEC.md, PLAN.md, DECISIONS.md)
-- **mcp/** — Local MCP server configuration (config.json, server.py)
+- **.specs/** — Project spec templates (SPEC.md, PLAN.md, DECISIONS.md) — 실제 문서는 `.gsd/`에 생성
+- **.mcp.json** — MCP server connection configuration (Claude Code)
 - **scripts/** — Utility scripts (validate_spec.py)
 
 ## Build & Development Commands
@@ -66,8 +66,9 @@ make clean                    # Docker volume + CodeGraph 인덱스 삭제
 ### CodeGraph + MCP
 
 The system uses CodeGraph for local AST analysis via MCP Protocol:
-- **CodeGraph** (stdio transport): 7 agentic tools for code search, dependency analysis, call chain tracing, architecture review, API surface analysis, context building, and semantic questions
-- **MCP Adapter**: `langchain-mcp-adapters` (MultiServerMCPClient)
+- **CodeGraph** (stdio transport): 4 agentic tools — `agentic_context`, `agentic_impact`, `agentic_architecture`, `agentic_quality`
+- **MCP Config**: `.mcp.json` (Claude Code native MCP connection)
+- **MCP Adapter** (optional): `langchain-mcp-adapters` — custom LangChain agent 구축 시 필요 (`uv add langchain-mcp-adapters`)
 
 ### URN Schema
 
@@ -76,16 +77,16 @@ All entities are identified via local URNs:
 
 ### GSD Document-Driven Workflow
 
-Tasks follow: `SPEC.md` (requirements) → `PLAN.md` (execution plan with XML tasks) → `DECISIONS.md` (ADRs). GSD state files live in `.gsd/` and project specs in `.specs/`.
+Tasks follow: `SPEC.md` (requirements) → `PLAN.md` (execution plan with XML tasks) → `DECISIONS.md` (ADRs). All GSD working documents live in `.gsd/`. The `.specs/` directory contains static templates only.
 
 ## Code Style
 
 - **Ruff**: target Python 3.11, line-length 100, rules: E, F, I, N, W (E501 ignored)
 - Use `TypedDict` for state definitions
-- Use `langchain-mcp-adapters` for MCP connections
+- MCP connections: Claude Code uses `.mcp.json`; custom agents use `langchain-mcp-adapters` (optional)
 
 ## Agent Boundaries (from agent.md)
 
-- **Always**: Run dependency/impact analysis before refactoring; read `.specs/SPEC.md` before implementation
+- **Always**: Run dependency/impact analysis before refactoring; read `.gsd/SPEC.md` before implementation
 - **Ask First**: Adding external dependencies, deleting files outside your task scope
 - **Never**: Read/print `.env` files, commit hardcoded secrets, assume API signatures without verification

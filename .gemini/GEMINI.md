@@ -148,5 +148,5 @@ Before "Done"    → Empirical proof captured
 
 ---
 
-*GSD Methodology adapted for Google Antigravity*
+*GSD Methodology for AI Agent Development*
 *Source: https://github.com/glittercowboy/get-shit-done*

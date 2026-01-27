@@ -11,8 +11,8 @@ AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이�
 ├── .gemini/           — Gemini 설정
 ├── .github/           — GitHub 에이전트 스펙 & 이슈 템플릿
 ├── .gsd/              — GSD 문서, 템플릿, 예제
-├── .specs/            — 프로젝트 명세 (SPEC, PLAN, DECISIONS)
-├── mcp/               — 로컬 MCP 서버 설정
+├── .specs/            — 명세 템플릿 (실제 문서는 .gsd/에 생성)
+├── .mcp.json          — MCP 서버 연결 설정 (Claude Code)
 ├── scripts/           — 유틸리티 스크립트
 ├── .env.example       — 환경변수 템플릿
 ├── codegraph.toml     — CodeGraph 설정
@@ -62,7 +62,7 @@ codegraph start stdio --watch
 /verify         → 필수 요구사항 검증
 ```
 
-전체 25개 명령어: `/help` 참조
+전체 27개 워크플로우: `/help` 참조
 
 ### 5. 스펙 검증
 
@@ -80,7 +80,7 @@ python scripts/validate_spec.py
 
 ## 핵심 도구
 
-- **CodeGraph**: 로컬 AST 인덱싱 (7개 agentic 도구 제공)
+- **CodeGraph**: 로컬 AST 인덱싱 (4개 agentic 도구 제공)
 - **MCP Protocol**: Model Context Protocol 기반 도구 통합
 - **GSD**: 문서 기반 개발 방법론 (SPEC → PLAN → DECISIONS)
 
@@ -96,5 +96,5 @@ urn:local:{project_id}:{file_path}:{symbol}
 
 1. `.env.example` — `PROJECT_ID` 설정
 2. `codegraph.toml` — 인덱싱 대상 언어/경로 조정
-3. `.specs/SPEC.md` — 프로젝트 요구사항 정의
-4. `mcp/config.json` — MCP 서버 설정
+3. `.gsd/SPEC.md` — 프로젝트 요구사항 정의 (`/new-project`로 생성)
+4. `.mcp.json` — MCP 서버 연결 설정

@@ -4,9 +4,13 @@ description: Standard workflow for fixing a bug
 
 # Bug Fix Workflow
 
+<objective>
+Guide bug fix through the GSD methodology: reproduce, locate, analyze impact, fix, verify, and update state.
+</objective>
+
 ## Prerequisites
 - [ ] Bug is reproducible
-- [ ] Issue is documented in `.specs/PLAN.md`
+- [ ] Issue is documented in `.gsd/TODO.md` or `.gsd/ROADMAP.md`
 
 ## Steps
 
@@ -14,9 +18,9 @@ description: Standard workflow for fixing a bug
 Confirm the bug exists. Document reproduction steps.
 
 ### 2. Locate
-Use `codegraph_search` to find relevant code.
+Use `agentic_context` to find relevant code.
 ```
-codegraph_search(query="ErrorComponent")
+agentic_context(query="ErrorComponent")
 ```
 
 ### 3. Impact Analysis
@@ -31,11 +35,22 @@ Implement the minimal change that resolves the issue.
 ### 5. Test
 Run the test suite to confirm the fix doesn't break anything.
 ```bash
-npm run test
+uv run pytest tests/
 ```
 
 ### 6. Regression Check
 If dependencies were affected, add tests for them.
 
 ### 7. Update State
-Mark the bug as resolved in `.specs/PLAN.md`.
+Mark the bug as resolved in `.gsd/STATE.md`.
+Log the fix in `.gsd/JOURNAL.md`.
+
+<related>
+## Related
+
+| Command | Relationship |
+|---------|--------------|
+| `/debug` | Systematic debugging for complex bugs |
+| `/verify` | Validates the fix against requirements |
+| `/execute` | For planned bug-fix tasks |
+</related>

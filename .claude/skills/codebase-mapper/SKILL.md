@@ -64,30 +64,34 @@ Surface issues to address:
 ### Phase 1: Project Type Detection
 
 Identify project type from markers:
-```powershell
+```bash
 # Node.js/JavaScript
-Test-Path "package.json"
+test -f "package.json"
 
 # Python
-Test-Path "requirements.txt" -or Test-Path "pyproject.toml"
+test -f "requirements.txt" || test -f "pyproject.toml"
 
 # Rust
-Test-Path "Cargo.toml"
+test -f "Cargo.toml"
 
 # Go
-Test-Path "go.mod"
+test -f "go.mod"
 
 # .NET
-Get-ChildItem "*.csproj"
+ls *.csproj 2>/dev/null
 ```
 
 ### Phase 2: Structure Scan
 
-```powershell
-# Get directory structure
-Get-ChildItem -Recurse -Directory | 
-    Where-Object { $_.Name -notmatch "node_modules|\.git|__pycache__|dist|build|\.next" } |
-    Select-Object FullName
+```bash
+# Get directory structure (excluding common non-source dirs)
+find . -type d \
+    -not -path "*/node_modules/*" \
+    -not -path "*/.git/*" \
+    -not -path "*/__pycache__/*" \
+    -not -path "*/dist/*" \
+    -not -path "*/build/*" \
+    -not -path "*/.next/*"
 ```
 
 ### Phase 3: Dependency Extraction
@@ -95,42 +99,43 @@ Get-ChildItem -Recurse -Directory |
 For each ecosystem:
 
 **Node.js:**
-```powershell
-$pkg = Get-Content "package.json" | ConvertFrom-Json
-$pkg.dependencies
-$pkg.devDependencies
+```bash
+cat package.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('dependencies',{})); print(d.get('devDependencies',{}))"
 ```
 
 **Python:**
-```powershell
-Get-Content "requirements.txt"
+```bash
+# pyproject.toml (uv/poetry)
+cat pyproject.toml
+# requirements.txt (pip)
+cat requirements.txt
 ```
 
 ### Phase 4: Pattern Discovery
 
 Search for common patterns:
-```powershell
+```bash
 # Components
-Get-ChildItem -Recurse -Include "*.tsx","*.jsx" | Select-Object Name
+find . -type f \( -name "*.tsx" -o -name "*.jsx" \) -not -path "*/node_modules/*"
 
 # API routes
-Get-ChildItem -Recurse -Path "**/api/**" -Include "*.ts","*.js"
+find . -path "*/api/*" -type f \( -name "*.ts" -o -name "*.js" \)
 
 # Models/schemas
-Select-String -Path "**/*.ts" -Pattern "interface|type|schema"
+grep -rn "interface\|type\|schema" --include="*.ts"
 ```
 
 ### Phase 5: Debt Discovery
 
-```powershell
+```bash
 # TODOs
-Select-String -Path "src/**/*" -Pattern "TODO|FIXME|HACK|XXX"
+grep -rn "TODO\|FIXME\|HACK\|XXX" src/
 
 # Deprecated
-Select-String -Path "**/*" -Pattern "@deprecated|DEPRECATED"
+grep -rn "@deprecated\|DEPRECATED" .
 
 # Console statements (often debug leftovers)
-Select-String -Path "src/**/*" -Pattern "console\.(log|debug|warn)"
+grep -rn "console\.\(log\|debug\|warn\)" src/
 ```
 
 ---

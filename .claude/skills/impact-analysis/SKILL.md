@@ -1,6 +1,6 @@
 ---
 name: impact-analysis
-description: 코드 변경 전 영향도를 분석하여 리그레션을 방지합니다.
+description: Analyzes change impact before code modifications to prevent regression
 version: 1.2.0
 allowed-tools:
   - agentic_impact
@@ -18,8 +18,8 @@ trigger: "Before ANY code modification or refactoring"
 
 ## 📋 Prerequisites
 
-- CodeGraph index must be up-to-date (`codegraph index --tier balanced`)
-- MCP server must be running (`python mcp/server.py`)
+- CodeGraph index must be up-to-date (`codegraph index . -r`)
+- MCP server must be running (`codegraph start stdio --watch`)
 
 ---
 
@@ -53,7 +53,7 @@ Check the following areas in the report:
 
 ### Step 4: Plan Mitigation
 If high impact is detected:
-1. Update `.specs/PLAN.md` to include verification steps
+1. Update `.gsd/STATE.md` to include verification steps
 2. Add affected dependent modules to test scope
 3. Consider incremental rollout strategy
 

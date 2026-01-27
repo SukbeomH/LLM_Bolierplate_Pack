@@ -120,3 +120,4 @@ tmp/
 temp/
 *.tmp
 *.bak
+settings.local.json

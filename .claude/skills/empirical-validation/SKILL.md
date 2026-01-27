@@ -44,7 +44,7 @@ description: Requires proof before marking work complete — no "trust me, it wo
 ## Examples
 
 ### API Endpoint Verification
-```powershell
+```bash
 # Good: Actual test showing response
 curl -X POST http://localhost:3000/api/login -d '{"email":"test@test.com"}' 
 # Output: {"success":true,"token":"..."}
@@ -63,7 +63,7 @@ curl -X POST http://localhost:3000/api/login -d '{"email":"test@test.com"}'
 ```
 
 ### Build Verification
-```powershell
+```bash
 # Good: Show build output
 npm run build
 # Output: Successfully compiled...
@@ -85,7 +85,7 @@ Never use these as justification for completion:
 This skill integrates with:
 - `/verify` — Primary workflow using this skill
 - `/execute` — Must validate before marking tasks complete
-- Rule 4 in `GEMINI.md` — Empirical Validation enforcement
+- `.gemini/GEMINI.md` Rule 4 (Empirical Validation) — Every change MUST be verified with empirical evidence (screenshot, command output, test result) before marking complete
 
 ## Failure Handling
 
