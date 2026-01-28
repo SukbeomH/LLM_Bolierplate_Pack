@@ -9,7 +9,7 @@
 Thumbs.db
 .cursor/
 .idea/
-.vscode/
+# .vscode/ — 팀 공유를 위해 추적 (개인 설정은 .vscode/*.code-workspace에 분리)
 *.swp
 *.swo
 
@@ -72,11 +72,11 @@ yarn-error.log*
 secrets/
 
 # ─────────────────────────────────────────────────────
-# CodeGraph & Project
+# Project
 # ─────────────────────────────────────────────────────
 
-# CodeGraph index data (regenerated on demand)
-.codegraph/
+# code-graph-rag index data (regenerated on demand)
+.graph-index/
 
 # Local logs
 .logs/
@@ -91,6 +91,15 @@ secrets/
 # Agent memory (ephemeral)
 .agent/memory.jsonl
 **/memory.jsonl
+
+# System prompt patching workspace (make patch-prompt)
+.patch-workspace/
+
+# External reference repos (not part of boilerplate core)
+awesome-claude-code/
+claude-code-tips/
+everything-claude-code/
+ralph/
 
 # ─────────────────────────────────────────────────────
 # Docker
