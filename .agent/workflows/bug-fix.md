@@ -18,15 +18,15 @@ Guide bug fix through the GSD methodology: reproduce, locate, analyze impact, fi
 Confirm the bug exists. Document reproduction steps.
 
 ### 2. Locate
-Use `agentic_context` to find relevant code.
+Use `query_code_graph` to find relevant code.
 ```
-agentic_context(query="ErrorComponent")
+query_code_graph("find code related to ErrorComponent")
 ```
 
 ### 3. Impact Analysis
 Identify all affected paths before fixing.
 ```
-agentic_impact(file_paths=["src/buggy_file.py"])
+query_code_graph("what depends on src/buggy_file.py? what would break if I change it?")
 ```
 
 ### 4. Fix

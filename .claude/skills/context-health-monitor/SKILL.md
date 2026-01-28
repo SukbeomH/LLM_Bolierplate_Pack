@@ -20,7 +20,8 @@ The agent should self-monitor for these warning signs:
 | Repeated debugging | 3+ failed attempts | Trigger state dump |
 | Going in circles | Same approach tried twice | Stop and reassess |
 | Confusion indicators | "I'm not sure", backtracking | Document uncertainty |
-| Session length | Extended back-and-forth | Recommend `/pause` |
+| Context window filling | >60% token usage | Run `/compact` proactively |
+| Session length | Extended back-and-forth | Recommend `/pause` or `/handoff` |
 
 ## Behavior Rules
 
@@ -56,6 +57,15 @@ When uncertain about an approach:
    - Alternatives considered
 3. **Ask** user for guidance rather than guessing
 
+### Rule 4: Proactive Compaction
+
+When context window usage exceeds ~60%:
+
+1. **Run** `/compact` before auto-compaction kicks in (~80%)
+2. **If task is nearly done**: finish first, then compact
+3. **If task is complex with much remaining work**: compact now to preserve budget
+4. **If context is beyond recovery** (repeated compactions, degrading quality): use `/handoff` and start fresh
+
 ## State Dump Format
 
 When triggered, write to `.gsd/STATE.md`:
@@ -86,6 +96,8 @@ When triggered, write to `.gsd/STATE.md`:
 ## Integration
 
 This skill integrates with:
-- `/pause` — Triggers proper session handoff
+- `/compact` — Proactive context compaction (Rule 4)
+- `/handoff` — Lightweight session transfer when context is beyond recovery
+- `/pause` — Full GSD session handoff with state archival
 - `/resume` — Loads the state dump context
 - `.gemini/GEMINI.md` Rule 3 (Context Hygiene) — After 3 failed debug attempts: STOP, summarize to STATE.md, document blocker in DECISIONS.md, recommend fresh session

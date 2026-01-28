@@ -1,9 +1,9 @@
 ---
 name: impact-analysis
 description: Analyzes change impact before code modifications to prevent regression
-version: 1.2.0
+version: 2.0.0
 allowed-tools:
-  - agentic_impact
+  - query_code_graph
   - Read
 trigger: "Before ANY code modification or refactoring"
 ---
@@ -15,14 +15,14 @@ trigger: "Before ANY code modification or refactoring"
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
-- CodeGraph index must be up-to-date (`codegraph index . -r`)
-- MCP server must be running (`codegraph start stdio --watch`)
+- Memgraph must be running (`docker compose up -d`)
+- code-graph-rag MCP server must be configured in `.mcp.json`
 
 ---
 
-## 🚦 Procedure
+## Procedure
 
 ### Step 1: Identify Targets
 List the files you intend to modify.
@@ -32,11 +32,10 @@ target_files = ["src/utils.py", "src/models.py"]
 ```
 
 ### Step 2: Run Impact Analysis
-Execute the `agentic_impact` tool with the target file list.
+Execute the `query_code_graph` tool with a dependency/impact query.
 
-```python
-# Using MCP tool
-result = await agentic_impact(file_paths=target_files)
+```
+query_code_graph("what depends on src/utils.py and src/models.py? what would break if I change them?")
 ```
 
 ### Step 3: Review Impact Report
@@ -58,17 +57,17 @@ If high impact is detected:
 
 ---
 
-## ⚠️ Compliance Rules
+## Compliance Rules
 
 | Rule | Description |
 |------|-------------|
 | **Mandatory** | You MUST NOT skip this step for any file modification |
-| **Exception** | New standalone files don't require analysis (but run `codegraph index` after) |
+| **Exception** | New standalone files don't require analysis (but run `index_repository` after) |
 | **Escalation** | If impact score > 7, require human approval before proceeding |
 
 ---
 
-## 📊 Output Format
+## Output Format
 
 ```json
 {

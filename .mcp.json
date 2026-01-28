@@ -1,16 +1,20 @@
 {
   "mcpServers": {
-    "codegraph": {
+    "graph-code": {
       "type": "stdio",
-      "command": "codegraph",
-      "args": ["start", "stdio", "--watch"],
+      "command": "uv",
+      "args": ["run", "--directory", "${CODE_GRAPH_RAG_PATH}", "graph-code", "mcp-server"],
       "env": {
-        "CODEGRAPH_SURREALDB_URL": "${CODEGRAPH_SURREALDB_URL}",
-        "CODEGRAPH_SURREALDB_NAMESPACE": "${CODEGRAPH_SURREALDB_NAMESPACE}",
-        "CODEGRAPH_SURREALDB_DATABASE": "${CODEGRAPH_SURREALDB_DATABASE}",
-        "CODEGRAPH_SURREALDB_USERNAME": "${CODEGRAPH_SURREALDB_USERNAME}",
-        "CODEGRAPH_SURREALDB_PASSWORD": "${CODEGRAPH_SURREALDB_PASSWORD}"
+        "TARGET_REPO_PATH": "${TARGET_REPO_PATH}",
+        "CYPHER_PROVIDER": "${CYPHER_PROVIDER}",
+        "CYPHER_MODEL": "${CYPHER_MODEL}",
+        "CYPHER_API_KEY": "${CYPHER_API_KEY}"
       }
+    },
+    "memorygraph": {
+      "type": "stdio",
+      "command": "memorygraph",
+      "args": ["--profile", "extended"]
     },
     "context7": {
       "type": "http",
@@ -19,5 +23,6 @@
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
     }
-  }
+  },
+  "enable_tool_search": true
 }

@@ -51,7 +51,8 @@ PHASE MANAGEMENT
 NAVIGATION & STATE
 ──────────────────
 /progress         Show current position in roadmap
-/pause            Save state for session handoff
+/pause            Save state for session handoff (full GSD)
+/handoff          Lightweight handoff → HANDOFF.md
 /resume           Restore from last session
 /add-todo         Quick capture idea
 /check-todos      List pending items
@@ -59,6 +60,7 @@ NAVIGATION & STATE
 UTILITIES
 ─────────
 /help             Show this help
+/fork             Fork conversation (built-in)
 
 ───────────────────────────────────────────────────────
 

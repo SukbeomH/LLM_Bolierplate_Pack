@@ -4,89 +4,85 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이트. CodeGraph AST 인덱싱과 GSD(Get Shit Done) 문서 기반 방법론을 사용합니다.
+AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이트. code-graph-rag(AST 인덱싱) + memory-graph(에이전트 기억)와 GSD(Get Shit Done) 문서 기반 방법론을 결합.
 
 Primary language is Python 3.11+. Documentation is bilingual (Korean/English).
 
 ## Repository Layout
 
-- **.agent/** — Agent symlinks, GSD workflows (27 commands)
-- **.claude/skills/** — Modular skill definitions (SKILL.md per skill)
-- **.github/agents/** — GitHub Agent specification (agent.md)
-- **.gsd/** — GSD methodology: templates, examples, state documents
-- **.specs/** — Project spec templates (SPEC.md, PLAN.md, DECISIONS.md) — 실제 문서는 `.gsd/`에 생성
-- **.mcp.json** — MCP server connection configuration (Claude Code)
-- **scripts/** — Utility scripts (validate_spec.py)
+- **.agent/** — GSD workflows (29 commands)
+- **.claude/skills/** — Modular skill definitions (14 skills)
+- **.github/agents/** — GitHub Agent specification
+- **.gsd/** — GSD documents: templates, examples, state (SPEC, PLAN, DECISIONS, STATE, JOURNAL)
+- **.mcp.json** — MCP server config (graph-code, memorygraph, context7)
+- **scripts/** — Utility scripts
 
-## Build & Development Commands
+## Commands
 
-**Package manager is `uv` — never use pip or poetry directly.**
+**Package manager: `uv` only. Never use pip or poetry.**
 
 ```bash
 uv sync                              # Install/sync dependencies
-uv add <package>                     # Add dependency
-uv add <package> --dev               # Add dev dependency
-
-uv run pytest tests/                 # Run all tests
-uv run pytest tests/ -k "test_name"  # Run specific test
-
-uv run ruff check .                  # Lint
-uv run ruff check --fix .            # Lint with auto-fix
+uv add <package> [--dev]             # Add dependency
+uv run pytest tests/ [-k "name"]     # Run tests
+uv run ruff check . [--fix]          # Lint
 uv run mypy .                        # Type check
 ```
 
-### CodeGraph Rust (external tool)
-
 ```bash
-codegraph index . -r -l python,typescript,rust   # Index codebase
-codegraph start stdio --watch                     # Start MCP server (stdio)
-codegraph index . -r --force                      # Force re-index
-```
-
-### Spec Validation
-
-```bash
-python scripts/validate_spec.py                   # Validate SPEC.md integrity
-```
-
-## Infrastructure
-
-```bash
-make setup                    # Full setup: SurrealDB + DB init + CodeGraph index
-make up                       # SurrealDB 시작
-make down                     # SurrealDB 중지
-make init-db                  # SurrealDB namespace/database 생성
-make status                   # 컨테이너 상태 확인
-make logs                     # SurrealDB 로그
-make clean                    # Docker volume + CodeGraph 인덱스 삭제
+make setup                    # Full setup (install → env → Memgraph → index)
+make up / down / status       # Memgraph lifecycle
+make index                    # code-graph-rag indexing
+make check-deps               # Verify prerequisites
+make clean                    # Docker volume + index cleanup
+make patch-prompt             # System prompt patching (토큰 절감)
+make patch-restore            # Patch 원복
+make patch-clean              # Patch workspace 삭제
 ```
 
 ## Architecture
 
-### CodeGraph + MCP
-
-The system uses CodeGraph for local AST analysis via MCP Protocol:
-- **CodeGraph** (stdio transport): 4 agentic tools — `agentic_context`, `agentic_impact`, `agentic_architecture`, `agentic_quality`
-- **MCP Config**: `.mcp.json` (Claude Code native MCP connection)
-- **MCP Adapter** (optional): `langchain-mcp-adapters` — custom LangChain agent 구축 시 필요 (`uv add langchain-mcp-adapters`)
-
-### URN Schema
-
-All entities are identified via local URNs:
-- `urn:local:{project_id}:{file_path}:{symbol}`
-
-### GSD Document-Driven Workflow
-
-Tasks follow: `SPEC.md` (requirements) → `PLAN.md` (execution plan with XML tasks) → `DECISIONS.md` (ADRs). All GSD working documents live in `.gsd/`. The `.specs/` directory contains static templates only.
+- **code-graph-rag** (MCP stdio): `query_code_graph`, `index_repository` — 코드 탐색 시 파일 직접 읽기보다 우선 사용
+- **memory-graph** (MCP stdio): `store_memory`, `recall_memories`, `search_memories`, `create_domain`, `select_domain`
+- **MCP Config**: `.mcp.json` — 도구 상세는 `.github/agents/agent.md` Section 4-5 참조
+- **GSD Workflow**: SPEC.md → PLAN.md → EXECUTE → VERIFY. Working docs in `.gsd/`
 
 ## Code Style
 
-- **Ruff**: target Python 3.11, line-length 100, rules: E, F, I, N, W (E501 ignored)
+See `pyproject.toml` for full Ruff/Mypy configuration. Key constraints:
+- Line-length 100, max-complexity 10, max-args 6
 - Use `TypedDict` for state definitions
-- MCP connections: Claude Code uses `.mcp.json`; custom agents use `langchain-mcp-adapters` (optional)
+- `*Factory`, `Create*` patterns exempt from naming rules
 
-## Agent Boundaries (from agent.md)
+## Validation & Testing
 
-- **Always**: Run dependency/impact analysis before refactoring; read `.gsd/SPEC.md` before implementation
-- **Ask First**: Adding external dependencies, deleting files outside your task scope
-- **Never**: Read/print `.env` files, commit hardcoded secrets, assume API signatures without verification
+검증은 경험적 증거 기반. "잘 되는 것 같다"는 증거가 아님.
+
+- **결과 우선**: 기능 동작 확인 후 스타일 수정. 기능이 깨지면 실패
+- **실패 전수 보고**: 모든 실패를 수집하여 보고 (첫 번째에서 멈추지 않음)
+- **조건부 성공**: 실제 결과 확인 후에만 성공 출력. 무조건적 "All tests passed!" 금지
+- **3회 연속 실패 시**: 접근 방식 변경 — 웹 검색, 공식 문서, 또는 fresh session
+- **mock 최소화**: 외부 API/네트워크만 mock. 실제 객체 우선
+- **새 기능 = 새 테스트**: 버그 수정 시 회귀 테스트 추가
+
+## Agent Boundaries
+
+### Always
+- `query_code_graph` for impact analysis before refactoring or deleting code
+- Read `.gsd/SPEC.md` before implementation
+- Verify empirically — 명령 실행 결과로 증명
+- Atomic commits per task
+
+### Ask First
+- Adding external dependencies (`uv add`)
+- Deleting files outside task scope
+- Changing public API signatures or database schema
+- Architectural decisions affecting 3+ modules
+
+### Never
+- Read/print `.env` or credential files
+- Commit hardcoded secrets or API keys
+- Assume API signatures without verification
+- Skip failing tests to "fix later"
+- Print unconditional success messages without verification
+- Use `--dangerously-skip-permissions` outside containers

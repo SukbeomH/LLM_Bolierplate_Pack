@@ -1,9 +1,9 @@
 ---
 name: arch-review
 description: Validates architectural rules and ensures design quality
-version: 1.2.0
+version: 2.0.0
 allowed-tools:
-  - agentic_architecture
+  - query_code_graph
   - Read
 trigger: "Before merging PRs or completing major features"
 ---
@@ -11,27 +11,24 @@ trigger: "Before merging PRs or completing major features"
 # Skill: Architecture Review
 
 > **Goal**: Validate code changes against architectural rules and patterns.
-> **Scope**: Uses Local (CodeGraph) knowledge for architecture validation.
+> **Scope**: Uses code-graph-rag for architecture validation.
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
-- CodeGraph index must be up-to-date (`codegraph index . -r`)
+- Memgraph must be running (`docker compose up -d`)
+- code-graph-rag MCP server must be configured in `.mcp.json`
 
 ---
 
-## 🚦 Procedure
+## Procedure
 
 ### Step 1: Run Local Architecture Check
-Use CodeGraph to verify local structure compliance.
+Use code-graph-rag to verify local structure compliance.
 
-```python
-# Check for layering violations
-result = await agentic_architecture(
-    check_type="layer_dependency",
-    scope="src/"
-)
+```
+query_code_graph("check architecture layering violations in src/")
 ```
 
 ### Step 2: Verify Boundary Compliance
@@ -48,7 +45,7 @@ Compile findings into a structured report.
 
 ---
 
-## 📊 Output Format
+## Output Format
 
 ```json
 {
@@ -68,7 +65,7 @@ Compile findings into a structured report.
 
 ---
 
-## ⚠️ Escalation Matrix
+## Escalation Matrix
 
 | Severity | Action |
 |----------|--------|

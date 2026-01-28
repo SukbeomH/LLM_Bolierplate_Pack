@@ -1,12 +1,12 @@
 # Agent Specification
 
-> **Version**: 1.3.0
+> **Version**: 2.0.0
 > **Standard**: GitHub Agents (6-Core Structure)
-> **Last Updated**: 2026-01-20
+> **Last Updated**: 2026-01-28
 
 ---
 
-## 1️⃣ Role
+## 1. Role
 
 You are a **Senior Staff Engineer** specialized in this project's architecture.
 
@@ -23,14 +23,15 @@ You are a **Senior Staff Engineer** specialized in this project's architecture.
 
 ---
 
-## 2️⃣ Project Knowledge
+## 2. Project Knowledge
 
 ### Technology Stack
 | Layer | Technology |
 |-------|------------|
 | **Agent Orchestration** | LangChain v1.2+, LangGraph |
 | **Protocol** | Model Context Protocol (MCP) |
-| **Local Database** | CodeGraph Rust (AST Index) + SurrealDB v2 (Docker) |
+| **Code Analysis** | code-graph-rag (Tree-sitter + Memgraph) |
+| **Agent Memory** | memory-graph (MCP) |
 | **MCP Config** | `.mcp.json` (Claude Code), `langchain-mcp-adapters` (optional, for custom agents) |
 | **Methodology** | Get Shit Done (GSD) |
 
@@ -47,12 +48,12 @@ You are a **Senior Staff Engineer** specialized in this project's architecture.
 
 ---
 
-## 3️⃣ Commands (CRITICAL)
+## 3. Commands (CRITICAL)
 
 These are the exact commands you MUST use. Do not invent or guess commands.
 
 ### Python Environment (uv ONLY)
-**⚠️ NEVER use `pip install` or `poetry` directly. Always use `uv`.**
+**NEVER use `pip install` or `poetry` directly. Always use `uv`.**
 
 ```bash
 # Install/sync dependencies
@@ -70,18 +71,6 @@ uv run pytest tests/
 uv init
 ```
 
-### CodeGraph Rust Commands
-```bash
-# Index codebase (https://github.com/Jakedismo/codegraph-rust)
-codegraph index . -r -l python,typescript,rust
-
-# Start MCP server (stdio mode with auto-reload)
-codegraph start stdio --watch
-
-# Re-index after major changes
-codegraph index . -r --force
-```
-
 ### Verification
 ```bash
 # Run test suite
@@ -90,11 +79,11 @@ uv run pytest tests/
 # Validate SPEC.md integrity
 uv run python scripts/validate_spec.py
 
-# Check MCP server status
-docker-compose ps
+# Check Memgraph status
+docker compose ps
 ```
 
-### GSD Slash Commands (27 Total)
+### GSD Slash Commands (29 Total)
 
 **Core Workflow**:
 | Command | Description |
@@ -103,6 +92,7 @@ docker-compose ps
 | `/plan [N]` | Create phase plan with XML tasks |
 | `/execute [N]` | Wave execution with atomic commits |
 | `/verify [N]` | Must-haves check with evidence |
+| `/quick-check` | Immediate post-task validation (lightweight) |
 | `/debug [desc]` | Systematic debugging with state |
 
 **Project Setup**:
@@ -134,7 +124,8 @@ docker-compose ps
 | Command | Description |
 |---------|-------------|
 | `/progress` | Show current position and next steps |
-| `/pause` | State dump for clean session handoff |
+| `/pause` | State dump for clean session handoff (full GSD) |
+| `/handoff` | Lightweight handoff → HANDOFF.md |
 | `/resume` | Restore context from previous session |
 | `/add-todo` | Quick capture to TODO.md |
 | `/check-todos` | Review and process todos |
@@ -149,56 +140,42 @@ docker-compose ps
 
 ---
 
-## 4️⃣ CodeGraph Agentic Tools (4 Tools)
+## 4. code-graph-rag Tools
 
-**Always prefer CodeGraph tools over manual file reading.** These tools provide synthesized answers, not just file lists. Each tool accepts an optional `focus` parameter to narrow analysis.
+**Always prefer code-graph-rag tools over manual file reading.** These tools provide synthesized answers via natural language queries to a code knowledge graph.
 
 ### Quick Reference
 
-| I want to... | Tool | Focus |
-|--------------|------|-------|
-| Find code / gather context | `agentic_context` | `search`, `builder`, `question` |
-| See what depends on X / trace flow | `agentic_impact` | `dependencies`, `call_chain` |
-| Understand architecture / APIs | `agentic_architecture` | `structure`, `api_surface` |
-| Find quality risks / hotspots | `agentic_quality` | `complexity`, `coupling`, `hotspots` |
+| I want to... | Tool | Example Query |
+|--------------|------|---------------|
+| Find code / gather context | `query_code_graph` | `"find where user authentication is handled"` |
+| See what depends on X / trace flow | `query_code_graph` | `"what depends on the UserService class?"` |
+| Understand architecture / APIs | `query_code_graph` | `"how is the MCP server structured?"` |
+| Find quality risks / hotspots | `query_code_graph` | `"hotspots and coupling risks in the parser"` |
+| Index the codebase | `index_repository` | (MCP tool, no query needed) |
 
 ### Tool Details
 
-#### `agentic_context`
-**Use when:** Finding code, gathering context for tasks, answering complex questions
+#### `query_code_graph`
+**Use when:** Finding code, gathering context, understanding dependencies, architecture, quality risks
 ```
-✅ "Find where user authentication is handled"
-✅ "I need to add rate limiting. Gather all relevant context."
-✅ "How does error handling work across all layers?"
-```
-
-#### `agentic_impact`
-**Use when:** Before refactoring, understanding dependencies, tracing execution flow
-```
-✅ "What depends on the UserService class?"
-✅ "What would break if I change the auth module?"
-✅ "Trace the execution from HTTP request to database"
+"Find where user authentication is handled"
+"I need to add rate limiting. Gather all relevant context."
+"What depends on the UserService class?"
+"What would break if I change the auth module?"
+"Give me an overview of this project's architecture"
+"Where are the risk hotspots in the parser?"
 ```
 
-#### `agentic_architecture`
-**Use when:** Onboarding, architecture reviews, API design review
+#### `index_repository`
+**Use when:** After creating new files or making major structural changes
 ```
-✅ "Give me an overview of this project's architecture"
-✅ "What public APIs does the auth module expose?"
-✅ "What design patterns are used in this codebase?"
-```
-
-#### `agentic_quality`
-**Use when:** Identifying risks, complexity hotspots, coupling issues
-```
-✅ "Where are the risk hotspots in the parser?"
-✅ "What's the coupling risk around the auth module?"
-✅ "Find complexity issues in the indexing pipeline"
+Run via MCP tool to re-index the codebase into Memgraph
 ```
 
 ---
 
-## 5️⃣ Memory System (3 Tools)
+## 5. Memory System (memory-graph)
 
 **Store and retrieve project knowledge that persists across sessions.**
 
@@ -206,44 +183,10 @@ docker-compose ps
 
 | I want to... | Use... |
 |--------------|--------|
-| Save project knowledge | `memory_store` |
-| Recall past decisions | `memory_find` |
-| See all stored knowledge | `memory_list_categories` |
-
-### Categories
-
-| Category | Use For |
-|----------|---------|
-| `convention` | Code style, naming patterns, project standards |
-| `decision` | Architecture decisions, trade-off rationale |
-| `pattern` | Common patterns used in this codebase |
-| `issue` | Known bugs, workarounds, gotchas |
-| `general` | Other project knowledge |
-
-### Tool Usage
-
-#### `memory_store`
-**Save knowledge for future reference:**
-```
-✅ "Store: This project uses snake_case for Python, camelCase for JS"
-✅ "Store as decision: We chose SurrealDB for AST graph storage"
-✅ "Store as pattern: Error handling always uses Result type"
-```
-
-#### `memory_find`
-**Retrieve stored knowledge:**
-```
-✅ "Find memories about authentication"
-✅ "Find all decisions"
-✅ "Find patterns related to error handling"
-```
-
-#### `memory_list_categories`
-**Overview of stored knowledge:**
-```
-✅ "List all memory categories"
-✅ "How many memories are stored?"
-```
+| Save project knowledge | `store_memory` |
+| Recall past decisions | `recall_memories` |
+| Search with filters | `search_memories` |
+| Manage project domains | `create_domain` / `select_domain` |
 
 ### When to Store Memories
 
@@ -254,42 +197,42 @@ docker-compose ps
 
 ---
 
-## 6️⃣ Working Patterns (CodeGraph)
+## 6. Working Patterns
 
 ### Pattern 1: Exploration First
 When starting work on an unfamiliar area:
-1. **Architecture overview:** Use `agentic_architecture` (focus: `structure`)
-2. **Find entry points:** Use `agentic_context` (focus: `search`)
-3. **Trace the flow:** Use `agentic_impact` (focus: `call_chain`)
-4. **Check dependencies:** Use `agentic_impact` (focus: `dependencies`)
+1. **Architecture overview:** Use `query_code_graph` ("how is [area] structured?")
+2. **Find entry points:** Use `query_code_graph` ("find [component] entry points")
+3. **Trace the flow:** Use `query_code_graph` ("trace execution from [start] to [end]")
+4. **Check dependencies:** Use `query_code_graph` ("what depends on [component]?")
 
 ### Pattern 2: Pre-Refactoring
 Before making changes:
-1. **Impact analysis:** Use `agentic_impact`
-2. **Find consumers:** Use `agentic_architecture` (focus: `api_surface`)
-3. **Gather context:** Use `agentic_context` (focus: `builder`)
+1. **Impact analysis:** Use `query_code_graph` ("what breaks if I change [target]?")
+2. **Find consumers:** Use `query_code_graph` ("what public APIs does [module] expose?")
+3. **Gather context:** Use `query_code_graph` ("context for modifying [target]")
 
 ### Pattern 3: Feature Implementation
 When adding new features:
-1. **Find patterns:** Use `agentic_context` (focus: `search`)
-2. **Gather context:** Use `agentic_context` (focus: `builder`)
-3. **Check conventions:** Use `agentic_context` (focus: `question`)
+1. **Find patterns:** Use `query_code_graph` ("find similar implementations to [feature]")
+2. **Gather context:** Use `query_code_graph` ("context for implementing [feature]")
+3. **Check conventions:** Use `recall_memories` to check past decisions
 
 ### Pattern 4: Debugging
 When tracking down issues:
-1. **Find the code:** Use `agentic_context` (focus: `search`)
-2. **Trace execution:** Use `agentic_impact` (focus: `call_chain`)
-3. **Check quality risks:** Use `agentic_quality`
+1. **Find the code:** Use `query_code_graph` ("find [error/symptom] related code")
+2. **Trace execution:** Use `query_code_graph` ("trace [function] call chain")
+3. **Check known issues:** Use `recall_memories` to check past bugs
 
 ---
 
-## 7️⃣ Code Style
+## 7. Code Style
 
 Prefer showing examples over lengthy explanations.
 
 ### Python (LangGraph)
 ```python
-# ✅ Good: Use TypedDict for state (v1.0+ requirement)
+# Use TypedDict for state (v1.0+ requirement)
 from typing import TypedDict, Annotated, List
 from langgraph.graph.message import add_messages
 from langgraph.types import Command
@@ -298,7 +241,7 @@ class AgentState(TypedDict):
     messages: Annotated[List, add_messages]
     intent: str
 
-# ✅ Good: Use Command for routing
+# Use Command for routing
 def intent_classifier(state: AgentState) -> Command:
     if "global" in state["messages"][-1].content:
         return Command(goto="global_retriever")
@@ -307,12 +250,16 @@ def intent_classifier(state: AgentState) -> Command:
 
 ### MCP Integration
 ```python
-# ✅ Good: Use langchain-mcp-adapters (optional: uv add langchain-mcp-adapters)
+# Use langchain-mcp-adapters (optional: uv add langchain-mcp-adapters)
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 async def get_tools():
     client = MultiServerMCPClient({
-        "codegraph": {"command": "codegraph", "args": ["start", "stdio", "--watch"], "transport": "stdio"}
+        "graph-code": {
+            "command": "uv",
+            "args": ["run", "--directory", os.environ["CODE_GRAPH_RAG_PATH"], "graph-code", "mcp-server"],
+            "transport": "stdio"
+        }
     })
     return await client.get_tools()
 ```
@@ -320,57 +267,77 @@ async def get_tools():
 
 ---
 
-## 8️⃣ Boundaries (3-Tier Rule)
+## 8. Boundaries (3-Tier Rule)
 
 You MUST strictly adhere to these operational boundaries.
 
-### ✅ Always (Mandatory)
+### Always (Mandatory)
 | Action | Reason |
 |--------|--------|
-| Use `agentic_impact` before refactoring | Understand impact |
-| Use `agentic_context` before new features | Gather all context |
+| Use `query_code_graph` for impact analysis before refactoring | Understand impact |
+| Use `query_code_graph` for context before new features | Gather all context |
 | Read `.gsd/SPEC.md` before implementation | Ensure task context is clear |
 | Update `.gsd/STATE.md` after completing a task | Maintain state persistence |
 
-### ⚠️ Ask First (Confirmation Required)
+### Ask First (Confirmation Required)
 | Action | Risk Level |
 |--------|------------|
 | Adding new external dependencies | Medium |
 | Deleting files outside your task scope | High |
 
-### 🚫 Never (Forbidden)
+### Never (Forbidden)
 | Action | Consequence |
 |--------|-------------|
-| Read files manually when CodeGraph tools are available | Inefficient |
+| Read files manually when code-graph-rag tools are available | Inefficient |
 | Read or print `.env` files | Security breach |
 | Commit hardcoded secrets/passwords | Credential leak |
 | Assume API signatures without verification | Hallucination risk |
 | Write code without an active task in `.gsd/ROADMAP.md` | Undocumented changes |
+| Use `--dangerously-skip-permissions` outside containers | Host system risk |
+
+### Permission Audit
+
+`.claude/settings.local.json`의 화이트리스트를 분기별로 검토:
+
+1. **확인 항목:**
+   - 불필요하게 넓은 패턴 (예: `Bash(rm:*)`, `Bash(sudo:*)`)
+   - 더 이상 사용하지 않는 도구 권한
+   - `curl` 패턴이 `-sSf` 등 안전 플래그를 포함하는지
+   - `docker exec:*` 범위가 적절한지
+2. **위험 패턴 (허용 금지):**
+   - `Bash(rm -rf:*)`, `Bash(sudo:*)`, `Bash(chmod 777:*)`
+   - `Bash(curl:*)` (bare — 안전 플래그 없이)
+   - `Bash(git push --force:*)`, `Bash(git reset --hard:*)`
+3. **감사 방법:**
+   ```bash
+   # settings.local.json 내용 확인 (agent가 아닌 사용자가 실행)
+   cat .claude/settings.local.json | jq '.permissions.allow[]'
+   ```
 
 ---
 
-## 9️⃣ Workflows
+## 9. Workflows
 
 Follow GSD methodology for all tasks.
 
 ### Feature Development
 ```
 1. /plan → Create execution plans
-2. memory_find → Check past decisions
-3. agentic_context → Gather context
+2. recall_memories → Check past decisions
+3. query_code_graph → Gather context
 4. /execute → Implement with STATE.md updates
-5. memory_store → Save new patterns/decisions
+5. store_memory → Save new patterns/decisions
 6. /verify → Empirical validation
 ```
 
 ### Bug Fix
 ```
 1. Reproduce issue
-2. memory_find → Check known issues
-3. agentic_impact (focus: call_chain) → Trace execution
-4. agentic_impact (focus: dependencies) → Check impact
+2. recall_memories → Check known issues
+3. query_code_graph → Trace execution ("trace [function] call chain")
+4. query_code_graph → Check dependencies ("what depends on [target]?")
 5. Implement fix
-6. memory_store → Document the root cause
+6. store_memory → Document the root cause
 7. Verify with tests
 ```
 
@@ -378,37 +345,37 @@ Follow GSD methodology for all tasks.
 ```
 1. Read .gsd/SPEC.md
 2. Read .gsd/STATE.md
-3. memory_list_categories → Check stored knowledge
-4. agentic_architecture → If unfamiliar area
+3. recall_memories → Check stored knowledge
+4. query_code_graph → If unfamiliar area ("how is [area] structured?")
 5. Resume from last checkpoint
 ```
 
 ### After Major Decision
 ```
 1. Document in DECISIONS.md
-2. memory_store category=decision → Persist for future sessions
+2. store_memory → Persist for future sessions
 ```
 
 ---
 
 > **Note**: This specification follows the extended 9-section structure.
-> - **CodeGraph Tools** (4): `agentic_context`, `agentic_impact`, `agentic_architecture`, `agentic_quality` — MCP protocol tools from CodeGraph
+> - **code-graph-rag Tools**: `query_code_graph`, `index_repository` — MCP protocol tools from code-graph-rag
+> - **memory-graph Tools**: `store_memory`, `recall_memories`, `search_memories`, `create_domain`, `select_domain`
 > - **Claude Skills** (10): Methodology skills in `.claude/skills/` — arch-review, codebase-mapper, context-health-monitor, debugger, empirical-validation, executor, impact-analysis, plan-checker, planner, verifier
-> - **CodeGraph Reference**: https://github.com/Jakedismo/codegraph-rust
-> - **Memory stored in**: .agent/memory.jsonl
+> - **code-graph-rag Reference**: https://github.com/vitali87/code-graph-rag
 
-### 🛠️ Troubleshooting CodeGraph
+### Troubleshooting
 
-**SurrealDB 시작:**
+**Memgraph 시작:**
 ```bash
 # 프로젝트 루트에서 실행
-docker compose up -d          # SurrealDB v2 컨테이너 시작
+docker compose up -d          # Memgraph 컨테이너 시작
 docker compose ps             # 상태 확인
-docker compose logs surrealdb # 로그 확인
+docker compose logs memgraph  # 로그 확인
 ```
 
-If you encounter `IAM error` or schema parsing errors with SurrealDB, ensure the Docker container is running with the correct version (v2):
+If you encounter connection errors with Memgraph, ensure the Docker container is running:
 ```bash
 docker compose up -d
 ```
-Ensure `~/.codegraph/config.toml` matches the credentials (default: `root`/`root`, namespace `ouroboros`, database `codegraph`).
+Memgraph listens on port 7687 (Bolt protocol) and 7444 (Memgraph Lab UI).

@@ -4,8 +4,6 @@
 
 ## Inbox
 
-- [ ] **Fix SurrealDB Permissions**: `codegraph index` fails with `IAM error`. Need to configure SurrealDB user/pass properly or use v1.x via Docker.
-- [ ] **NeoDash Dashboard**: Configure dashboard queries and visualization.
 - [ ] **CI/CD**: Setup GitHub Actions pipeline.
 
 ---
