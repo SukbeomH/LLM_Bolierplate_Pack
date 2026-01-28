@@ -30,11 +30,11 @@ uv run mypy .                        # Type check
 ```
 
 ```bash
-make setup                    # Full setup (install → env → Memgraph → index)
-make up / down / status       # Memgraph lifecycle
+make setup                    # Full setup (install → env → index)
+make status                   # Tool & environment status
 make index                    # code-graph-rag indexing
 make check-deps               # Verify prerequisites
-make clean                    # Docker volume + index cleanup
+make clean                    # Index data + patch workspace cleanup
 make patch-prompt             # System prompt patching (토큰 절감)
 make patch-restore            # Patch 원복
 make patch-clean              # Patch workspace 삭제
@@ -42,7 +42,7 @@ make patch-clean              # Patch workspace 삭제
 
 ## Architecture
 
-- **code-graph-rag** (MCP stdio): `query_code_graph`, `index_repository` — 코드 탐색 시 파일 직접 읽기보다 우선 사용
+- **code-graph-rag** (MCP stdio, `@er77/code-graph-rag-mcp`): Tree-sitter + SQLite 기반 AST 코드 분석 — 26개 MCP 도구 (semantic search, clone detection, hotspot analysis 등). 코드 탐색 시 파일 직접 읽기보다 우선 사용
 - **memory-graph** (MCP stdio): `store_memory`, `recall_memories`, `search_memories`, `create_domain`, `select_domain`
 - **MCP Config**: `.mcp.json` — 도구 상세는 `.github/agents/agent.md` Section 4-5 참조
 - **GSD Workflow**: SPEC.md → PLAN.md → EXECUTE → VERIFY. Working docs in `.gsd/`

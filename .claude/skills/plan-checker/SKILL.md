@@ -281,3 +281,7 @@ issue:
 - After plan modifications
 
 Plan checker is the quality gate between planning and execution.
+
+## Scripts
+
+- `scripts/validate_plan.py`: Validate PLAN.md YAML frontmatter, task XML structure, and section completeness. Output: JSON blockers/warnings

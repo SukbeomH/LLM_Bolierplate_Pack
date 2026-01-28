@@ -229,3 +229,8 @@ Before Completing Map:
 - [ ] Technical debt surfaced
 - [ ] ARCHITECTURE.md created
 - [ ] STACK.md created
+
+## Scripts
+
+- `scripts/scan_structure.sh`: Scan project directory tree, file statistics, key files, and lines of code
+- `scripts/analyze_imports.py`: Build Python import dependency graph showing internal and external dependencies. Output: JSON or text

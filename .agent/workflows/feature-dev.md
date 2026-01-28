@@ -20,18 +20,18 @@ Read the relevant sections of `.gsd/SPEC.md` and `.gsd/ROADMAP.md`.
 Load the phase plan from `.gsd/phases/{N}/{M}-PLAN.md`.
 
 ### 2. Impact Analysis
-Run `query_code_graph` on the files you intend to modify.
+Run `analyze_code_impact` on the entities you intend to modify.
 ```
-query_code_graph("what depends on src/target_file.py? what would break if I change it?")
+analyze_code_impact(entityId: "target_module", depth: 2)
 ```
 
 ### 3. Implementation
 Write code following the plan. Commit after each sub-task.
 
 ### 4. Architecture Check
-If the change involves cross-module interaction, run `query_code_graph` to verify patterns.
+If the change involves cross-module interaction, run `query` to verify patterns.
 ```
-query_code_graph("check architecture and module boundaries for src/")
+query("check architecture and module boundaries for src/")
 ```
 
 ### 5. Verification
@@ -45,7 +45,7 @@ Mark the task as complete in `.gsd/STATE.md`.
 Update `.gsd/JOURNAL.md` if a significant milestone was reached.
 
 ### 7. Re-index (if new files created)
-Use the `index_repository` MCP tool to re-index the codebase.
+Use the `index` MCP tool to re-index the codebase.
 
 <related>
 ## Related

@@ -3,7 +3,10 @@ name: arch-review
 description: Validates architectural rules and ensures design quality
 version: 2.0.0
 allowed-tools:
-  - query_code_graph
+  - query
+  - analyze_hotspots
+  - list_entity_relationships
+  - detect_code_clones
   - Read
 trigger: "Before merging PRs or completing major features"
 ---
@@ -17,8 +20,8 @@ trigger: "Before merging PRs or completing major features"
 
 ## Prerequisites
 
-- Memgraph must be running (`docker compose up -d`)
-- code-graph-rag MCP server must be configured in `.mcp.json`
+- Node.js must be installed (`node --version`)
+- code-graph-rag MCP server must be configured in `.mcp.json` (`@er77/code-graph-rag-mcp`)
 
 ---
 
@@ -28,7 +31,7 @@ trigger: "Before merging PRs or completing major features"
 Use code-graph-rag to verify local structure compliance.
 
 ```
-query_code_graph("check architecture layering violations in src/")
+query("check architecture layering violations in src/")
 ```
 
 ### Step 2: Verify Boundary Compliance
@@ -73,3 +76,8 @@ Compile findings into a structured report.
 | MEDIUM | Require acknowledgment in DECISIONS.md |
 | HIGH | Block and require human approval |
 | CRITICAL | Stop all work, escalate to tech lead |
+
+## Scripts
+
+- `scripts/check_complexity.sh`: Check McCabe complexity, argument counts, and naming conventions via ruff
+- `scripts/find_circular_imports.py`: Detect circular import dependencies using DFS cycle detection. Output: JSON

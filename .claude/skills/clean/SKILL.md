@@ -84,3 +84,7 @@ Overall:      <CLEAN|ISSUES_REMAIN>
 - **Pre-execute**: Run `/clean` before `/execute` to ensure clean baseline
 - **Pre-commit**: `commit` skill calls clean checks automatically
 - **CI alignment**: Same tools as CI pipeline (`ruff check`, `mypy`, `pytest`)
+
+## Scripts
+
+- `scripts/run_quality_checks.sh`: Run all quality tools (ruff lint, format, mypy, pytest) with structured report output. Flags: --no-test, --fix-only, --strict

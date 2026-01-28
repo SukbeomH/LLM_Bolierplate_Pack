@@ -76,7 +76,7 @@ secrets/
 # ─────────────────────────────────────────────────────
 
 # code-graph-rag index data (regenerated on demand)
-.graph-index/
+.code-graph-rag/
 
 # Local logs
 .logs/
@@ -87,6 +87,7 @@ secrets/
 .gsd/STATE.md
 .gsd/JOURNAL.md
 .gsd/TODO.md
+*.pre-compact.bak
 
 # Agent memory (ephemeral)
 .agent/memory.jsonl
@@ -100,11 +101,6 @@ awesome-claude-code/
 claude-code-tips/
 everything-claude-code/
 ralph/
-
-# ─────────────────────────────────────────────────────
-# Docker
-# ─────────────────────────────────────────────────────
-docker-compose.override.yml
 
 # ─────────────────────────────────────────────────────
 # Database

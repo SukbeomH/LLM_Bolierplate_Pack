@@ -271,3 +271,7 @@ STATUS: {gathering | investigating}
 PROGRESS: {what's been done}
 QUESTION: {what's needed from user}
 ```
+
+## Scripts
+
+- `scripts/collect_diagnostics.sh`: Gather system info, runtime versions, git status, dependencies, and Docker state

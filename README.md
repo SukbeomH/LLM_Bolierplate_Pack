@@ -16,7 +16,6 @@ AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이�
 ├── .mcp.json          — MCP 서버 연결 설정 (Claude Code)
 ├── scripts/           — 유틸리티 스크립트
 ├── .env.example       — 환경변수 템플릿
-├── docker-compose.yml — Memgraph (code-graph-rag 백엔드)
 ├── Makefile           — 개발 명령어 (make help)
 ├── pyproject.toml     — Python 프로젝트 설정 (uv)
 └── CLAUDE.md          — Claude Code 지침
@@ -30,7 +29,7 @@ AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이�
 
 | 도구 | 용도 | 설치 |
 |------|------|------|
-| **Docker** | Memgraph 컨테이너 | [docker.com](https://docs.docker.com/get-docker/) |
+| **Node.js** | code-graph-rag MCP 서버 실행 | [nodejs.org](https://nodejs.org/) |
 | **uv** | Python 패키지 관리 | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | **pipx** | CLI 도구 격리 설치 | `brew install pipx && pipx ensurepath` |
 | gh CLI | GitHub PR/Issue (선택) | `brew install gh` |
@@ -53,18 +52,15 @@ make setup
 
 이 명령은 다음을 순서대로 수행합니다:
 
-1. **code-graph-rag** 클론 + 의존성 설치 → `~/code-graph-rag`
-2. **memorygraph** 설치 (pipx)
-3. `.env` 파일 생성 (`.env.example` 복사)
-4. **Memgraph** Docker 컨테이너 시작
-5. 코드베이스 **인덱싱** (Tree-sitter → Memgraph)
+1. **memorygraph** 설치 (pipx)
+2. `.env` 파일 생성 (`.env.example` 복사)
+3. 코드베이스 **인덱싱** (Tree-sitter → SQLite)
 
 셋업 완료 후:
 
 ```bash
-# 1. .env 파일에서 API 키 설정
-#    - CYPHER_API_KEY (Gemini API key — code-graph-rag에서 자연어→Cypher 변환에 사용)
-#    - CONTEXT7_API_KEY (선택)
+# 1. .env 파일에서 API 키 설정 (선택)
+#    - CONTEXT7_API_KEY
 
 # 2. Claude Code 재시작하여 MCP 서버 로드
 ```
@@ -76,13 +72,11 @@ make setup
 ### Step 1: 외부 도구 설치
 
 ```bash
-# code-graph-rag: AST 코드 분석 MCP 서버
-make install-code-graph-rag
-# 기본 설치 경로: ~/code-graph-rag
-# 변경하려면: CODE_GRAPH_RAG_PATH=/your/path make install-code-graph-rag
-
 # memorygraph: 에이전트 영구 기억 MCP 서버
 make install-memorygraph
+
+# code-graph-rag: npm 패키지로 자동 설치 (npx로 on-demand 실행)
+# 별도 설치 불필요 — npx -y @er77/code-graph-rag-mcp 으로 자동 다운로드
 ```
 
 ### Step 2: 환경 변수 설정
@@ -91,66 +85,26 @@ make install-memorygraph
 make init-env       # .env.example → .env 복사
 ```
 
-`.env` 파일을 열고 다음을 설정합니다:
+`.env` 파일을 열고 필요 시 설정합니다:
 
 ```bash
-# 필수
-CYPHER_API_KEY=your-gemini-api-key    # Google AI Studio에서 발급
-
-# code-graph-rag 경로 (기본값: ~/code-graph-rag)
-# 다른 경로에 설치했다면 변경
-CODE_GRAPH_RAG_PATH=/your/custom/path
-
 # 선택
 CONTEXT7_API_KEY=your-key             # Context7 MCP 사용 시
 ```
 
-### Step 3: 인프라 시작
+### Step 3: 코드베이스 인덱싱
 
 ```bash
-make up             # Memgraph Docker 컨테이너 시작
-make status         # 상태 확인
+make index          # Tree-sitter 파싱 → SQLite 저장
 ```
 
-### Step 4: 코드베이스 인덱싱
+### Step 4: MCP 서버 확인
 
-```bash
-make index          # Tree-sitter 파싱 → Memgraph 그래프 저장
-```
-
-### Step 5: MCP 서버 확인
-
-`.mcp.json`이 `CODE_GRAPH_RAG_PATH` 환경변수를 참조합니다.
+`.mcp.json`이 `npx`를 통해 `@er77/code-graph-rag-mcp`를 직접 실행합니다.
 Claude Code를 재시작하면 자동으로 MCP 서버에 연결됩니다.
 
 ```bash
-make status         # 전체 상태 확인 (Docker + MCP tools + .env)
-```
-
----
-
-## 설치 경로 커스터마이징
-
-모든 경로는 `.env` 파일 또는 환경변수로 제어됩니다. 하드코딩된 경로는 없습니다.
-
-| 변수 | 기본값 | 설명 |
-|------|--------|------|
-| `CODE_GRAPH_RAG_PATH` | `~/code-graph-rag` | code-graph-rag 설치 경로 |
-| `TARGET_REPO_PATH` | `.` | 분석 대상 저장소 경로 |
-| `CYPHER_PROVIDER` | `google` | LLM 프로바이더 |
-| `CYPHER_MODEL` | `gemini-2.0-flash` | Cypher 생성 모델 |
-
-팀원에게 공유 시:
-
-```bash
-# 1. 저장소 클론
-git clone <repo-url> && cd <repo>
-
-# 2. 원클릭 셋업
-make setup
-
-# 3. .env에서 API 키 설정
-# 4. Claude Code 재시작
+make status         # MCP 도구 + 환경 상태 확인
 ```
 
 ---
@@ -165,10 +119,9 @@ make help                   # 전체 명령어 목록
 
 | 명령어 | 설명 |
 |--------|------|
-| `make setup` | 전체 초기 설정 (설치 → 환경 → Memgraph → 인덱싱) |
+| `make setup` | 전체 초기 설정 (설치 → 환경 → 인덱싱) |
 | `make check-deps` | 필수 도구 설치 여부 확인 |
 | `make install-deps` | 모든 외부 의존성 설치 |
-| `make install-code-graph-rag` | code-graph-rag 클론 + 설치 |
 | `make install-memorygraph` | memorygraph 설치 (pipx) |
 | `make init-env` | `.env.example` → `.env` 생성 |
 
@@ -176,12 +129,9 @@ make help                   # 전체 명령어 목록
 
 | 명령어 | 설명 |
 |--------|------|
-| `make up` | Memgraph 시작 |
-| `make down` | Memgraph 중지 |
-| `make status` | Docker + MCP 도구 + 환경 상태 확인 |
-| `make logs` | Memgraph 로그 |
+| `make status` | MCP 도구 + 환경 상태 확인 |
 | `make index` | 코드베이스 인덱싱 (code-graph-rag) |
-| `make clean` | Docker 볼륨 + 인덱스 삭제 |
+| `make clean` | 인덱스 데이터 + 패치 워크스페이스 삭제 |
 
 ### 코드 품질
 
@@ -212,12 +162,22 @@ make help                   # 전체 명령어 목록
 
 ### code-graph-rag (코드 분석)
 
-Tree-sitter + Memgraph 기반 AST 코드 분석. 자연어로 코드베이스를 쿼리합니다.
+Tree-sitter + SQLite 기반 AST 코드 분석. `@er77/code-graph-rag-mcp` npm 패키지를 npx로 실행합니다.
+
+주요 MCP 도구:
 
 | MCP Tool | 용도 |
 |----------|------|
-| `query_code_graph` | 자연어 코드 검색, 의존성/구조/품질 분석 |
+| `list_projects` | 인덱싱된 프로젝트 목록 |
+| `query_code_graph` | 코드 그래프 쿼리 |
+| `get_code_snippet` | 코드 스니펫 조회 |
+| `read_file` | 파일 읽기 |
+| `write_file` | 파일 쓰기 |
+| `surgical_replace_code` | 코드 정밀 교체 |
 | `index_repository` | 코드베이스 인덱싱 |
+| `list_directory` | 디렉토리 목록 |
+
+> 전체 26개 도구 제공 (semantic search, clone detection, hotspot analysis 등)
 
 ### memory-graph (에이전트 기억)
 
@@ -275,22 +235,18 @@ Tree-sitter + Memgraph 기반 AST 코드 분석. 자연어로 코드베이스를
 
 ## Troubleshooting
 
-### Memgraph 연결 실패
-
-```bash
-make up             # 컨테이너 재시작
-make logs           # 로그 확인
-docker compose ps   # 상태 확인 (ports: 7687, 7444)
-```
-
 ### code-graph-rag MCP 서버 연결 실패
 
 ```bash
-# .env에 CODE_GRAPH_RAG_PATH가 올바르게 설정되었는지 확인
-make status
+# Node.js / npm 설치 확인
+node --version
+npm --version
 
 # 수동 테스트
-cd $CODE_GRAPH_RAG_PATH && uv run graph-code --help
+npx -y @er77/code-graph-rag-mcp --version
+
+# 타임아웃 발생 시 MCP_TIMEOUT 환경변수 조정
+# .mcp.json의 env.MCP_TIMEOUT 값을 늘려 보세요 (기본: 80000ms)
 ```
 
 ### memorygraph 연결 실패
@@ -307,8 +263,11 @@ pipx reinstall memorygraphMCP
 ### 인덱싱 실패
 
 ```bash
-# Memgraph가 실행 중인지 확인
-make up && sleep 5 && make index
+# Node.js가 설치되어 있는지 확인
+node --version
+
+# 메모리 부족 시 NODE_OPTIONS 조정
+NODE_OPTIONS="--max-old-space-size=4096" npx -y @er77/code-graph-rag-mcp index .
 ```
 
 ---
@@ -317,6 +276,6 @@ make up && sleep 5 && make index
 
 이 보일러플레이트를 프로젝트에 맞게 수정하세요:
 
-1. `.env` — `PROJECT_ID`, `CYPHER_API_KEY` 설정
+1. `.env` — `PROJECT_ID` 설정
 2. `.gsd/SPEC.md` — 프로젝트 요구사항 정의 (`/new-project`로 생성)
 3. `.mcp.json` — MCP 서버 연결 설정 (추가 서버 등록 시)

@@ -463,3 +463,7 @@ One task = one commit. Always.
 
 ### ✅ Verification before done
 Run verify step. Confirm done criteria. Then commit.
+
+## Scripts
+
+- `scripts/parse_plan.py`: Parse PLAN.md and extract tasks into machine-readable JSON format

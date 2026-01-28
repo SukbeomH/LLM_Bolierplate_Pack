@@ -483,3 +483,7 @@ context:
 - [ ] Must-haves are derived from phase goal
 - [ ] Discovery level assessed (0-3)
 - [ ] TDD considered for complex logic
+
+## Scripts
+
+- `scripts/assess_discovery_level.py`: Assess discovery level (0-3) for a planning task based on keywords and project context. Output: JSON

@@ -3,7 +3,9 @@ name: impact-analysis
 description: Analyzes change impact before code modifications to prevent regression
 version: 2.0.0
 allowed-tools:
-  - query_code_graph
+  - analyze_code_impact
+  - query
+  - list_entity_relationships
   - Read
 trigger: "Before ANY code modification or refactoring"
 ---
@@ -17,8 +19,8 @@ trigger: "Before ANY code modification or refactoring"
 
 ## Prerequisites
 
-- Memgraph must be running (`docker compose up -d`)
-- code-graph-rag MCP server must be configured in `.mcp.json`
+- Node.js must be installed (`node --version`)
+- code-graph-rag MCP server must be configured in `.mcp.json` (`@er77/code-graph-rag-mcp`)
 
 ---
 
@@ -32,10 +34,11 @@ target_files = ["src/utils.py", "src/models.py"]
 ```
 
 ### Step 2: Run Impact Analysis
-Execute the `query_code_graph` tool with a dependency/impact query.
+Execute the `analyze_code_impact` tool for each target entity, or use `query` for broader analysis.
 
 ```
-query_code_graph("what depends on src/utils.py and src/models.py? what would break if I change them?")
+analyze_code_impact(entityId: "utils", depth: 2)
+analyze_code_impact(entityId: "models", depth: 2)
 ```
 
 ### Step 3: Review Impact Report
@@ -62,7 +65,7 @@ If high impact is detected:
 | Rule | Description |
 |------|-------------|
 | **Mandatory** | You MUST NOT skip this step for any file modification |
-| **Exception** | New standalone files don't require analysis (but run `index_repository` after) |
+| **Exception** | New standalone files don't require analysis (but run `index` after) |
 | **Escalation** | If impact score > 7, require human approval before proceeding |
 
 ---
@@ -79,3 +82,7 @@ If high impact is detected:
   "recommendation": "Safe to proceed with standard testing"
 }
 ```
+
+## Scripts
+
+- `scripts/find_dependents.py`: Find files importing a target module. Calculates impact score (1-10) with escalation level. Output: JSON

@@ -2,11 +2,7 @@
 -include .env
 export
 
-# Defaults (override via .env or environment)
-CODE_GRAPH_RAG_PATH ?= $(HOME)/code-graph-rag
-CODE_GRAPH_RAG_REPO := https://github.com/vitali87/code-graph-rag.git
-
-.PHONY: up down logs status index setup install-deps install-code-graph-rag \
+.PHONY: status index setup install-deps \
         install-memorygraph init-env check-deps lint lint-fix test typecheck \
         validate clean patch-prompt patch-restore patch-clean help
 
@@ -16,40 +12,32 @@ CODE_GRAPH_RAG_REPO := https://github.com/vitali87/code-graph-rag.git
 
 check-deps: ## Check required tools are installed
 	@echo "Checking prerequisites..."
-	@command -v docker  >/dev/null 2>&1 || { echo "  [MISSING] docker  — https://docs.docker.com/get-docker/"; exit 1; }
+	@command -v node    >/dev/null 2>&1 || { echo "  [MISSING] node    — https://nodejs.org/"; exit 1; }
+	@command -v npm     >/dev/null 2>&1 || { echo "  [MISSING] npm     — https://nodejs.org/"; exit 1; }
 	@command -v uv      >/dev/null 2>&1 || { echo "  [MISSING] uv      — curl -LsSf https://astral.sh/uv/install.sh | sh"; exit 1; }
 	@command -v pipx    >/dev/null 2>&1 || { echo "  [MISSING] pipx    — brew install pipx && pipx ensurepath"; exit 1; }
-	@echo "  [OK] docker"
+	@echo "  [OK] node ($$(node --version))"
+	@echo "  [OK] npm ($$(npm --version))"
 	@echo "  [OK] uv"
 	@echo "  [OK] pipx"
 	@echo ""
 	@echo "Optional:"
 	@command -v gh          >/dev/null 2>&1 && echo "  [OK] gh CLI" || echo "  [SKIP] gh — brew install gh (GitHub PR/Issue 관리)"
 	@command -v memorygraph >/dev/null 2>&1 && echo "  [OK] memorygraph" || echo "  [SKIP] memorygraph — run: make install-memorygraph"
-	@test -d "$(CODE_GRAPH_RAG_PATH)" && echo "  [OK] code-graph-rag ($(CODE_GRAPH_RAG_PATH))" || echo "  [SKIP] code-graph-rag — run: make install-code-graph-rag"
+	@npx -y @er77/code-graph-rag-mcp --version >/dev/null 2>&1 && echo "  [OK] @er77/code-graph-rag-mcp" || echo "  [SKIP] @er77/code-graph-rag-mcp — installed on-demand via npx"
 
 # ─────────────────────────────────────────────────────
 # Installation
 # ─────────────────────────────────────────────────────
 
-install-code-graph-rag: ## Clone and install code-graph-rag
-	@if [ -d "$(CODE_GRAPH_RAG_PATH)" ]; then \
-		echo "code-graph-rag already exists at $(CODE_GRAPH_RAG_PATH). Updating..."; \
-		cd "$(CODE_GRAPH_RAG_PATH)" && git pull && uv sync; \
-	else \
-		echo "Cloning code-graph-rag to $(CODE_GRAPH_RAG_PATH)..."; \
-		git clone $(CODE_GRAPH_RAG_REPO) "$(CODE_GRAPH_RAG_PATH)"; \
-		cd "$(CODE_GRAPH_RAG_PATH)" && uv sync; \
-	fi
-	@echo "code-graph-rag installed at $(CODE_GRAPH_RAG_PATH)"
-
 install-memorygraph: ## Install memorygraph MCP server via pipx
 	@command -v memorygraph >/dev/null 2>&1 && echo "memorygraph already installed: $$(memorygraph --version)" || \
 		{ echo "Installing memorygraph..."; pipx install memorygraphMCP; }
 
-install-deps: check-deps install-code-graph-rag install-memorygraph ## Install all external dependencies
+install-deps: check-deps install-memorygraph ## Install all external dependencies
 	@echo ""
 	@echo "All dependencies installed."
+	@echo "Note: @er77/code-graph-rag-mcp is installed on-demand via npx."
 
 # ─────────────────────────────────────────────────────
 # Environment Setup
@@ -60,31 +48,17 @@ init-env: ## Create .env from .env.example (if not exists)
 		echo ".env already exists. Skipping."; \
 	else \
 		cp .env.example .env; \
-		sed -i.bak "s|CODE_GRAPH_RAG_PATH=.*|CODE_GRAPH_RAG_PATH=$(CODE_GRAPH_RAG_PATH)|" .env; \
-		rm -f .env.bak; \
-		echo ".env created. Edit CYPHER_API_KEY and CONTEXT7_API_KEY before running MCP servers."; \
+		echo ".env created. Edit CONTEXT7_API_KEY before running MCP servers."; \
 	fi
 
 # ─────────────────────────────────────────────────────
-# Infrastructure
+# Status
 # ─────────────────────────────────────────────────────
 
-up: ## Start Memgraph container
-	docker compose up -d
-
-down: ## Stop Memgraph container
-	docker compose down
-
-logs: ## Show Memgraph logs
-	docker compose logs -f memgraph
-
-status: ## Show container and tool status
-	@echo "=== Docker ==="
-	@docker compose ps 2>/dev/null || echo "  Docker not running"
-	@echo ""
+status: ## Show tool status
 	@echo "=== MCP Tools ==="
 	@command -v memorygraph >/dev/null 2>&1 && echo "  memorygraph: $$(memorygraph --version)" || echo "  memorygraph: not installed"
-	@test -d "$(CODE_GRAPH_RAG_PATH)" && echo "  code-graph-rag: $(CODE_GRAPH_RAG_PATH)" || echo "  code-graph-rag: not installed"
+	@echo "  code-graph-rag: @er77/code-graph-rag-mcp (npx, on-demand)"
 	@echo ""
 	@echo "=== Environment ==="
 	@test -f .env && echo "  .env: exists" || echo "  .env: MISSING (run: make init-env)"
@@ -94,28 +68,20 @@ status: ## Show container and tool status
 # ─────────────────────────────────────────────────────
 
 index: ## Index codebase with code-graph-rag
-	@test -d "$(CODE_GRAPH_RAG_PATH)" || { echo "ERROR: code-graph-rag not found at $(CODE_GRAPH_RAG_PATH)"; echo "Run: make install-code-graph-rag"; exit 1; }
-	@docker compose ps --format '{{.Status}}' 2>/dev/null | grep -q "Up" || { echo "ERROR: Memgraph not running. Run: make up"; exit 1; }
-	cd "$(CODE_GRAPH_RAG_PATH)" && uv run graph-code index \
-		--repo-path "$(CURDIR)" \
-		-o "$(CURDIR)/.graph-index"
-	@echo "Index complete: .graph-index/"
+	@command -v npx >/dev/null 2>&1 || { echo "ERROR: npx not found. Install Node.js: https://nodejs.org/"; exit 1; }
+	npx -y @er77/code-graph-rag-mcp index "$(CURDIR)"
+	@echo "Index complete."
 
 # ─────────────────────────────────────────────────────
 # Full Setup
 # ─────────────────────────────────────────────────────
 
-setup: ## Full initial setup (install deps → env → Memgraph → index)
+setup: ## Full initial setup (install deps → env → index)
 	@echo "========================================="
 	@echo "  Boilerplate Full Setup"
 	@echo "========================================="
 	@$(MAKE) --no-print-directory install-deps
 	@$(MAKE) --no-print-directory init-env
-	@echo ""
-	@echo "--- Starting Memgraph ---"
-	@$(MAKE) --no-print-directory up
-	@echo "Waiting for Memgraph..."
-	@sleep 5
 	@echo ""
 	@echo "--- Indexing Codebase ---"
 	@$(MAKE) --no-print-directory index
@@ -125,7 +91,7 @@ setup: ## Full initial setup (install deps → env → Memgraph → index)
 	@echo "========================================="
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Edit .env — set CYPHER_API_KEY, CONTEXT7_API_KEY"
+	@echo "  1. Edit .env — set CONTEXT7_API_KEY (optional)"
 	@echo "  2. Restart Claude Code to load MCP servers"
 	@echo "  3. Run: /new-project to start a GSD workflow"
 
@@ -186,9 +152,8 @@ patch-clean: ## Remove patched Claude Code workspace
 # Cleanup
 # ─────────────────────────────────────────────────────
 
-clean: ## Remove Docker volumes, index data, and patch workspace
-	docker compose down -v
-	rm -rf .graph-index/ .patch-workspace/
+clean: ## Remove index data and patch workspace
+	rm -rf .code-graph-rag/ .patch-workspace/
 
 # ─────────────────────────────────────────────────────
 # Help

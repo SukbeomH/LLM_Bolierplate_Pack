@@ -419,3 +419,8 @@ gaps: [...]  # If gaps_found
 - [ ] Gaps structured in YAML (if gaps_found)
 - [ ] VERIFICATION.md created
 - [ ] Results returned to orchestrator
+
+## Scripts
+
+- `scripts/detect_stubs.py`: Scan Python files for stub implementations (pass, NotImplementedError, TODO, Ellipsis). Output: structured report
+- `scripts/check_artifacts.sh`: Verify file existence and substance from a list or PLAN.md. Output: JSON with status per file

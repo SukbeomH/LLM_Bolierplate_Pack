@@ -2,13 +2,11 @@
   "mcpServers": {
     "graph-code": {
       "type": "stdio",
-      "command": "uv",
-      "args": ["run", "--directory", "${CODE_GRAPH_RAG_PATH}", "graph-code", "mcp-server"],
+      "command": "npx",
+      "args": ["-y", "@er77/code-graph-rag-mcp", "."],
       "env": {
-        "TARGET_REPO_PATH": "${TARGET_REPO_PATH}",
-        "CYPHER_PROVIDER": "${CYPHER_PROVIDER}",
-        "CYPHER_MODEL": "${CYPHER_MODEL}",
-        "CYPHER_API_KEY": "${CYPHER_API_KEY}"
+        "MCP_TIMEOUT": "80000",
+        "NODE_OPTIONS": "--max-old-space-size=4096"
       }
     },
     "memorygraph": {

@@ -30,7 +30,7 @@ You are a **Senior Staff Engineer** specialized in this project's architecture.
 |-------|------------|
 | **Agent Orchestration** | LangChain v1.2+, LangGraph |
 | **Protocol** | Model Context Protocol (MCP) |
-| **Code Analysis** | code-graph-rag (Tree-sitter + Memgraph) |
+| **Code Analysis** | code-graph-rag (Tree-sitter + SQLite, `@er77/code-graph-rag-mcp`) |
 | **Agent Memory** | memory-graph (MCP) |
 | **MCP Config** | `.mcp.json` (Claude Code), `langchain-mcp-adapters` (optional, for custom agents) |
 | **Methodology** | Get Shit Done (GSD) |
@@ -79,8 +79,8 @@ uv run pytest tests/
 # Validate SPEC.md integrity
 uv run python scripts/validate_spec.py
 
-# Check Memgraph status
-docker compose ps
+# Check MCP tools status
+make status
 ```
 
 ### GSD Slash Commands (29 Total)
@@ -142,36 +142,69 @@ docker compose ps
 
 ## 4. code-graph-rag Tools
 
-**Always prefer code-graph-rag tools over manual file reading.** These tools provide synthesized answers via natural language queries to a code knowledge graph.
+**Always prefer code-graph-rag tools over manual file reading.** These tools provide AST-based code analysis via Tree-sitter + SQLite (`@er77/code-graph-rag-mcp`).
 
 ### Quick Reference
 
-| I want to... | Tool | Example Query |
-|--------------|------|---------------|
-| Find code / gather context | `query_code_graph` | `"find where user authentication is handled"` |
-| See what depends on X / trace flow | `query_code_graph` | `"what depends on the UserService class?"` |
-| Understand architecture / APIs | `query_code_graph` | `"how is the MCP server structured?"` |
-| Find quality risks / hotspots | `query_code_graph` | `"hotspots and coupling risks in the parser"` |
-| Index the codebase | `index_repository` | (MCP tool, no query needed) |
+| I want to... | Tool | Example |
+|--------------|------|---------|
+| Find code / gather context | `query` | `"find where user authentication is handled"` |
+| Search code semantically | `semantic_search` | `"error handling patterns"` |
+| See what depends on X | `list_entity_relationships` | `entityName: "UserService"` |
+| Analyze change impact | `analyze_code_impact` | `entityId: "UserService"` |
+| Find quality risks / hotspots | `analyze_hotspots` | `metric: "complexity"` |
+| Detect duplicate code | `detect_code_clones` | `minSimilarity: 0.8` |
+| Find similar code | `find_similar_code` | `code: "def authenticate(...):"` |
+| List file entities | `list_file_entities` | `filePath: "src/auth.py"` |
+| Get refactoring suggestions | `suggest_refactoring` | `filePath: "src/utils.py"` |
+| Cross-language search | `cross_language_search` | `query: "authentication"` |
+| Find related concepts | `find_related_concepts` | `entityId: "AuthModule"` |
+| Index the codebase | `index` | `directory: "."` |
+| Clean re-index | `clean_index` | `directory: "."` |
+| Get graph overview | `get_graph` | `limit: 100` |
+| Get graph stats | `get_graph_stats` | — |
+| Get graph health | `get_graph_health` | — |
+| Reset graph data | `reset_graph` | — |
+| Get system metrics | `get_metrics` | — |
+| Get server version | `get_version` | — |
 
 ### Tool Details
 
-#### `query_code_graph`
-**Use when:** Finding code, gathering context, understanding dependencies, architecture, quality risks
+#### `query`
+**Use when:** Finding code, gathering context, understanding dependencies, architecture
 ```
 "Find where user authentication is handled"
 "I need to add rate limiting. Gather all relevant context."
 "What depends on the UserService class?"
-"What would break if I change the auth module?"
 "Give me an overview of this project's architecture"
-"Where are the risk hotspots in the parser?"
 ```
 
-#### `index_repository`
+#### `semantic_search`
+**Use when:** Searching code by meaning, not just text matching
+```
+"error handling patterns"
+"authentication middleware"
+```
+
+#### `analyze_code_impact`
+**Use when:** Before refactoring — understanding what would break
+```
+entityId: "AuthModule", depth: 2
+```
+
+#### `analyze_hotspots`
+**Use when:** Finding complexity, coupling, or change-frequency hotspots
+```
+metric: "complexity" | "changes" | "coupling"
+```
+
+#### `index`
 **Use when:** After creating new files or making major structural changes
 ```
-Run via MCP tool to re-index the codebase into Memgraph
+directory: ".", incremental: true
 ```
+
+> Total 19 MCP tools available (query, semantic_search, find_similar_code, analyze_code_impact, detect_code_clones, analyze_hotspots, suggest_refactoring, cross_language_search, find_related_concepts, list_file_entities, list_entity_relationships, index, clean_index, get_graph, get_graph_stats, get_graph_health, reset_graph, get_metrics, get_version).
 
 ---
 
@@ -186,7 +219,15 @@ Run via MCP tool to re-index the codebase into Memgraph
 | Save project knowledge | `store_memory` |
 | Recall past decisions | `recall_memories` |
 | Search with filters | `search_memories` |
-| Manage project domains | `create_domain` / `select_domain` |
+| Get a specific memory | `get_memory` |
+| Update a memory | `update_memory` |
+| Delete a memory | `delete_memory` |
+| Link related memories | `create_relationship` |
+| Get related memories | `get_related_memories` |
+| Get memory stats | `get_memory_statistics` |
+| Get recent activity | `get_recent_activity` |
+| Search by relationship context | `search_relationships_by_context` |
+| Contextual search | `contextual_search` |
 
 ### When to Store Memories
 
@@ -201,27 +242,27 @@ Run via MCP tool to re-index the codebase into Memgraph
 
 ### Pattern 1: Exploration First
 When starting work on an unfamiliar area:
-1. **Architecture overview:** Use `query_code_graph` ("how is [area] structured?")
-2. **Find entry points:** Use `query_code_graph` ("find [component] entry points")
-3. **Trace the flow:** Use `query_code_graph` ("trace execution from [start] to [end]")
-4. **Check dependencies:** Use `query_code_graph` ("what depends on [component]?")
+1. **Architecture overview:** Use `query` ("how is [area] structured?")
+2. **Find entry points:** Use `query` ("find [component] entry points")
+3. **Trace the flow:** Use `query` ("trace execution from [start] to [end]")
+4. **Check dependencies:** Use `list_entity_relationships` (entityName: "[component]")
 
 ### Pattern 2: Pre-Refactoring
 Before making changes:
-1. **Impact analysis:** Use `query_code_graph` ("what breaks if I change [target]?")
-2. **Find consumers:** Use `query_code_graph` ("what public APIs does [module] expose?")
-3. **Gather context:** Use `query_code_graph` ("context for modifying [target]")
+1. **Impact analysis:** Use `analyze_code_impact` (entityId: "[target]")
+2. **Find consumers:** Use `list_entity_relationships` (entityName: "[module]")
+3. **Gather context:** Use `query` ("context for modifying [target]")
 
 ### Pattern 3: Feature Implementation
 When adding new features:
-1. **Find patterns:** Use `query_code_graph` ("find similar implementations to [feature]")
-2. **Gather context:** Use `query_code_graph` ("context for implementing [feature]")
+1. **Find patterns:** Use `semantic_search` ("find similar implementations to [feature]")
+2. **Gather context:** Use `query` ("context for implementing [feature]")
 3. **Check conventions:** Use `recall_memories` to check past decisions
 
 ### Pattern 4: Debugging
 When tracking down issues:
-1. **Find the code:** Use `query_code_graph` ("find [error/symptom] related code")
-2. **Trace execution:** Use `query_code_graph` ("trace [function] call chain")
+1. **Find the code:** Use `semantic_search` ("find [error/symptom] related code")
+2. **Trace execution:** Use `query` ("trace [function] call chain")
 3. **Check known issues:** Use `recall_memories` to check past bugs
 
 ---
@@ -256,9 +297,10 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 async def get_tools():
     client = MultiServerMCPClient({
         "graph-code": {
-            "command": "uv",
-            "args": ["run", "--directory", os.environ["CODE_GRAPH_RAG_PATH"], "graph-code", "mcp-server"],
-            "transport": "stdio"
+            "command": "npx",
+            "args": ["-y", "@er77/code-graph-rag-mcp", "."],
+            "transport": "stdio",
+            "env": {"MCP_TIMEOUT": "80000", "NODE_OPTIONS": "--max-old-space-size=4096"}
         }
     })
     return await client.get_tools()
@@ -274,8 +316,8 @@ You MUST strictly adhere to these operational boundaries.
 ### Always (Mandatory)
 | Action | Reason |
 |--------|--------|
-| Use `query_code_graph` for impact analysis before refactoring | Understand impact |
-| Use `query_code_graph` for context before new features | Gather all context |
+| Use `analyze_code_impact` for impact analysis before refactoring | Understand impact |
+| Use `query` for context before new features | Gather all context |
 | Read `.gsd/SPEC.md` before implementation | Ensure task context is clear |
 | Update `.gsd/STATE.md` after completing a task | Maintain state persistence |
 
@@ -324,7 +366,7 @@ Follow GSD methodology for all tasks.
 ```
 1. /plan → Create execution plans
 2. recall_memories → Check past decisions
-3. query_code_graph → Gather context
+3. query → Gather context
 4. /execute → Implement with STATE.md updates
 5. store_memory → Save new patterns/decisions
 6. /verify → Empirical validation
@@ -334,8 +376,8 @@ Follow GSD methodology for all tasks.
 ```
 1. Reproduce issue
 2. recall_memories → Check known issues
-3. query_code_graph → Trace execution ("trace [function] call chain")
-4. query_code_graph → Check dependencies ("what depends on [target]?")
+3. query → Trace execution ("trace [function] call chain")
+4. analyze_code_impact → Check impact (entityId: "[target]")
 5. Implement fix
 6. store_memory → Document the root cause
 7. Verify with tests
@@ -346,7 +388,7 @@ Follow GSD methodology for all tasks.
 1. Read .gsd/SPEC.md
 2. Read .gsd/STATE.md
 3. recall_memories → Check stored knowledge
-4. query_code_graph → If unfamiliar area ("how is [area] structured?")
+4. query → If unfamiliar area ("how is [area] structured?")
 5. Resume from last checkpoint
 ```
 
@@ -359,23 +401,25 @@ Follow GSD methodology for all tasks.
 ---
 
 > **Note**: This specification follows the extended 9-section structure.
-> - **code-graph-rag Tools**: `query_code_graph`, `index_repository` — MCP protocol tools from code-graph-rag
-> - **memory-graph Tools**: `store_memory`, `recall_memories`, `search_memories`, `create_domain`, `select_domain`
-> - **Claude Skills** (10): Methodology skills in `.claude/skills/` — arch-review, codebase-mapper, context-health-monitor, debugger, empirical-validation, executor, impact-analysis, plan-checker, planner, verifier
-> - **code-graph-rag Reference**: https://github.com/vitali87/code-graph-rag
+> - **code-graph-rag Tools**: 19 MCP tools from `@er77/code-graph-rag-mcp` (Tree-sitter + SQLite)
+> - **memory-graph Tools** (12): `store_memory`, `recall_memories`, `search_memories`, `get_memory`, `update_memory`, `delete_memory`, `create_relationship`, `get_related_memories`, `get_memory_statistics`, `get_recent_activity`, `search_relationships_by_context`, `contextual_search`
+> - **context7 Tools** (2): `resolve-library-id`, `query-docs`
+> - **Claude Skills** (14): Methodology skills in `.claude/skills/` — arch-review, clean, codebase-mapper, commit, context-health-monitor, create-pr, debugger, empirical-validation, executor, impact-analysis, plan-checker, planner, pr-review, verifier
+> - **code-graph-rag Reference**: https://github.com/er77/code-graph-rag-mcp
 
 ### Troubleshooting
 
-**Memgraph 시작:**
+**code-graph-rag MCP 서버 연결 실패:**
 ```bash
-# 프로젝트 루트에서 실행
-docker compose up -d          # Memgraph 컨테이너 시작
-docker compose ps             # 상태 확인
-docker compose logs memgraph  # 로그 확인
+# Node.js / npm 설치 확인
+node --version
+npm --version
+
+# 수동 테스트
+npx -y @er77/code-graph-rag-mcp --version
+
+# 타임아웃 발생 시 .mcp.json의 MCP_TIMEOUT 값 조정
 ```
 
-If you encounter connection errors with Memgraph, ensure the Docker container is running:
-```bash
-docker compose up -d
-```
-Memgraph listens on port 7687 (Bolt protocol) and 7444 (Memgraph Lab UI).
+If you encounter timeout errors, increase the `MCP_TIMEOUT` value in `.mcp.json` env section (default: 80000ms).
+For memory issues with large codebases, adjust `NODE_OPTIONS` in `.mcp.json` (default: `--max-old-space-size=4096`).

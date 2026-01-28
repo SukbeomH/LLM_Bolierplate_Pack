@@ -141,3 +141,7 @@ git commit -m "test(auth): add login endpoint integration tests"
 git add pyproject.toml uv.lock
 git commit -m "chore(deps): add jose and bcrypt dependencies"
 ```
+
+## Scripts
+
+- `scripts/analyze_diff.py`: Analyze git diff for logical split candidates. Detects multi-concern changes and suggests separate commits. Output: JSON

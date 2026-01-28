@@ -127,3 +127,7 @@ URL: <url>
 BRANCH: <branch-name>
 COMMITS: <count>
 ```
+
+## Scripts
+
+- `scripts/prepare_pr_body.py`: Generate structured PR body from git log and diff stats following GSD template

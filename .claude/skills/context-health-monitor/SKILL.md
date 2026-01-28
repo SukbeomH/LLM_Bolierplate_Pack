@@ -101,3 +101,7 @@ This skill integrates with:
 - `/pause` — Full GSD session handoff with state archival
 - `/resume` — Loads the state dump context
 - `.gemini/GEMINI.md` Rule 3 (Context Hygiene) — After 3 failed debug attempts: STOP, summarize to STATE.md, document blocker in DECISIONS.md, recommend fresh session
+
+## Scripts
+
+- `scripts/dump_state.sh`: Dump current context state to .gsd/STATE.md with git info, task status, and recommendations

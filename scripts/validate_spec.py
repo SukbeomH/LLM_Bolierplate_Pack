@@ -7,6 +7,7 @@ REQUIRED_FILES = [
     ".specs/PLAN.md",
 ]
 
+
 def validate_project_structure():
     """
     Validates that the current directory has proper project structure.
@@ -25,6 +26,7 @@ def validate_project_structure():
         sys.exit(1)
 
     print("Validation Passed: Project structure is correct.")
+
 
 if __name__ == "__main__":
     validate_project_structure()

@@ -163,7 +163,7 @@ Each persona reviews independently, producing findings with severity classificat
 
 - **SPEC 검증**: 변경 사항이 `.gsd/SPEC.md`의 must-haves를 충족하는지 확인
 - **DECISIONS 참조**: 아키텍처 변경이 `.gsd/DECISIONS.md`에 기록된 ADR과 일치하는지 확인
-- **Impact 분석**: `query_code_graph`를 사용하여 변경 영향 범위 사전 파악
+- **Impact 분석**: `analyze_code_impact`를 사용하여 변경 영향 범위 사전 파악
 
 ---
 
@@ -181,3 +181,7 @@ gh pr review <PR> --request-changes --body "<review>"
 # 승인
 gh pr review <PR> --approve --body "<review>"
 ```
+
+## Scripts
+
+- `scripts/extract_pr_diff.sh`: Extract PR diff and metadata for review. Supports PR number or branch name
