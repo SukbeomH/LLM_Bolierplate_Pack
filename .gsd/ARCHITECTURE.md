@@ -17,14 +17,30 @@ AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이�
                │                      │
        ┌───────▼────────┐    ┌────────▼─────────┐
        │  Claude Code   │    │  GitHub Agent /   │
-       │  (14 skills)   │    │  Gemini           │
+       │  (Orchestrator)│    │  Gemini           │
        └───────┬────────┘    └────────┬──────────┘
                │                      │
-       ┌───────▼──────────────────────▼──────────┐
-       │           GSD Methodology               │
-       │  29 workflows → SPEC → PLAN → EXECUTE   │
-       │  .agent/workflows/ + .claude/skills/     │
-       └───────┬──────────────────────┬──────────┘
+       ┌───────▼──────────────────────┘
+       │  Sub-Agents (13)  ←─── .claude/agents/
+       │  ┌─────────┬──────────┬─────────┐
+       │  │ Opus(5) │Sonnet(4) │Haiku(4) │
+       │  │planner  │executor  │clean    │
+       │  │arch-rev │verifier  │commit   │
+       │  │impact   │plan-chk  │create-pr│
+       │  │pr-review│codebase  │ctx-mon  │
+       │  │debugger │          │         │
+       │  └────┬────┴────┬─────┴────┬────┘
+       │       │ skills  │ inherit  │
+       │  ┌────▼─────────▼──────────▼────┐
+       │  │  Skills (14)  ←─── .claude/skills/
+       │  │  Knowledge + Workflow defs   │
+       │  └──────────────────────────────┘
+       │
+       ┌───────▼──────────────────────────────────┐
+       │           GSD Methodology                │
+       │  29 workflows → SPEC → PLAN → EXECUTE    │
+       │  .agent/workflows/ + .claude/skills/      │
+       └───────┬──────────────────────┬───────────┘
                │                      │
        ┌───────▼────────┐    ┌────────▼──────────┐
        │ code-graph-rag │    │   memory-graph    │
@@ -57,14 +73,20 @@ AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이�
   - 예제 (`.gsd/examples/`, 3개)
   - 상태 문서 (`.gsd/STATE.md`, `JOURNAL.md`, `TODO.md`)
 
-### 2. Claude Code Skills
-- **Purpose:** AI 에이전트의 모듈형 능력 정의
-- **Location:** `.claude/skills/` (14 SKILL.md files)
-- **Categories:**
+### 2. Claude Code Skills & Sub-Agents
+- **Purpose:** AI 에이전트의 모듈형 능력 정의 + 모델별 서브에이전트 실행
+- **Skills Location:** `.claude/skills/` (14 SKILL.md files)
+- **Agents Location:** `.claude/agents/` (13 agent .md files)
+- **Skill Categories:**
   - **Planning (2):** planner, plan-checker
   - **Execution (4):** executor, commit, create-pr, clean
   - **Verification (3):** verifier, empirical-validation, pr-review
   - **Analysis (5):** arch-review, impact-analysis, codebase-mapper, context-health-monitor, debugger
+- **Agent-Skill Relationship:** 각 에이전트는 `skills` 필드로 대응하는 스킬을 참조하여 지식을 상속받음. `empirical-validation` 스킬만 에이전트 없이 가이드라인으로 유지.
+- **Model Distribution:**
+  - **Opus (5):** planner, arch-review, impact-analysis, pr-review, debugger — 복잡한 추론, 아키텍처 분석, 멀티 관점 평가
+  - **Sonnet (4):** executor, verifier, plan-checker, codebase-mapper — 멀티파일 구현, 검증, 탐색
+  - **Haiku (4):** clean, commit, create-pr, context-health-monitor — 경량 도구 호출, 포매팅
 
 ### 3. code-graph-rag + memory-graph + MCP
 - **Purpose:** AST 기반 코드 분석 및 에이전트 영구 기억 제공
@@ -83,11 +105,28 @@ AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이�
   - Makefile 타겟 (setup, up, down, index, lint, test, typecheck, validate, clean, patch-prompt/restore/clean)
 
 ### 5. Multi-Agent Configuration
-- **Purpose:** 동일 GSD 방법론을 3개 에이전트에서 사용
-- **Agents:**
-  - **Claude Code:** `.claude/skills/`, `CLAUDE.md`, `.claude/settings.local.json`
+- **Purpose:** 동일 GSD 방법론을 3+13 에이전트에서 사용
+- **Orchestrator Agents:**
+  - **Claude Code:** `.claude/skills/`, `.claude/agents/`, `CLAUDE.md`, `.claude/settings.local.json`
   - **GitHub Agent:** `.github/agents/agent.md` (9 sections, Senior Staff Engineer role)
   - **Gemini:** `.gemini/GEMINI.md`
+- **Claude Sub-Agents (13):** `.claude/agents/` — 태스크 유형별 모델이 지정된 서브에이전트. 오케스트레이터(Claude Code)가 태스크 복잡도에 따라 적절한 서브에이전트를 위임.
+
+  | Agent | Model | Tools | Skill |
+  |-------|-------|-------|-------|
+  | planner | opus | Read, Grep, Glob | planner |
+  | arch-review | opus | Read, Grep, Glob | arch-review |
+  | impact-analysis | opus | Read, Grep, Glob | impact-analysis |
+  | pr-review | opus | Read, Bash, Grep, Glob | pr-review |
+  | debugger | opus | Read, Write, Edit, Bash, Grep, Glob | debugger |
+  | executor | sonnet | Read, Write, Edit, Bash, Grep, Glob | executor |
+  | verifier | sonnet | Read, Bash, Grep, Glob | verifier |
+  | plan-checker | sonnet | Read, Grep, Glob | plan-checker |
+  | codebase-mapper | sonnet | Read, Bash, Grep, Glob | codebase-mapper |
+  | clean | haiku | Read, Write, Edit, Bash, Grep, Glob | clean |
+  | commit | haiku | Read, Bash, Grep, Glob | commit |
+  | create-pr | haiku | Read, Bash, Grep, Glob | create-pr |
+  | context-health-monitor | haiku | Read, Grep, Glob | context-health-monitor |
 
 ### 6. Code Quality Gate
 - **Purpose:** 코드 품질 자동 검증
