@@ -53,14 +53,21 @@ This compares your project files against GSD reference configurations:
 
 ### Step 3: Interactive Setup (if needed)
 
-If `.gsd/SPEC.md` is empty or contains only template content, collect project information:
+If `.gsd/SPEC.md` is empty or contains only placeholder content:
 
-1. Ask for project name and brief description
-2. Ask for primary programming language(s)
-3. Ask for key dependencies or frameworks
-4. Ask for project goals or constraints
+1. **Read the template**: Read `.gsd/templates/spec.md` to understand the document structure
+2. **Collect project information** via AskUserQuestion:
+   - Project name and brief description (Vision)
+   - Primary programming language(s) and frameworks
+   - 2-3 key goals
+   - Known constraints (technical, business, timeline)
+   - Success criteria (measurable outcomes)
+3. **Populate SPEC.md**: Write the collected information using the template structure from `templates/spec.md`
+   - Keep `Status: DRAFT` until user finalizes
+   - Fill in all sections with collected info
+   - Remove placeholder text like `{Goal 1}`
 
-Then populate `.gsd/SPEC.md` with the collected information.
+**Important**: The working document must follow the template structure, not just contain raw answers.
 
 ## After Initialization
 
