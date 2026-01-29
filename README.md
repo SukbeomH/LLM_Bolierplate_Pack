@@ -1037,17 +1037,37 @@ make build-antigravity
 ```
 antigravity-boilerplate/
 ├── .agent/
-│   ├── skills/              # 15개 스킬
-│   ├── workflows/           # 30개 워크플로우
-│   └── rules/               # 3개 규칙 파일
-│       ├── code-style.md
-│       ├── safety.md
-│       └── gsd-workflow.md
+│   ├── skills/              # 15개 스킬 (SKILL.md format)
+│   ├── workflows/           # 30개 워크플로우 (// turbo 지원)
+│   └── rules/               # 3개 패시브 규칙
+│       ├── code-style.md    # Python 코드 스타일
+│       ├── safety.md        # 안전 규칙
+│       └── gsd-workflow.md  # GSD 방법론 규칙
 ├── templates/gsd/           # GSD 템플릿
 ├── scripts/                 # 유틸리티 스크립트
-├── mcp_config.json          # MCP 서버 설정
+├── mcp-settings.json        # MCP 서버 설정 (Antigravity 표준)
 └── README.md
 ```
+
+### Antigravity 주요 개념
+
+| 컴포넌트 | 설명 | 트리거 |
+|----------|------|--------|
+| **Workflows** | 표준화된 작업 레시피 | `/` 슬래시 커맨드 또는 자연어 |
+| **Rules** | 패시브 가이드라인 (항상 적용) | 자동 |
+| **Skills** | 전문화된 에이전트 기능 | 에이전트가 자동 인식 |
+
+### Turbo Mode
+
+워크플로우에서 `// turbo` 주석으로 명령어 자동 실행:
+
+```markdown
+1. 테스트 실행
+// turbo
+2. `npm run test`
+```
+
+또는 `// turbo-all`로 모든 명령어 자동 실행.
 
 ### 사용 방법
 
@@ -1059,13 +1079,30 @@ antigravity antigravity-boilerplate/
 **기존 프로젝트에 적용:**
 ```bash
 cp -r antigravity-boilerplate/.agent /path/to/project/
-cp antigravity-boilerplate/mcp_config.json /path/to/project/
+cp antigravity-boilerplate/mcp-settings.json /path/to/project/
 ```
 
 **MCP 서버 설정:**
+
+*옵션 1: 프로젝트 레벨 (권장)*
 1. Antigravity에서 Agent panel "..." → MCP Servers
 2. Manage MCP Servers → View raw config
-3. `mcp_config.json` 내용 추가
+3. `mcp-settings.json` 내용 추가
+
+*옵션 2: 글로벌*
+```bash
+mkdir -p ~/.gemini/antigravity
+cp mcp-settings.json ~/.gemini/antigravity/
+```
+
+### Claude Code → Antigravity 마이그레이션
+
+| Claude Code | Antigravity |
+|-------------|-------------|
+| `CLAUDE.md` | `.agent/rules/*.md` |
+| `.claude/skills/` | `.agent/skills/` |
+| Claude Hooks | `.agent/workflows/` (`// turbo` 사용) |
+| `.mcp.json` | `mcp-settings.json` |
 
 상세 내용은 [Build Guide](docs/BUILD.md)를 참조하세요.
 

@@ -100,15 +100,15 @@ make build-antigravity
 ```
 antigravity-boilerplate/
 ├── .agent/
-│   ├── skills/              # 15개 스킬 (Antigravity SKILL.md 형식)
+│   ├── skills/              # 15개 스킬 (SKILL.md format)
 │   │   ├── planner/
 │   │   ├── executor/
 │   │   └── ...
-│   ├── workflows/           # 30개 워크플로우 (description 자동 추가)
+│   ├── workflows/           # 30개 워크플로우 (// turbo 지원)
 │   │   ├── plan.md
 │   │   ├── execute.md
 │   │   └── ...
-│   └── rules/               # 3개 규칙 파일 (CLAUDE.md에서 추출)
+│   └── rules/               # 3개 패시브 규칙 (항상 적용)
 │       ├── code-style.md    # Python/코드 스타일 규칙
 │       ├── safety.md        # 안전 규칙 (금지/필수 사항)
 │       └── gsd-workflow.md  # GSD 워크플로우 규칙
@@ -117,7 +117,7 @@ antigravity-boilerplate/
 │   ├── scaffold-gsd.sh      # GSD 문서 초기화
 │   ├── bash-guard.py        # Bash 명령 가드
 │   └── file-protect.py      # 파일 보호
-├── mcp_config.json          # MCP 서버 설정
+├── mcp-settings.json        # MCP 서버 설정 (Antigravity 표준)
 └── README.md
 ```
 
@@ -135,10 +135,31 @@ antigravity-boilerplate/
    - `code-style.md`: Python 표준, 패키지 관리, 코드 품질
    - `safety.md`: 금지 사항, 필수 사항, 터미널 안전
    - `gsd-workflow.md`: 검증 철학, GSD 사이클, MCP 우선순위
-5. **MCP 변환**: `.mcp.json` → `mcp_config.json`
+5. **MCP 변환**: `.mcp.json` → `mcp-settings.json` (Antigravity 표준)
 6. **템플릿 복사**: `.gsd/templates/`, `.gsd/examples/`
 7. **유틸리티 스크립트**: `scaffold-gsd.sh`, Python 훅
 8. **검증**: 구조, 스킬 description, JSON 유효성
+
+### Antigravity 주요 개념
+
+| 컴포넌트 | 설명 | 트리거 |
+|----------|------|--------|
+| **Workflows** | 표준화된 작업 레시피 | `/` 슬래시 커맨드 또는 자연어 |
+| **Rules** | 패시브 가이드라인 (항상 적용) | 자동 |
+| **Skills** | 전문화된 에이전트 기능 | 에이전트가 자동 인식 |
+
+### Turbo Mode
+
+워크플로우에서 명령어 자동 실행:
+
+```markdown
+1. 테스트 실행
+// turbo
+2. `npm run test`
+```
+
+- `// turbo`: 해당 명령어만 자동 실행
+- `// turbo-all`: 워크플로우 내 모든 명령어 자동 실행
 
 ### Antigravity 사용
 
@@ -147,8 +168,12 @@ antigravity-boilerplate/
 # Antigravity IDE에서 열기
 antigravity antigravity-boilerplate/
 
-# MCP 설정: Agent "..." → MCP Servers → View raw config
-# mcp_config.json 내용 추가
+# MCP 설정 (옵션 A): Agent "..." → MCP Servers → View raw config
+# mcp-settings.json 내용 추가
+
+# MCP 설정 (옵션 B): 글로벌 설정
+mkdir -p ~/.gemini/antigravity
+cp mcp-settings.json ~/.gemini/antigravity/
 ```
 
 **방법 2: 기존 프로젝트에 적용**
@@ -157,7 +182,7 @@ antigravity antigravity-boilerplate/
 cp -r antigravity-boilerplate/.agent /path/to/project/
 
 # MCP 설정 복사
-cp antigravity-boilerplate/mcp_config.json /path/to/project/
+cp antigravity-boilerplate/mcp-settings.json /path/to/project/
 ```
 
 **방법 3: GSD 문서 초기화**
@@ -179,7 +204,7 @@ zsh antigravity-boilerplate/scripts/scaffold-gsd.sh
 | `.claude/agents/` | `agents/` | (내부 시스템) |
 | `.claude/hooks/` | `hooks/hooks.json` + `scripts/` | `.agent/rules/` |
 | `CLAUDE.md` | (그대로) | `.agent/rules/*.md` |
-| `.mcp.json` | `.mcp.json` | `mcp_config.json` |
+| `.mcp.json` | `.mcp.json` | `mcp-settings.json` |
 
 ### 기능 차이
 
@@ -287,10 +312,17 @@ head -5 .claude/skills/*/SKILL.md
 
 ### MCP 서버 연결 실패 (Antigravity)
 
+**옵션 1: 프로젝트 레벨**
 1. Agent panel "..." → MCP Servers → Manage MCP Servers
 2. "View raw config" 클릭
-3. `mcp_config.json` 내용 수동 추가
+3. `mcp-settings.json` 내용 수동 추가
 4. Antigravity 재시작
+
+**옵션 2: 글로벌 설정**
+```bash
+mkdir -p ~/.gemini/antigravity
+cp mcp-settings.json ~/.gemini/antigravity/
+```
 
 ---
 
