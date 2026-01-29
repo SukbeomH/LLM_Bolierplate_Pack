@@ -29,6 +29,7 @@ AI 에이전트 기반 개발을 위한 프로젝트 보일러플레이트.
 | [MCP](docs/MCP.md) | MCP 서버 상세 (graph-code 19도구, memorygraph 12도구) |
 | [Linting](docs/LINTING.md) | Ruff/Mypy 설정 상세 (규칙, 제한, 자동 포맷) |
 | [GitHub Workflow](docs/GITHUB-WORKFLOW.md) | CI/CD 파이프라인 상세 (jobs, 캐싱, Issue 템플릿) |
+| [Build](docs/BUILD.md) | 빌드 가이드 (Claude Code Plugin, Google Antigravity) |
 
 ---
 
@@ -72,10 +73,12 @@ AI 에이전트 기반 개발을 위한 프로젝트 보일러플레이트.
 ├── .mcp.json                  # MCP 서버 설정
 ├── scripts/                   # 유틸리티 스크립트
 │   ├── build-plugin.sh        # GSD 플러그인 빌드
+│   ├── build-antigravity.sh   # Antigravity 워크스페이스 빌드
 │   ├── bootstrap.sh           # 프로젝트 부트스트랩
 │   ├── compact-context.sh     # 컨텍스트 압축
 │   └── organize-docs.sh       # 문서 정리
-├── gsd-plugin/                # 빌드된 플러그인 (배포용)
+├── gsd-plugin/                # 빌드된 플러그인 (Claude Code)
+├── antigravity-boilerplate/   # 빌드된 워크스페이스 (Antigravity IDE)
 ├── Makefile                   # 개발 명령어
 ├── pyproject.toml             # Python 설정 (uv + hatchling)
 └── CLAUDE.md                  # Claude Code 지침
@@ -165,6 +168,220 @@ src/gsd_stat/
 ```
 
 이 예제는 GSD 워크플로우와 테스트 작성 패턴을 데모합니다.
+
+---
+
+## 실행 흐름 & 의사결정
+
+플러그인의 각 컴포넌트(Skills, Agents, Hooks)가 언제, 어떻게 실행되는지 설명합니다.
+
+### 세션 라이프사이클
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              SESSION LIFECYCLE                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [Claude Code 시작]
+         │
+         ▼
+  ┌──────────────┐
+  │ SessionStart │ ─────▶ session-start.sh
+  │    Hook      │        • .gsd/STATE.md 로드
+  └──────────────┘        • git status 주입
+         │
+         ▼
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                           MAIN LOOP                                       │
+  │  ┌────────────┐     ┌────────────┐     ┌────────────┐     ┌────────────┐ │
+  │  │사용자 입력 │────▶│ 의사결정   │────▶│ 도구 실행  │────▶│ 결과 반환  │ │
+  │  └────────────┘     └────────────┘     └────────────┘     └────────────┘ │
+  │        ▲                                                         │        │
+  │        └─────────────────────────────────────────────────────────┘        │
+  └──────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+  ┌──────────────┐
+  │  SessionEnd  │ ─────▶ save-session-changes.sh
+  │    Hook      │        save-transcript.sh
+  └──────────────┘        • 변경사항 추적
+                          • 대화 기록 저장
+```
+
+### 의사결정 흐름
+
+사용자 입력을 받으면 Claude는 다음 순서로 처리 방식을 결정합니다:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DECISION FLOW                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [사용자 입력]
+         │
+         ▼
+  ┌──────────────────┐
+  │ 워크플로우 명령어? │──── Yes ───▶ /plan, /execute, /verify 등
+  │   (/gsd:*)       │              해당 워크플로우 실행
+  └──────────────────┘
+         │ No
+         ▼
+  ┌──────────────────┐
+  │ 스킬 트리거 조건? │──── Yes ───▶ 매칭되는 스킬 자동 호출
+  │                  │              (description 기반 판단)
+  └──────────────────┘
+         │ No
+         ▼
+  ┌──────────────────┐
+  │ 복잡한 작업?     │──── Yes ───▶ 서브에이전트 위임
+  │ (멀티스텝/전문)  │              (Task tool 사용)
+  └──────────────────┘
+         │ No
+         ▼
+  [직접 처리]
+```
+
+### 스킬 트리거 조건
+
+| 스킬 | 트리거 조건 | 트리거 예시 |
+|------|-------------|-------------|
+| `planner` | 계획 수립 요청 | "이 기능 어떻게 구현하지?", `/plan` |
+| `plan-checker` | 계획 검증 필요 | 계획 생성 직후 자동 호출 |
+| `executor` | 계획 실행 요청 | `/execute`, "이 계획 실행해줘" |
+| `verifier` | 구현 검증 요청 | `/verify`, "제대로 동작하는지 확인해줘" |
+| `debugger` | 버그 조사 | "왜 안 되지?", "에러 원인 찾아줘" |
+| `impact-analysis` | 코드 수정 전 | 리팩토링, 삭제, 대규모 수정 전 |
+| `arch-review` | 구조 변경 시 | 새 모듈 추가, 아키텍처 변경 |
+| `codebase-mapper` | 코드베이스 파악 | "프로젝트 구조 알려줘", `/map` |
+| `commit` | 커밋 요청 | "커밋해줘", 작업 완료 후 |
+| `create-pr` | PR 생성 요청 | "PR 만들어줘" |
+| `pr-review` | PR 리뷰 요청 | "이 PR 리뷰해줘" |
+| `clean` | 코드 품질 체크 | "린트 돌려줘", "코드 정리해줘" |
+| `context-health-monitor` | 긴 세션 | 자동 모니터링 (복잡도 감지) |
+| `empirical-validation` | 완료 확인 | "다 됐어?" → 증거 요구 |
+| `bootstrap` | 프로젝트 초기화 | `/bootstrap`, "프로젝트 셋업해줘" |
+
+### 도구 실행과 Hook 체인
+
+도구가 실행될 때 Hook이 자동으로 개입합니다:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           TOOL EXECUTION CHAIN                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [도구 호출 요청]
+         │
+         ▼
+  ┌──────────────┐
+  │ PreToolUse   │ ─────▶ 도구별 검증
+  │    Hook      │
+  └──────────────┘
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+ [허용]     [차단]
+    │         │
+    ▼         └──▶ "차단됨: {reason}" 반환
+  ┌──────────────┐
+  │  도구 실행   │
+  └──────────────┘
+         │
+         ▼
+  ┌──────────────┐
+  │ PostToolUse  │ ─────▶ 후처리 (포맷팅 등)
+  │    Hook      │
+  └──────────────┘
+         │
+         ▼
+  ┌──────────────┐
+  │    Stop      │ ─────▶ 턴 종료 시 처리
+  │    Hook      │        (인덱싱, 검증)
+  └──────────────┘
+```
+
+### Hook 트리거 조건
+
+| Hook | 이벤트 | 트리거 조건 | 동작 |
+|------|--------|-------------|------|
+| `session-start.sh` | SessionStart | Claude Code 시작 | STATE.md 로드, git status 주입 |
+| `file-protect.py` | PreToolUse | Edit/Write/Read 도구 사용 시 | .env, 시크릿 파일 차단 |
+| `bash-guard.py` | PreToolUse | Bash 도구 사용 시 | rm -rf, 위험 명령 차단 |
+| `auto-format-py.sh` | PostToolUse | Python 파일 Edit/Write 후 | ruff format 자동 실행 |
+| `pre-compact-save.sh` | PreCompact | 컨텍스트 압축 전 | 상태 백업 |
+| `post-turn-index.sh` | Stop | 매 턴 종료 시 | 변경된 코드 인덱싱 |
+| `post-turn-verify.sh` | Stop | 매 턴 종료 시 | 작업 검증 |
+| `save-session-changes.sh` | SessionEnd | 세션 종료 시 | 변경사항 추적 |
+| `save-transcript.sh` | SessionEnd | 세션 종료 시 | 대화 기록 저장 |
+
+### 에이전트 위임 조건
+
+Claude가 서브에이전트를 spawning하는 조건:
+
+| 조건 | 위임 대상 | 이유 |
+|------|-----------|------|
+| 복잡한 멀티스텝 작업 | `executor` | 별도 컨텍스트에서 집중 실행 |
+| 대규모 코드 분석 | `codebase-mapper` | 전체 코드베이스 탐색 필요 |
+| 체계적 디버깅 | `debugger` | 상태 추적 + 3-strike rule |
+| 영향 분석 | `impact-analysis` | 의존성 그래프 탐색 |
+| 아키텍처 검토 | `arch-review` | 전문적 관점 필요 |
+
+### 완전한 워크플로우 예시
+
+`/execute` 명령 실행 시 전체 흐름:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    /execute WORKFLOW EXAMPLE                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [사용자: /execute 1]
+         │
+         ▼
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ 1. 워크플로우 로드                                                        │
+  │    .agent/workflows/execute.md 읽기                                       │
+  └──────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ 2. executor 스킬 호출                                                     │
+  │    .claude/skills/executor/SKILL.md 로드                                  │
+  │    • Deviation Rules 적용                                                 │
+  │    • Checkpoint Protocol 준수                                             │
+  └──────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ 3. Task 실행 루프                                                         │
+  │    ┌────────────────────────────────────────────────────────────────┐    │
+  │    │ For each task:                                                  │    │
+  │    │   a. 코드 수정 (Edit/Write)                                     │    │
+  │    │      └─▶ PreToolUse: file-protect.py 검증                       │    │
+  │    │      └─▶ PostToolUse: auto-format-py.sh 포맷팅                  │    │
+  │    │   b. 테스트 실행 (Bash)                                         │    │
+  │    │      └─▶ PreToolUse: bash-guard.py 검증                         │    │
+  │    │   c. 검증 통과 시 커밋                                           │    │
+  │    │      └─▶ commit 스킬 호출                                        │    │
+  │    │   d. PRD 업데이트                                                │    │
+  │    │      └─▶ update_prd.py complete-plan                            │    │
+  │    └────────────────────────────────────────────────────────────────┘    │
+  └──────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ 4. 턴 종료                                                                │
+  │    └─▶ Stop Hook: post-turn-index.sh (코드 인덱싱)                       │
+  │    └─▶ Stop Hook: post-turn-verify.sh (작업 검증)                        │
+  └──────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ 5. SUMMARY.md 생성                                                        │
+  │    .gsd/phases/{N}/{plan}-SUMMARY.md                                      │
+  └──────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -398,34 +615,170 @@ SessionStart → session-start.sh 실행
 
 ## MCP Servers (2)
 
-### code-graph-rag
+### MCP 의사결정 흐름
 
-Tree-sitter + SQLite 기반 **AST 코드 분석** 서버.
+Claude는 작업 유형에 따라 적절한 MCP 도구를 선택합니다:
 
-| 도구 | 용도 |
-|------|------|
-| `query` | 자연어 코드 그래프 쿼리 |
-| `semantic_search` | 의미 기반 코드 검색 |
-| `analyze_code_impact` | 변경 영향 분석 |
-| `analyze_hotspots` | 복잡도/커플링 핫스팟 |
-| `detect_code_clones` | 중복 코드 탐지 |
-| `find_similar_code` | 유사 코드 검색 |
-| `list_file_entities` | 파일 내 엔티티 |
-| `list_entity_relationships` | 엔티티 의존성 |
-| `suggest_refactoring` | 리팩토링 제안 |
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           MCP DECISION FLOW                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-### memory-graph
+  [작업 요청]
+         │
+         ▼
+  ┌──────────────────┐
+  │ 코드 분석 필요?  │──── Yes ───▶ code-graph-rag
+  │ (구조/의존성/영향)│              (AST 기반 분석)
+  └──────────────────┘
+         │ No
+         ▼
+  ┌──────────────────┐
+  │ 과거 컨텍스트    │──── Yes ───▶ memory-graph
+  │ 필요?            │              (기억 검색/저장)
+  └──────────────────┘
+         │ No
+         ▼
+  [기본 도구 사용]
+  (Read, Grep, Glob)
+```
 
-에이전트 **영구 기억** 서버.
+### code-graph-rag 도구 선택
 
-| 도구 | 용도 |
-|------|------|
-| `store_memory` | 패턴/결정/학습 저장 |
-| `recall_memories` | 자연어 기반 검색 |
-| `search_memories` | 필터 기반 검색 |
-| `get_memory` / `update_memory` / `delete_memory` | CRUD |
-| `create_relationship` | 기억 간 관계 생성 |
-| `get_related_memories` | 관련 기억 조회 |
+코드 분석 요청 시 상황에 맞는 도구를 선택합니다:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      code-graph-rag TOOL SELECTION                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [코드 분석 요청]
+         │
+         ├─── "이 함수 수정하면 뭐가 영향받아?" ───▶ analyze_code_impact
+         │
+         ├─── "비슷한 코드 있어?" ─────────────────▶ find_similar_code
+         │                                          detect_code_clones
+         │
+         ├─── "이 클래스가 뭘 사용해?" ────────────▶ list_entity_relationships
+         │
+         ├─── "이 파일에 뭐가 있어?" ──────────────▶ list_file_entities
+         │
+         ├─── "복잡한 코드 어디야?" ───────────────▶ analyze_hotspots
+         │
+         ├─── "리팩토링 어떻게 해?" ───────────────▶ suggest_refactoring
+         │
+         └─── "XXX 관련 코드 찾아줘" ──────────────▶ semantic_search
+                                                    query
+```
+
+| 도구 | 트리거 상황 | 예시 요청 |
+|------|-------------|-----------|
+| `analyze_code_impact` | 수정/삭제 전 영향 분석 | "이 함수 삭제하면?", 리팩토링 전 |
+| `semantic_search` | 개념/기능 기반 검색 | "인증 처리하는 코드", "에러 핸들링" |
+| `query` | 자연어 코드 질문 | "User 모델의 관계는?", "API 엔드포인트 목록" |
+| `find_similar_code` | 패턴 찾기 | "이거랑 비슷한 코드 있어?" |
+| `detect_code_clones` | 중복 제거 | "중복 코드 찾아줘" |
+| `list_file_entities` | 파일 구조 파악 | "이 파일에 뭐 정의돼 있어?" |
+| `list_entity_relationships` | 의존성 파악 | "이 클래스가 뭘 import해?" |
+| `analyze_hotspots` | 복잡도 분석 | "리팩토링 필요한 곳", "복잡한 코드" |
+| `suggest_refactoring` | 개선 제안 | "이 코드 어떻게 개선해?" |
+
+### memory-graph 도구 선택
+
+세션 간 학습과 기억 관리:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      memory-graph TOOL SELECTION                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [기억 관련 요청]
+         │
+         ├─── "저번에 어떻게 했더라?" ────────────▶ recall_memories
+         │                                          search_memories
+         │
+         ├─── "이 패턴 기억해둬" ──────────────────▶ store_memory
+         │
+         ├─── "관련된 결정들 뭐 있어?" ────────────▶ get_related_memories
+         │
+         └─── "이전 기억 수정해줘" ────────────────▶ update_memory
+                                                    delete_memory
+```
+
+| 도구 | 트리거 상황 | 예시 |
+|------|-------------|------|
+| `store_memory` | 중요 패턴/결정 발견 | 아키텍처 결정, 버그 해결 패턴, 학습 내용 |
+| `recall_memories` | 자연어로 기억 검색 | "인증 관련 결정", "이전 버그 수정" |
+| `search_memories` | 태그/필터로 검색 | `tags: ["architecture"]`, `type: "decision"` |
+| `get_related_memories` | 연관 기억 탐색 | 특정 결정과 관련된 다른 결정들 |
+| `create_relationship` | 기억 간 연결 | "이 버그 수정은 저 아키텍처 결정과 관련" |
+| `update_memory` | 기억 갱신 | 결정 변경, 패턴 업데이트 |
+| `delete_memory` | 기억 삭제 | 더 이상 유효하지 않은 정보 |
+
+### MCP 통합 워크플로우 예시
+
+코드 수정 작업 시 MCP 도구 활용 흐름:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    MCP INTEGRATION EXAMPLE                                   │
+│                    "UserService 리팩토링해줘"                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [1. 과거 기억 검색]
+         │
+         ▼
+  memory-graph: recall_memories("UserService 관련 결정")
+         │
+         └──▶ "2024-01에 인증 로직 분리 결정함" 발견
+         │
+         ▼
+  [2. 영향 분석]
+         │
+         ▼
+  code-graph-rag: analyze_code_impact("UserService")
+         │
+         └──▶ AuthController, OrderService, 테스트 12개 영향
+         │
+         ▼
+  [3. 유사 코드 확인]
+         │
+         ▼
+  code-graph-rag: find_similar_code("UserService.authenticate")
+         │
+         └──▶ AdminService에 중복 로직 발견
+         │
+         ▼
+  [4. 리팩토링 제안]
+         │
+         ▼
+  code-graph-rag: suggest_refactoring("UserService")
+         │
+         └──▶ "인증 로직을 AuthService로 추출 권장"
+         │
+         ▼
+  [5. 실행 후 기억 저장]
+         │
+         ▼
+  memory-graph: store_memory({
+    type: "decision",
+    title: "UserService 리팩토링",
+    content: "인증 로직을 AuthService로 분리",
+    tags: ["architecture", "refactoring"]
+  })
+```
+
+### MCP vs 기본 도구 선택 기준
+
+| 상황 | 선택 | 이유 |
+|------|------|------|
+| 단일 파일 읽기 | `Read` | 간단한 작업엔 기본 도구 |
+| 텍스트 패턴 검색 | `Grep` | 정규식 기반 빠른 검색 |
+| 파일명 패턴 검색 | `Glob` | 파일 시스템 탐색 |
+| **의존성/영향 분석** | `code-graph-rag` | AST 기반 정확한 분석 필요 |
+| **의미 기반 코드 검색** | `code-graph-rag` | "인증 처리" 같은 개념 검색 |
+| **과거 결정/패턴 검색** | `memory-graph` | 세션 간 컨텍스트 유지 |
+| **학습 내용 저장** | `memory-graph` | 영구 기억으로 축적 |
 
 ---
 
@@ -555,6 +908,17 @@ context7을 포함하려면 빌드 스크립트를 수정하거나, 플러그인
 
 ---
 
+## 빌드
+
+이 보일러플레이트를 다른 형식으로 빌드할 수 있습니다. 상세 내용은 [Build Guide](docs/BUILD.md)를 참조하세요.
+
+| 타겟 | 명령어 | 출력 |
+|------|--------|------|
+| Claude Code Plugin | `make build-plugin` | `gsd-plugin/` |
+| Google Antigravity | `make build-antigravity` | `antigravity-boilerplate/` |
+
+---
+
 ## GSD Plugin 빌드
 
 이 보일러플레이트를 Claude Code 플러그인으로 변환할 수 있습니다.
@@ -658,6 +1022,55 @@ curl -L "https://github.com/SukbeomH/LLM_Bolierplate_Pack/releases/download/gsd-
 
 ---
 
+## Antigravity 빌드
+
+이 보일러플레이트를 Google Antigravity IDE 워크스페이스로 변환할 수 있습니다.
+
+### 빌드
+
+```bash
+make build-antigravity
+```
+
+### 빌드 산출물
+
+```
+antigravity-boilerplate/
+├── .agent/
+│   ├── skills/              # 15개 스킬
+│   ├── workflows/           # 30개 워크플로우
+│   └── rules/               # 3개 규칙 파일
+│       ├── code-style.md
+│       ├── safety.md
+│       └── gsd-workflow.md
+├── templates/gsd/           # GSD 템플릿
+├── scripts/                 # 유틸리티 스크립트
+├── mcp_config.json          # MCP 서버 설정
+└── README.md
+```
+
+### 사용 방법
+
+**독립 워크스페이스로 사용:**
+```bash
+antigravity antigravity-boilerplate/
+```
+
+**기존 프로젝트에 적용:**
+```bash
+cp -r antigravity-boilerplate/.agent /path/to/project/
+cp antigravity-boilerplate/mcp_config.json /path/to/project/
+```
+
+**MCP 서버 설정:**
+1. Antigravity에서 Agent panel "..." → MCP Servers
+2. Manage MCP Servers → View raw config
+3. `mcp_config.json` 내용 추가
+
+상세 내용은 [Build Guide](docs/BUILD.md)를 참조하세요.
+
+---
+
 ## Make 명령어
 
 ```bash
@@ -675,6 +1088,8 @@ make help                   # 전체 명령어 목록
 | `make lint-fix` | Ruff 자동 수정 |
 | `make test` | pytest 실행 |
 | `make typecheck` | mypy 타입 체크 |
+| `make build-plugin` | Claude Code 플러그인 빌드 |
+| `make build-antigravity` | Antigravity 워크스페이스 빌드 |
 
 ---
 
