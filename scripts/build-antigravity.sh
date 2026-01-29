@@ -1,10 +1,9 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 #
 # Antigravity Build Script
 # Converts boilerplate to Google Antigravity IDE format
 #
-setopt ERR_EXIT
-setopt NO_UNSET
+set -euo pipefail
 
 # --- Configuration ---
 BOILERPLATE="$(cd "$(dirname "$0")/.." && pwd)"
