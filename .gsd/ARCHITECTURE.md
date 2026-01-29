@@ -111,10 +111,10 @@ AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이�
 
 ### 5. Infrastructure
 - **Purpose:** 개발 환경 자동화
-- **Location:** `Makefile` (16 targets)
+- **Location:** `Makefile` (15 targets)
 - **Services:**
   - code-graph-rag: `npx -y @er77/code-graph-rag-mcp` (on-demand, Docker 불필요)
-  - Makefile 타겟: setup, install-deps, install-memorygraph, init-env, status, index, lint, lint-fix, test, typecheck, validate, patch-prompt, patch-restore, patch-clean, clean, help
+  - Makefile 타겟: setup, install-deps, install-memorygraph, init-env, status, index, lint, lint-fix, test, typecheck, patch-prompt, patch-restore, patch-clean, clean, help, check-deps
 
 ### 6. Multi-Agent Configuration
 - **Purpose:** 동일 GSD 방법론을 3+13 에이전트에서 사용
@@ -200,16 +200,21 @@ User Intent
 
 ### Resolved
 - [x] `scripts/validate_spec.py` 경로 수정: `.agent/agent.md` → `.github/agents/agent.md`
-- [x] `tests/` 스켈레톤 구성 완료: conftest.py (3 fixtures) + test_sample.py (8 tests)
-- [x] CI/CD 파이프라인 구성: `.github/workflows/ci.yml` (lint + typecheck + test, Python 3.11-3.13)
+- [x] `tests/` 스켈레톤 구성 완료: conftest.py (3 fixtures) + 29 tests (3 파일)
+- [x] CI/CD 파이프라인 구성: `.github/workflows/ci.yml` (lint + typecheck + test, Python 3.12)
 - [x] Reference repos `.gitignore`에 추가: `awesome-claude-code/`, `claude-code-tips/`, `everything-claude-code/`, `ralph/`
 - [x] `.vscode/` 팀 공유 가능: settings.json + extensions.json 커밋
 - [x] Docker/Memgraph 의존성 제거 — code-graph-rag SQLite 기반으로 전환
+- [x] Python 버전 3.12 고정 — `pyproject.toml`, CI, Ruff, Mypy 모두 일치
+- [x] `scripts/validate_spec.py` 참조 제거 — 파일 존재하지 않음
+- [x] `python-snippets` 서브모듈 정리 — 디렉토리 및 설정 모두 제거됨
+- [x] 예제 CLI 도구 추가 — `gsd-stat` (src/gsd_stat/, 29개 테스트)
+- [x] gsd-plugin 전환 완료 — v1.2.0 배포, 31 commands, 14 skills, 13 agents
+- [x] 컨텍스트 관리 시스템 — PATTERNS.md, compact-context.sh, organize-docs.sh
 
 ### Open
-- [ ] `scripts/validate_spec.py`가 `.specs/SPEC.md`, `.specs/PLAN.md` 경로를 검증하지만 실제 GSD 문서는 `.gsd/`에 위치 — 경로 불일치
-- [ ] 도메인 로직 없음 — 보일러플레이트 인프라만 존재, 실제 앱 코드 생성 필요
-- [ ] MCP 서버 2개 외부 의존 — code-graph-rag (npx on-demand), memorygraph (pipx) 별도 설치 필요
-- [ ] `python-snippets` 서브모듈 상태 불일치 — git status에서 modified로 표시되나 `.gitmodules` 누락
-- [ ] `.gsd/SPEC.md`가 템플릿 상태 (DRAFT) — 실제 프로젝트 스펙 미작성
-- [ ] `.venv`에 Python 3.14가 설치되어 있으나 `pyproject.toml`은 `>=3.11`, CI는 3.11-3.13 — 로컬/CI 버전 불일치 가능성
+- [ ] MCP 서버 2개 외부 의존 — code-graph-rag (npx on-demand), memorygraph (pipx) 별도 설치 필요 (설계 의도)
+- [ ] `.gsd/SPEC.md`가 템플릿 상태 — 실제 프로젝트 스펙 미작성 (보일러플레이트 특성)
+- [ ] 컨텍스트 관리 완성 — CURRENT.md, prd-active.json, archive/ 미구현
+
+> **상세 구현 현황**: `.gsd/reports/REPORT-implementation-status-2026-01.md` 참조

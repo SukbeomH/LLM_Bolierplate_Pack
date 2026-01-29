@@ -10,10 +10,10 @@ AI 에이전트 기반 개발을 위한 프로젝트 보일러플레이트.
 
 | 구성요소 | 개수 | 설명 |
 |----------|------|------|
-| **Commands** | 31 | GSD 워크플로우 슬래시 명령어 |
+| **Commands** | 30 | GSD 워크플로우 슬래시 명령어 |
 | **Skills** | 15 | Claude가 자율적으로 호출하는 전문 기능 |
 | **Agents** | 13 | 특정 작업을 위한 서브에이전트 |
-| **Hooks** | 7 | 이벤트 기반 자동화 스크립트 |
+| **Hooks** | 9 | 이벤트 기반 자동화 스크립트 |
 | **MCP Servers** | 2 | 코드 분석 + 에이전트 기억 |
 
 ### 상세 문서
@@ -24,8 +24,8 @@ AI 에이전트 기반 개발을 위한 프로젝트 보일러플레이트.
 |------|------|
 | [Agents](docs/AGENTS.md) | 13개 서브에이전트 상세 (역할, capabilities, 실행 흐름) |
 | [Skills](docs/SKILLS.md) | 15개 스킬 상세 (트리거 조건, MCP 도구 연동) |
-| [Hooks](docs/HOOKS.md) | 7개 훅 스크립트 상세 (이벤트, 코드, 작동 예시) |
-| [Workflows](docs/WORKFLOWS.md) | 31개 명령어 상세 (GSD 사이클, 인자, 출력 형식) |
+| [Hooks](docs/HOOKS.md) | 9개 훅 스크립트 상세 (이벤트, 코드, 작동 예시) |
+| [Workflows](docs/WORKFLOWS.md) | 30개 명령어 상세 (GSD 사이클, 인자, 출력 형식) |
 | [MCP](docs/MCP.md) | MCP 서버 상세 (graph-code 19도구, memorygraph 12도구) |
 | [Linting](docs/LINTING.md) | Ruff/Mypy 설정 상세 (규칙, 제한, 자동 포맷) |
 | [GitHub Workflow](docs/GITHUB-WORKFLOW.md) | CI/CD 파이프라인 상세 (jobs, 캐싱, Issue 템플릿) |
@@ -41,7 +41,7 @@ AI 에이전트 기반 개발을 위한 프로젝트 보일러플레이트.
 ├── .claude/                   # Claude Code 설정
 │   ├── agents/                # 서브에이전트 정의 (13)
 │   ├── skills/                # 스킬 정의 (15)
-│   ├── hooks/                 # 훅 스크립트 (7)
+│   ├── hooks/                 # 훅 스크립트 (9)
 │   └── settings.json          # 훅 설정
 ├── .gsd/                      # GSD 작업 문서
 │   ├── SPEC.md                # 프로젝트 명세
@@ -49,14 +49,35 @@ AI 에이전트 기반 개발을 위한 프로젝트 보일러플레이트.
 │   ├── STATE.md               # 현재 작업 상태
 │   ├── DECISIONS.md           # 아키텍처 결정 기록
 │   ├── JOURNAL.md             # 개발 저널
-│   ├── templates/             # 문서 템플릿 (22)
-│   └── examples/              # 예제 (3)
+│   ├── ARCHITECTURE.md        # 코드베이스 아키텍처 분석
+│   ├── PATTERNS.md            # 컨텍스트 패턴 (2KB 제한)
+│   ├── STACK.md               # 기술 스택 문서
+│   ├── context-config.yaml    # 컨텍스트 관리 설정
+│   ├── templates/             # 문서 템플릿 (25)
+│   ├── examples/              # 예제 (3)
+│   ├── research/              # 연구 문서 (RESEARCH-*.md)
+│   ├── reports/               # 분석 보고서 (REPORT-*.md)
+│   └── archive/               # 월별 아카이브
+├── docs/                      # 상세 문서
+│   ├── AGENTS.md              # 에이전트 상세
+│   ├── SKILLS.md              # 스킬 상세
+│   ├── HOOKS.md               # 훅 상세
+│   ├── WORKFLOWS.md           # 워크플로우 상세
+│   ├── MCP.md                 # MCP 서버 상세
+│   ├── LINTING.md             # 린팅 설정 상세
+│   └── GITHUB-WORKFLOW.md     # CI/CD 파이프라인 상세
+├── src/                       # 예제 애플리케이션
+│   └── gsd_stat/              # 프로젝트 통계 CLI 도구
+├── tests/                     # 테스트
 ├── .mcp.json                  # MCP 서버 설정
 ├── scripts/                   # 유틸리티 스크립트
-│   └── build-plugin.sh        # GSD 플러그인 빌드
+│   ├── build-plugin.sh        # GSD 플러그인 빌드
+│   ├── bootstrap.sh           # 프로젝트 부트스트랩
+│   ├── compact-context.sh     # 컨텍스트 압축
+│   └── organize-docs.sh       # 문서 정리
 ├── gsd-plugin/                # 빌드된 플러그인 (배포용)
 ├── Makefile                   # 개발 명령어
-├── pyproject.toml             # Python 설정 (uv)
+├── pyproject.toml             # Python 설정 (uv + hatchling)
 └── CLAUDE.md                  # Claude Code 지침
 ```
 
@@ -98,6 +119,55 @@ make setup
 
 ---
 
+## 예제 CLI 도구 (gsd-stat)
+
+프로젝트 통계를 분석하는 예제 CLI 도구가 포함되어 있습니다.
+
+### 사용법
+
+```bash
+# 현재 디렉토리 분석
+uv run gsd-stat
+
+# 특정 경로 분석
+uv run gsd-stat src/
+
+# JSON 출력
+uv run gsd-stat --json
+```
+
+### 출력 예시
+
+```
+Project Statistics
+========================================
+Total files: 4
+Total lines: 192
+
+Lines by Language:
+--------------------
+  Python            192 (100.0%)
+
+Markers:
+--------------------
+  TODO:  10
+  FIXME: 10
+```
+
+### 구조
+
+```
+src/gsd_stat/
+├── __init__.py      # 버전 정보
+├── analyzer.py      # 파일 분석 로직
+├── reporter.py      # 결과 포맷팅
+└── cli.py           # CLI 엔트리포인트
+```
+
+이 예제는 GSD 워크플로우와 테스트 작성 패턴을 데모합니다.
+
+---
+
 ## GSD 워크플로우
 
 ### 핵심 사이클
@@ -113,7 +183,7 @@ SPEC → PLAN → EXECUTE → VERIFY
 | **3. 실행** | `/execute [N]` | 웨이브 단위 구현 + atomic commits |
 | **4. 검증** | `/verify [N]` | must-haves 검증 + 증거 수집 |
 
-### 전체 명령어 (31)
+### 전체 명령어 (30)
 
 <details>
 <summary>Core Workflow</summary>
@@ -267,7 +337,7 @@ SPEC → PLAN → EXECUTE → VERIFY
 
 ---
 
-## Hooks (7)
+## Hooks (9)
 
 **Hooks**는 Claude Code 이벤트에 자동으로 응답하는 스크립트입니다.
 
@@ -280,7 +350,8 @@ SPEC → PLAN → EXECUTE → VERIFY
        │                   │                   │
        ▼                   ▼                   ▼
   session-start.sh    PreToolUse         memory 저장
-  (상태 로드)         PostToolUse        (prompt hook)
+  (상태 로드)         PostToolUse        save-session-changes.sh
+                      PreCompact         save-transcript.sh
                       Stop
 ```
 
@@ -295,7 +366,8 @@ SPEC → PLAN → EXECUTE → VERIFY
 | **PreCompact** | `pre-compact-save.sh` | 컴팩트 전 상태 저장 |
 | **Stop** | `post-turn-index.sh` | 변경된 코드 인덱싱 |
 | **Stop** | `post-turn-verify.sh` | 작업 검증 |
-| **SessionEnd** | (prompt) | memory-graph에 세션 요약 저장 |
+| **SessionEnd** | `save-session-changes.sh` | 세션 변경사항 추적 |
+| **SessionEnd** | `save-transcript.sh` | 대화 기록 저장 |
 
 ### 훅 작동 예시
 
@@ -353,6 +425,58 @@ Tree-sitter + SQLite 기반 **AST 코드 분석** 서버.
 | `get_memory` / `update_memory` / `delete_memory` | CRUD |
 | `create_relationship` | 기억 간 관계 생성 |
 | `get_related_memories` | 관련 기억 조회 |
+
+---
+
+## Context Management
+
+긴 세션에서 컨텍스트 품질을 유지하기 위한 시스템입니다.
+
+### 핵심 파일
+
+| 파일 | 용도 | 제한 |
+|------|------|------|
+| `.gsd/PATTERNS.md` | 핵심 패턴/학습 저장 | 2KB |
+| `.gsd/context-config.yaml` | 컨텍스트 관리 설정 | - |
+| `.gsd/STATE.md` | 현재 작업 상태 | - |
+
+### 유틸리티 스크립트
+
+```bash
+# 컨텍스트 압축 (긴 세션 후)
+./scripts/compact-context.sh
+
+# 문서 정리 (research/, reports/ 아카이브)
+./scripts/organize-docs.sh
+```
+
+### 컨텍스트 흐름
+
+```
+작업 진행
+    │
+    ▼
+context-health-monitor 스킬
+    │ (복잡도 감지)
+    ▼
+pre-compact-save.sh 훅
+    │ (상태 백업)
+    ▼
+compact-context.sh
+    │ (PATTERNS.md 추출)
+    ▼
+Fresh Session (PATTERNS.md 로드)
+```
+
+### Research & Reports
+
+프로젝트 연구 및 분석 결과물:
+
+| 디렉토리 | 내용 |
+|----------|------|
+| `.gsd/research/` | 기술 리서치 문서 (RESEARCH-*.md) |
+| `.gsd/reports/` | 분석 보고서 (REPORT-*.md) |
+| `.gsd/archive/` | 월별 아카이브 (journal, changelog) |
 
 ---
 
