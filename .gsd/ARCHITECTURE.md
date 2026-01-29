@@ -210,11 +210,11 @@ User Intent
 - [x] `python-snippets` 서브모듈 정리 — 디렉토리 및 설정 모두 제거됨
 - [x] 예제 CLI 도구 추가 — `gsd-stat` (src/gsd_stat/, 29개 테스트)
 - [x] gsd-plugin 전환 완료 — v1.2.0 배포, 31 commands, 14 skills, 13 agents
-- [x] 컨텍스트 관리 시스템 — PATTERNS.md, compact-context.sh, organize-docs.sh
+- [x] 컨텍스트 관리 시스템 — PATTERNS.md, compact-context.sh, organize-docs.sh, context-config.yaml, archive/
 
 ### Open
 - [ ] MCP 서버 2개 외부 의존 — code-graph-rag (npx on-demand), memorygraph (pipx) 별도 설치 필요 (설계 의도)
 - [ ] `.gsd/SPEC.md`가 템플릿 상태 — 실제 프로젝트 스펙 미작성 (보일러플레이트 특성)
-- [ ] 컨텍스트 관리 완성 — CURRENT.md, prd-active.json, archive/ 미구현
+- [ ] 컨텍스트 관리 완성 — CURRENT.md, prd-active.json, prd-done.json 미구현
 
 > **상세 구현 현황**: `.gsd/reports/REPORT-implementation-status-2026-01.md` 참조

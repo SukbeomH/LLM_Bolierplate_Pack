@@ -92,27 +92,26 @@ GSD Boilerplate 프로젝트의 문서(research/, reports/, ARCHITECTURE.md)와 
 
 | 순위 | 항목 | 설명 | 난이도 |
 |------|------|------|--------|
-| 1 | `.gsd/CURRENT.md` 템플릿 | 현재 세션 컨텍스트 (~1KB) | 낮음 |
-| 2 | `.gsd/archive/` 구조 | 월별 아카이브 폴더 | 낮음 |
-| 3 | compact-context.sh 완성 | 실제 아카이빙 로직 (현재 TODO) | 중간 |
+| 1 | `.gsd/CURRENT.md` 생성 | 현재 세션 컨텍스트 (~1KB) | 낮음 |
+| 2 | compact-context.sh 완성 | 실제 아카이빙 로직 (현재 TODO) | 중간 |
 
 ### 4.2 중간 우선순위 (자동화 기반)
 
 | 순위 | 항목 | 설명 | 난이도 |
 |------|------|------|--------|
-| 4 | prd-active.json 스키마 | pending 작업 JSON 구조 | 중간 |
-| 5 | prd-done.json 스키마 | completed 작업 JSON 구조 | 중간 |
-| 6 | planner --json 옵션 | JSON 형식 계획 출력 | 중간 |
-| 7 | executor prd 업데이트 | 작업 완료 시 상태 변경 | 중간 |
+| 3 | prd-active.json 스키마 | pending 작업 JSON 구조 | 중간 |
+| 4 | prd-done.json 스키마 | completed 작업 JSON 구조 | 중간 |
+| 5 | planner --json 옵션 | JSON 형식 계획 출력 | 중간 |
+| 6 | executor prd 업데이트 | 작업 완료 시 상태 변경 | 중간 |
 
 ### 4.3 낮은 우선순위 (자율 루프 - Phase 3)
 
 | 순위 | 항목 | 설명 | 난이도 |
 |------|------|------|--------|
-| 8 | gsd-loop.sh | Ralph 스타일 자율 실행 | 높음 |
-| 9 | gsd-archive.sh | 자동 월별 아카이빙 | 중간 |
-| 10 | executor 완료 시그널 | `<gsd>COMPLETE</gsd>` 반환 | 낮음 |
-| 11 | context-health-monitor 연동 | 임계치 도달 시 자동 덤프 | 높음 |
+| 7 | gsd-loop.sh | Ralph 스타일 자율 실행 | 높음 |
+| 8 | gsd-archive.sh | 자동 월별 아카이빙 | 중간 |
+| 9 | executor 완료 시그널 | `<gsd>COMPLETE</gsd>` 반환 | 낮음 |
+| 10 | context-health-monitor 연동 | 임계치 도달 시 자동 덤프 | 높음 |
 
 ### 4.4 외부 참조 항목 (구현 불필요)
 
@@ -147,16 +146,15 @@ GSD Boilerplate 프로젝트의 문서(research/, reports/, ARCHITECTURE.md)와 
 
 ### 즉시 실행 가능
 1. `.gsd/CURRENT.md` 생성 (current.md 템플릿 복사)
-2. `.gsd/archive/` 디렉토리 생성
-3. compact-context.sh의 TODO 부분 구현
+2. compact-context.sh의 TODO 부분 구현 (실제 아카이빙 로직)
 
 ### 단기 (1주)
-4. prd-active.json / prd-done.json 스키마 정의
-5. planner skill에 --json 옵션 추가
+3. prd-active.json / prd-done.json 스키마 정의
+4. planner skill에 --json 옵션 추가
 
 ### 장기 (선택적)
-6. gsd-loop.sh 자율 실행 스크립트
-7. 전체 자동화 파이프라인 완성
+5. gsd-loop.sh 자율 실행 스크립트
+6. 전체 자동화 파이프라인 완성
 
 ---
 
@@ -172,6 +170,7 @@ GSD Boilerplate 프로젝트의 문서(research/, reports/, ARCHITECTURE.md)와 
 ├── STACK.md                # 기술 스택
 ├── CHANGELOG.md            # 변경 이력
 ├── GUIDE-*.md              # 가이드 문서
+├── context-config.yaml     # ✅ 컨텍스트 정리 규칙 (41줄)
 │
 ├── reports/                # ✅ 분석 보고서
 │   ├── REPORT-ralph-integration.md
@@ -185,12 +184,11 @@ GSD Boilerplate 프로젝트의 문서(research/, reports/, ARCHITECTURE.md)와 
 │   └── ... (8개)
 │
 ├── templates/              # 문서 템플릿
+├── archive/                # ✅ 월별 아카이브 (빈 디렉토리)
 │
 ├── CURRENT.md              # ❌ 미구현
 ├── prd-active.json         # ❌ 미구현
-├── prd-done.json           # ❌ 미구현
-├── context-config.yaml     # ❌ 미구현
-└── archive/                # ❌ 미구현
+└── prd-done.json           # ❌ 미구현
 
 scripts/
 ├── compact-context.sh      # ✅ 구현됨 (일부 TODO)
