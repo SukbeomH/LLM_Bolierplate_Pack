@@ -1,0 +1,128 @@
+# ═══════════════════════════════════════════════════
+# Developer Boilerplate .gitignore
+# ═══════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────
+# OS & IDE
+# ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.cursor/
+.idea/
+# .vscode/ — 팀 공유를 위해 추적 (개인 설정은 .vscode/*.code-workspace에 분리)
+*.swp
+*.swo
+
+# ─────────────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Python testing & linting
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ─────────────────────────────────────────────────────
+# Node.js
+# ─────────────────────────────────────────────────────
+node_modules/
+.next/
+.nuxt/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ─────────────────────────────────────────────────────
+# Environment & Secrets
+# ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.mcp
+*.pem
+*.key
+secrets/
+
+# ─────────────────────────────────────────────────────
+# Project
+# ─────────────────────────────────────────────────────
+
+# code-graph-rag index data (regenerated on demand)
+.code-graph-rag/
+
+# Local logs
+.logs/
+*.log
+
+# GSD state management (project-specific, not versioned)
+# Note: .gsd/SPEC.md may be versioned for team projects
+.gsd/STATE.md
+.gsd/JOURNAL.md
+.gsd/TODO.md
+*.pre-compact.bak
+
+# Agent memory (ephemeral)
+.agent/memory.jsonl
+**/memory.jsonl
+
+# System prompt patching workspace (make patch-prompt)
+.patch-workspace/
+
+# External reference repos (not part of boilerplate core)
+awesome-claude-code/
+claude-code-tips/
+everything-claude-code/
+ralph/
+
+# ─────────────────────────────────────────────────────
+# Database
+# ─────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+surreal.db/
+
+# ─────────────────────────────────────────────────────
+# Build artifacts
+# ─────────────────────────────────────────────────────
+*.a
+*.o
+*.dll
+*.dylib
+
+# ─────────────────────────────────────────────────────
+# Miscellaneous
+# ─────────────────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.bak
+settings.local.json

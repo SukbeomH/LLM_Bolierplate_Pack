@@ -1,17 +1,25 @@
 ---
 researched_at: 2026-01-28
+updated_at: 2026-01-28
 discovery_level: 3
+status: Revised — reflects current boilerplate state (15 skills, 13 agents, 5 hooks)
 ---
 
-# everything-claude-code 분석 및 보일러플레이트 비교
+# everything-claude-code 분석 및 보일러플레이트 비교 (개정판)
 
 ## Objective
 
-everything-claude-code 저장소를 심층 분석하고, 현재 보일러플레이트와 아키텍처/기능/철학 수준에서 비교한다.
+everything-claude-code 저장소를 심층 분석하고, **현재 최신 상태의 보일러플레이트**(15 skills, 13 sub-agents, 5 hook scripts)와 아키텍처/기능/철학 수준에서 비교한다.
 
 ## Discovery Level
 
 **Level 3** -- 심층 비교 분석 + 갭 식별 + 채택 권고
+
+## Revision Note
+
+> 초판 작성 시 보일러플레이트는 서브에이전트 0, 후크 0 상태였다.
+> 이후 13 sub-agents(모델별 분리), 5 hook scripts(4 이벤트), bootstrap 스킬이 추가되어
+> 초판의 격차 분석 상당수가 해소됨. 본 개정판은 현재 코드베이스를 기준으로 재평가한 결과다.
 
 ---
 
@@ -71,36 +79,52 @@ everything-claude-code/
 | **배포** | git clone + make setup | Plugin marketplace 또는 수동 복사 |
 | **문서** | 한국어/영어 이중 | 영어 단일 |
 
-### 2.2 기능 매트릭스
+### 2.2 기능 매트릭스 (개정)
 
-| 영역 | **보일러플레이트** | **everything-claude-code** | 비고 |
+| 영역 | **보일러플레이트** | **everything-claude-code** | 상태 |
 |---|---|---|---|
-| **워크플로우 명령** | 29 (GSD) | 23+ (개발 중심) | 보일러플레이트가 방법론 더 체계적 |
-| **에이전트 스킬** | 14 | 15+ | 유사 수준, 도메인 다름 |
-| **서브에이전트** | 0 (직접 실행) | 12 (모델별 분리) | **격차: 서브에이전트 아키텍처** |
-| **모듈형 규칙** | 0 (CLAUDE.md 통합) | 8 (분리 파일) | **격차: 규칙 모듈화** |
-| **후크 시스템** | 0 | 16 (6종 이벤트) | **격차: 후크 자동화** |
-| **동적 컨텍스트** | 0 | 3 (dev/review/research) | **격차: 컨텍스트 전환** |
-| **MCP 통합** | 3 (graph-code, memorygraph, context7) | 14 (GitHub, Vercel, Supabase 등) | 보일러플레이트는 RAG 특화 |
-| **GSD 방법론** | 완전 (SPEC/PLAN/EXECUTE/VERIFY) | 없음 (자체 워크플로우) | **강점: GSD 체계** |
-| **문서 템플릿** | 22 | 0 | **강점: 템플릿 라이브러리** |
-| **인프라 자동화** | Docker + Makefile (17 타겟) | 없음 | **강점: 인프라** |
-| **CI/CD** | GitHub Actions (1 workflow) | 없음 | 유사 |
-| **테스트** | 8 (Python, pytest) | 있음 (Node.js) | 유사 |
-| **멀티 에이전트** | 3 (Claude/GitHub/Gemini) | 1 (Claude Code only) | **강점: 멀티 에이전트** |
-| **지속적 학습** | memory-graph MCP | 세션 후크 + 패턴 추출 | 접근 방식 다름 |
-| **플러그인 배포** | 없음 | Claude Code Plugin 지원 | **격차: 배포 시스템** |
+| **워크플로우 명령** | 29 (GSD) | 23+ (개발 중심) | **보일러플레이트 우위** |
+| **에이전트 스킬** | 15 | 15+ | **동등** |
+| **서브에이전트** | 13 (3-tier 모델 분리) | 12 (모델별 분리) | ~~격차~~ → **동등** |
+| **모듈형 규칙** | 0 (CLAUDE.md 통합, 89줄) | 8 (분리 파일) | **잔여 격차** |
+| **후크 시스템** | 5 스크립트, 4 이벤트 | 16 (6종 이벤트) | ~~격차~~ → **부분 해소** |
+| **동적 컨텍스트** | GSD 워크플로우로 대체 | 3 (dev/review/research) | **불필요 (설계 차이)** |
+| **MCP 통합** | 3 (graph-code, memorygraph, context7) | 14 (GitHub, Vercel, Supabase 등) | **보일러플레이트: RAG 특화** |
+| **GSD 방법론** | 완전 (SPEC/PLAN/EXECUTE/VERIFY) | 없음 | **보일러플레이트 고유** |
+| **문서 템플릿** | 22 | 0 | **보일러플레이트 고유** |
+| **인프라 자동화** | Makefile (21 타겟) | 없음 | **보일러플레이트 고유** |
+| **CI/CD** | GitHub Actions (1 workflow) | 없음 | **보일러플레이트 우위** |
+| **멀티 에이전트** | 3 (Claude/GitHub/Gemini) | 1 (Claude Code only) | **보일러플레이트 우위** |
+| **지속적 학습** | memory-graph MCP (구조화) | 세션 후크 + 패턴 추출 (자동) | **접근 차이** |
+| **플러그인 배포** | 리서치 완료, 변환 가능 | 네이티브 Plugin 지원 | **잔여 격차 (실행 대기)** |
+| **보안 자동화** | 2 PreToolUse 훅 (file-protect, bash-guard) | security-reviewer 에이전트 + 규칙 | **부분 해소** |
 
-### 2.3 에이전트/스킬 비교
+### 2.3 에이전트/스킬 비교 (개정)
 
-#### 보일러플레이트 14 스킬
+#### 보일러플레이트 15 스킬 + 13 서브에이전트
 
-| 카테고리 | 스킬 | 모델 |
-|----------|------|------|
-| Planning | planner, plan-checker | 미지정 (호스트 모델) |
-| Execution | executor, commit, create-pr, clean | 미지정 |
-| Verification | verifier, empirical-validation, pr-review | 미지정 |
-| Analysis | arch-review, impact-analysis, codebase-mapper, context-health-monitor, debugger | 미지정 |
+| 카테고리 | 스킬 | 에이전트 모델 | 도구 제한 |
+|----------|------|:---:|---|
+| **Planning** | planner | Opus | Read, Grep, Glob |
+| | plan-checker | Sonnet | Read, Grep, Glob |
+| **Execution** | executor | Sonnet | Read, Write, Edit, Bash, Grep, Glob |
+| | commit | Haiku | Read, Bash, Grep, Glob |
+| | create-pr | Haiku | Read, Bash, Grep, Glob |
+| | clean | Haiku | Read, Write, Edit, Bash, Grep, Glob |
+| **Verification** | verifier | Sonnet | Read, Bash, Grep, Glob |
+| | empirical-validation | (스킬만, 에이전트 없음) | - |
+| | pr-review | Opus | Read, Bash, Grep, Glob |
+| **Analysis** | arch-review | Opus | Read, Grep, Glob |
+| | impact-analysis | Opus | Read, Grep, Glob |
+| | codebase-mapper | Sonnet | Read, Bash, Grep, Glob |
+| | context-health-monitor | Haiku | Read, Grep, Glob |
+| | debugger | Opus | Read, Write, Edit, Bash, Grep, Glob |
+| **Setup** | bootstrap | (스킬만, 에이전트 없음) | - |
+
+**모델 분포:**
+- **Opus (5)**: planner, debugger, impact-analysis, pr-review, arch-review
+- **Sonnet (4)**: executor, verifier, plan-checker, codebase-mapper
+- **Haiku (4)**: commit, clean, create-pr, context-health-monitor
 
 #### everything-claude-code 12 에이전트
 
@@ -113,57 +137,82 @@ everything-claude-code/
 | Maintenance | refactor-cleaner, doc-updater | Haiku |
 | Testing | e2e-runner | Opus |
 
-**핵심 차이**: everything-claude-code는 **모델별 비용 최적화** (Opus/Haiku 분리), 보일러플레이트는 **GSD 사이클 매핑** (Planning->Execution->Verification->Analysis)
+**모델 분포:**
+- **Opus (8)**: planner, architect, tdd-guide, code-reviewer, security-reviewer, go-reviewer, database-reviewer, e2e-runner
+- **Haiku (4)**: build-error-resolver, go-build-resolver, refactor-cleaner, doc-updater
+
+### 2.4 비교 분석
+
+| 측면 | 보일러플레이트 | everything-claude-code |
+|------|:---:|:---:|
+| **에이전트 수** | 13 | 12 |
+| **스킬 수** | 15 | 15+ |
+| **모델 분리** | 3-tier (Opus/Sonnet/Haiku) | 2-tier (Opus/Haiku) |
+| **Sonnet 활용** | O (executor, verifier 등 4개) | X |
+| **스킬-에이전트 연결** | 1:1 매핑 (skills 필드로 연결) | 별도 구성 |
+| **도구 제한** | 에이전트별 명시적 도구 목록 | 에이전트별 명시적 도구 목록 |
+| **스킬 스크립트** | 15개 (Python/Bash) | 6개 (Node.js) |
+| **GSD 사이클 통합** | Planning→Execution→Verification→Analysis | Plan→TDD→Review |
+| **proactive 트리거** | description 기반 자동 위임 | description 기반 자동 위임 |
+
+**핵심 차이점 (개정):**
+- 보일러플레이트는 **Sonnet 계층**을 활용하여 더 세밀한 비용 최적화 (3-tier)
+- everything-claude-code는 **Opus 비중이 높음** (8/12 = 67%) — 고비용 구조
+- 보일러플레이트의 스킬-에이전트 1:1 매핑이 더 체계적
+- everything-claude-code는 **리뷰 특화** (4개 리뷰 에이전트), 보일러플레이트는 **GSD 사이클 특화**
 
 ---
 
-## 3. 핵심 격차 분석 (Gap Analysis)
+## 3. 격차 분석 (Gap Analysis) — 개정
 
-### 3.1 서브에이전트 아키텍처 (Critical Gap)
+### 3.1 서브에이전트 아키텍처 — ~~Critical Gap~~ → CLOSED
 
-**현재**: 보일러플레이트의 14 스킬은 모두 **호스트 모델에서 직접 실행**. 모델 선택 불가.
-
-**everything-claude-code**: 12 에이전트가 **YAML frontmatter로 모델 지정** + **도구 제한**.
+**초판**: 보일러플레이트 서브에이전트 0개, 모델 선택 불가.
+**현재**: 13 서브에이전트 + 3-tier 모델 분리 + 도구 제한 + 스킬 프리로딩 완비.
 
 ```yaml
-# everything-claude-code 에이전트 예시
+# 보일러플레이트 현재 에이전트 예시
 ---
-name: build-error-resolver
+name: commit
 model: haiku
-tools: [Bash, Read, Grep, Glob]
+description: Analyzes diffs, splits logical changes, creates conventional emoji commits
+tools: Read, Bash, Grep, Glob
+skills:
+  - commit
 ---
 ```
 
-**영향**: 비용 최적화 불가 (탐색에 Opus 사용 = 낭비), 도구 범위 제한 불가
+**평가**: everything-claude-code보다 **더 세밀한** 모델 분리 (3-tier vs 2-tier). 격차 완전 해소.
 
-**권고**: 높은 추론이 필요한 스킬(arch-review, planner)은 Opus, 단순 실행(clean, commit)은 Haiku 지정 검토
+### 3.2 후크 시스템 — ~~High Gap~~ → PARTIALLY CLOSED
 
-### 3.2 후크 시스템 (High Gap)
+**초판**: 후크 없음.
+**현재**: 5 hook scripts, 4 이벤트 커버.
 
-**현재**: 후크 없음. 모든 검증은 수동 명령 또는 GSD 워크플로우 의존.
+| 이벤트 | 보일러플레이트 | everything-claude-code |
+|--------|:---:|:---:|
+| **SessionStart** | session-start.sh (STATE.md 로드) | 이전 컨텍스트 로드, 패키지 매니저 감지 |
+| **PreToolUse** | file-protect.py (시크릿 차단), bash-guard.py (파괴적 명령 차단) | tmux 강제, .md 생성 차단, git push 리뷰 |
+| **PostToolUse** | auto-format-py.sh (ruff format + check) | Prettier 자동 포맷, TypeScript 체크, console.log 경고 |
+| **PreCompact** | pre-compact-save.sh (STATE/JOURNAL 백업) | 상태 백업 |
+| **SessionEnd** | 없음 | 상태 저장, 패턴 평가 |
+| **Stop** | 없음 | console.log 최종 체크 |
 
-**everything-claude-code 후크 (16개)**:
+**해소된 부분:**
+- SessionStart: STATE.md 자동 로드 (**완료**)
+- PreToolUse: 파일 보호 + Bash 안전장치 (**완료**)
+- PostToolUse: Python 자동 포맷 (**완료**)
+- PreCompact: 상태 백업 (**완료**)
 
-| 이벤트 | 후크 | 효과 |
-|--------|------|------|
-| PreToolUse | tmux 강제, .md 생성 차단, git push 리뷰 | 실수 사전 방지 |
-| PostToolUse | Prettier 자동 포맷, TypeScript 체크, console.log 경고 | 즉시 품질 피드백 |
-| SessionStart | 이전 컨텍스트 로드, 패키지 매니저 감지 | 세션 연속성 |
-| SessionEnd | 상태 저장, 패턴 평가 | 학습 지속성 |
-| PreCompact | 상태 백업 | 컨텍스트 손실 방지 |
-| Stop | console.log 최종 체크 | 배포 안전 |
+**잔여 격차:**
+- SessionEnd: 세션 종료 시 패턴 추출/학습 저장 없음
+- Stop: 최종 검증 체크 없음
+- 전체 규모: 5 vs 16 (수량 차이, 단 Python 프로젝트에 불필요한 JS/TS 훅 제외 시 실질 격차 작음)
 
-**권고**: 단계적 도입. 우선순위:
-1. **SessionStart**: `.gsd/STATE.md` 자동 로드 (GSD /resume 자동화)
-2. **PreToolUse (Bash)**: `uv run ruff check` / `uv run mypy` 자동 트리거
-3. **PostToolUse (Write/Edit)**: Python 파일 변경 시 ruff 자동 포맷
-4. **PreCompact**: STATE.md 자동 저장
+### 3.3 모듈형 규칙 — Medium Gap (변동 없음)
 
-### 3.3 모듈형 규칙 (Medium Gap)
-
-**현재**: 모든 규칙이 `CLAUDE.md` 단일 파일에 통합 (80줄).
-
-**everything-claude-code**: 8개 독립 규칙 파일
+**현재**: CLAUDE.md 단일 파일 (89줄).
+**everything-claude-code**: 8개 독립 규칙 파일.
 
 | 파일 | 내용 |
 |------|------|
@@ -175,33 +224,44 @@ tools: [Bash, Read, Grep, Glob]
 | `patterns.md` | API 응답 포맷, Repository 패턴, Service 레이어 |
 | `performance.md` | 모델 선택, 컨텍스트 윈도우 관리 |
 
-**장점**: 규칙별 독립 업데이트, 프로젝트별 선택적 적용, 관심사 분리
-**권고**: `CLAUDE.md`가 비대해지면 규칙 모듈화 검토. 현재 80줄은 관리 가능 수준이므로 즉시 필요하지 않음.
+**현재 판단**: CLAUDE.md 89줄은 관리 가능. 단, 플러그인 전환 시 CLAUDE.md를 플러그인에 포함할 수 없으므로(플러그인 시스템 미지원), 프로젝트 scaffolding에서 생성하거나 규칙을 스킬로 분리하는 방안 검토 필요.
 
-### 3.4 동적 컨텍스트 전환 (Low Gap)
+### 3.4 동적 컨텍스트 전환 — Low Gap (변동 없음)
 
-**현재**: 단일 모드 (CLAUDE.md 항상 적용)
+GSD 워크플로우가 동일 역할 수행:
+- `/execute` = dev 컨텍스트
+- `/verify` = review 컨텍스트
+- `/research-phase` = research 컨텍스트
 
-**everything-claude-code**: 3개 컨텍스트 (dev/review/research) CLI 플래그로 전환
+별도 컨텍스트 파일 불필요.
 
-```bash
-claude --system-prompt "$(cat ~/.claude/contexts/dev.md)"
-```
-
-**권고**: 보일러플레이트는 GSD 워크플로우가 이 역할을 대체 (/execute = dev, /verify = review, /research-phase = research). 별도 컨텍스트 파일은 불필요.
-
-### 3.5 지속적 학습 메커니즘 비교
+### 3.5 지속적 학습 메커니즘 비교 (보완)
 
 | | **보일러플레이트** | **everything-claude-code** |
 |---|---|---|
 | **저장소** | memory-graph MCP (그래프 DB) | 파일 시스템 (~/.claude/sessions/) |
-| **트리거** | 수동 (`store_memory`, `recall_memories`) | 자동 (SessionEnd 후크) |
+| **트리거** | debugger/executor 스킬의 allowed-tools에 memory-graph 도구 포함 (반자동) | 자동 (SessionEnd 후크) |
 | **형태** | 구조화된 메모리 노드 + 관계 | 패턴 추출 → 스킬 파일 |
 | **범위** | 프로젝트 내 + 크로스 프로젝트 (도메인) | 세션 내 → 스킬로 승격 |
-| **진화** | 정적 (저장/조회) | 동적 (instinct → skill → agent 진화) |
+| **진화** | 수동 store → 자동 recall (검색 기반) | 동적 (instinct → skill → agent 진화) |
 
-**보일러플레이트 강점**: 구조화된 그래프 기반 메모리, 관계 추적, 크로스 프로젝트 도메인
-**everything-claude-code 강점**: 자동 추출, 진화 메커니즘, 세션 연속성
+**변화**: debugger, executor, context-health-monitor 스킬에 memory-graph 도구가 `allowed-tools`로 지정되어 반자동 학습 가능. 초판보다 통합도 상승.
+
+### 3.6 플러그인 배포 — ~~Gap~~ → IN PROGRESS
+
+별도 리서치 완료 (`RESEARCH-plugin-feasibility.md`). 15 Skills + 13 Agents + 5 Hook Scripts의 플러그인 변환은 **기술적으로 가능**. 핵심 과제:
+- MCP 서버의 프로젝트 경로 참조 해결
+- .gsd/ 문서체계 scaffolding
+- CLAUDE.md 템플릿 제공
+
+### 3.7 보안 자동화 — ~~Gap~~ → PARTIALLY CLOSED
+
+**초판**: 수동 규칙만 존재.
+**현재**:
+- `file-protect.py`: .env, .pem, .key, credentials, id_rsa 등 민감 파일 쓰기 차단 (PreToolUse)
+- `bash-guard.py`: `git push --force`, `git reset --hard`, `git checkout .`, `git clean -f` 차단 + pip/poetry/conda 사용 차단 (PreToolUse)
+
+**잔여 격차**: everything-claude-code의 `security-reviewer` 에이전트(OWASP 전체 범위 자동 리뷰)에 해당하는 전용 보안 리뷰 에이전트는 없음. `pr-review` 에이전트의 6-persona 중 Security 관점이 부분적으로 커버.
 
 ---
 
@@ -216,29 +276,32 @@ claude --system-prompt "$(cat ~/.claude/contexts/dev.md)"
 | **실행** | 페이즈 기반 원자적 커밋 | TDD 사이클 (RED -> GREEN -> IMPROVE) |
 | **검증** | 경험적 증거 기반 (VERIFICATION.md) | 체크포인트 기반 eval + E2E |
 | **반복** | 3회 실패 → 접근 변경 | Continuous eval loop |
+| **위임** | 13 서브에이전트 자동 위임 (신규) | 12 서브에이전트 자동 위임 |
 
-### 4.2 토큰 경제학
+### 4.2 토큰 경제학 (개정)
 
 | | **보일러플레이트** | **everything-claude-code** |
 |---|---|---|
-| **모델 전략** | 단일 모델 (호스트) | 3-tier (Haiku/Sonnet/Opus) |
-| **MCP 관리** | 3개 항상 활성 | 10개 미만 권장, 80 도구 상한 |
-| **컨텍스트** | 무제한 (자동 요약) | 200k 중 70k 가용, 마지막 20% 회피 |
-| **최적화** | GSD 문서로 컨텍스트 공유 | MCP → CLI+스킬 대체, mgrep 사용 |
+| **모델 전략** | 3-tier (Opus 5 / Sonnet 4 / Haiku 4) | 2-tier (Opus 8 / Haiku 4) |
+| **비용 효율** | Sonnet 계층으로 중간 비용 최적화 | Opus 비중 67%로 고비용 |
+| **MCP 관리** | 3개 목적 특화 (33 도구) | 14개 광범위 (80 도구 상한 권장) |
+| **컨텍스트** | 무제한 (자동 요약) + PreCompact 훅 | 200k 중 70k 가용, 마지막 20% 회피 |
+| **최적화** | GSD 문서 공유 + context-health-monitor | MCP → CLI+스킬 대체, mgrep 사용 |
 | **패칭** | `make patch-prompt` (~50% 절감) | 없음 |
 
-### 4.3 보안 접근
+### 4.3 보안 접근 (개정)
 
 | | **보일러플레이트** | **everything-claude-code** |
 |---|---|---|
 | **규칙** | CLAUDE.md Agent Boundaries | rules/security.md (독립 파일) |
-| **검증** | 수동 (.env 비커밋 규칙) | security-reviewer 에이전트 자동 트리거 |
-| **범위** | .env, 시크릿 커밋 금지 | OWASP 전체 (SQLi, XSS, CSRF, Rate Limit) |
+| **자동 차단** | file-protect.py (시크릿 파일), bash-guard.py (위험 명령) | PreToolUse 후크 (tmux, git push) |
+| **코드 리뷰** | pr-review 에이전트 (Opus, 6-persona 중 Security) | security-reviewer 에이전트 (전용) |
+| **범위** | .env/credential 보호 + 파괴적 git 차단 | OWASP 전체 (SQLi, XSS, CSRF, Rate Limit) |
 | **TLS** | SSL_CERT_FILE 지원 | 없음 |
 
 ---
 
-## 5. 보일러플레이트 고유 강점
+## 5. 보일러플레이트 고유 강점 (개정)
 
 everything-claude-code에 **없는** 보일러플레이트 기능:
 
@@ -246,130 +309,178 @@ everything-claude-code에 **없는** 보일러플레이트 기능:
 |------|------|
 | **GSD 방법론** | SPEC -> PLAN -> EXECUTE -> VERIFY 전체 사이클. 29개 워크플로우 |
 | **문서 템플릿 22개** | SPEC, PLAN, VERIFICATION, DEBUG, milestone, sprint 등 |
-| **code-graph-rag** | Tree-sitter + Memgraph AST 분석. 리팩토링 전 영향도 분석 |
-| **memory-graph** | 그래프 기반 영구 기억. 관계 추적, 도메인 분리 |
+| **code-graph-rag** | Tree-sitter + SQLite AST 분석 (19 도구). 리팩토링 전 영향도 분석 |
+| **memory-graph** | 그래프 기반 영구 기억 (12 도구). 관계 추적, 도메인 분리 |
 | **멀티 에이전트** | Claude Code + GitHub Agent + Gemini 동시 지원 |
-| **인프라 자동화** | Docker Compose + Makefile 17 타겟 + make setup 원커맨드 |
+| **인프라 자동화** | Makefile 21 타겟 + make setup 원커맨드 |
 | **시스템 프롬프트 패치** | make patch-prompt (~50% 토큰 절감) |
 | **VS Code 팀 설정** | 워크스페이스 설정 + 확장 권장 공유 |
 | **코드 품질 엄격** | Ruff 9종 + McCabe<=10 + max-args=6 + mypy strict |
+| **3-tier 모델 전략** | Opus/Sonnet/Haiku 세분화 (everything-claude-code는 2-tier) |
+| **스킬-에이전트 1:1 매핑** | 스킬에 도메인 지식, 에이전트에 실행 환경 분리 |
+| **15개 스킬 스크립트** | Python/Bash 유틸리티 (diff 분석, import 그래프, 복잡도 체크 등) |
 
 ---
 
-## 6. 채택 권고
+## 6. everything-claude-code 고유 강점
 
-### 6.1 즉시 도입 (High Priority)
+보일러플레이트에 **없는** everything-claude-code 기능:
 
-| # | 요소 | 현재 상태 | 도입 방안 | 효과 |
+| 기능 | 상세 |
+|------|------|
+| **전용 security-reviewer** | OWASP 전체 범위 보안 리뷰 에이전트 |
+| **tdd-guide 에이전트** | RED → GREEN → IMPROVE TDD 사이클 강제 |
+| **e2e-runner 에이전트** | Playwright 기반 E2E 테스트 자동 실행 |
+| **database-reviewer** | DB 스키마/쿼리 전용 리뷰 |
+| **모듈형 규칙 (8개)** | 보안, 코딩 스타일, 테스팅, git 등 독립 규칙 파일 |
+| **동적 컨텍스트 (3개)** | dev/review/research 모드 전환 |
+| **14 MCP 설정** | GitHub, Vercel, Supabase 등 광범위 통합 |
+| **SessionEnd 후크** | 세션 종료 시 패턴 추출 → 자동 학습 |
+| **네이티브 플러그인 배포** | .claude-plugin/plugin.json으로 즉시 설치 가능 |
+| **롱/숏폼 가이드** | 입문자용 + 고급 사용자용 문서 |
+
+---
+
+## 7. 채택 권고 (개정)
+
+### 7.1 완료됨 (이전 "즉시 도입" 항목)
+
+| # | 요소 | 초판 상태 | 현재 상태 | 결과 |
 |---|------|-----------|-----------|------|
-| 1 | **후크 시스템 기초** | 없음 | `.claude/settings.local.json`에 hooks 설정. SessionStart에서 STATE.md 로드, PostToolUse(Write/Edit)에서 ruff 자동 포맷 | 수동 /resume 불필요, 코드 품질 자동 보장 |
-| 2 | **에이전트 모델 분리** | 14 스킬 모두 호스트 모델 | 분석/계획 스킬(arch-review, planner, plan-checker)에 Opus, 실행 스킬(clean, commit, create-pr)에 Haiku 지정 | 비용 최적화 |
-| 3 | **security-reviewer 에이전트** | 없음 (수동 규칙) | 커밋 전 자동 트리거되는 보안 검토 에이전트 추가 | 보안 사각지대 해소 |
+| 1 | **후크 시스템 기초** | 없음 | 5 스크립트, 4 이벤트 | **완료** |
+| 2 | **에이전트 모델 분리** | 호스트 모델만 | 3-tier (5 Opus / 4 Sonnet / 4 Haiku) | **완료** |
+| 3 | **PreCompact 후크** | 없음 | pre-compact-save.sh | **완료** |
 
-### 6.2 중기 검토 (Medium Priority)
+### 7.2 신규 도입 검토 (현재 기준 우선순위)
 
-| # | 요소 | 현재 상태 | 도입 방안 | 효과 |
-|---|------|-----------|-----------|------|
-| 4 | **TDD 워크플로우** | /verify만 존재 | tdd-guide 스킬 추가 (RED->GREEN->IMPROVE 사이클) | 테스트 선행 개발 강제 |
-| 5 | **PreCompact 후크** | 없음 | 자동 요약 전 STATE.md + JOURNAL.md 저장 | 컨텍스트 손실 방지 |
-| 6 | **지속적 학습 자동화** | memory-graph 수동 사용 | SessionEnd 후크에서 패턴 추출 → memory-graph 자동 저장 | 학습 연속성 |
-| 7 | **E2E 테스트 스킬** | 없음 | Playwright 기반 e2e-runner 스킬 추가 | 크리티컬 플로우 검증 |
+| # | 요소 | 현재 상태 | 도입 방안 | 효과 | 우선순위 |
+|---|------|-----------|-----------|------|---------|
+| 1 | **security-reviewer 에이전트** | pr-review의 Security 관점만 | 전용 보안 리뷰 에이전트 추가 (Opus, OWASP 범위) | 보안 사각지대 해소 | 높음 |
+| 2 | **SessionEnd 후크** | 없음 | 세션 종료 시 memory-graph에 패턴/결정 자동 저장 | 학습 연속성 | 높음 |
+| 3 | **플러그인 패키징** | 리서치 완료 | 15 Skills + 13 Agents + Hooks → plugin 디렉토리 | 팀 배포, 멀티 프로젝트 공유 | 높음 |
+| 4 | **tdd-guide 스킬** | /verify만 존재 | RED→GREEN→IMPROVE 사이클 스킬 추가 | 테스트 선행 개발 | 중간 |
+| 5 | **e2e-runner 스킬** | 없음 | Playwright 기반 E2E 테스트 에이전트 | 크리티컬 플로우 검증 | 중간 |
+| 6 | **Stop 후크** | 없음 | 작업 완료 전 최종 검증 (lint pass, test pass 확인) | 미완성 커밋 방지 | 낮음 |
 
-### 6.3 불필요 / 보류
+### 7.3 불필요 / 보류 (유지)
 
 | 요소 | 사유 |
 |------|------|
-| **규칙 모듈화** | 현재 CLAUDE.md 80줄 -- 관리 가능 수준. 200줄 초과 시 분리 검토 |
-| **동적 컨텍스트** | GSD 워크플로우가 동일 역할 수행 (/execute=dev, /verify=review) |
-| **Node.js 스크립트** | Python 생태계와 불일치. 필요 시 Python으로 재구현 |
-| **플러그인 배포** | 보일러플레이트는 프로젝트 템플릿이므로 git clone이 적합 |
-| **14 MCP 설정** | 보일러플레이트의 3 MCP (RAG 특화)가 목적에 부합. 불필요한 MCP 추가는 컨텍스트 낭비 |
-| **Immutability 규칙** | TypeScript/React 패턴. Python에서는 해당 없음 |
-| **Zod 입력 검증** | TypeScript 전용. Python은 Pydantic/TypedDict 사용 |
+| **규칙 모듈화** | CLAUDE.md 89줄 -- 관리 가능. 플러그인 전환 시 재검토 |
+| **동적 컨텍스트** | GSD 워크플로우가 동일 역할 수행 |
+| **Node.js 스크립트** | Python 생태계와 불일치. 보일러플레이트의 15개 Python/Bash 스크립트가 대체 |
+| **14 MCP 설정** | 보일러플레이트의 3 MCP (33 도구)가 목적에 부합. 불필요한 MCP는 컨텍스트 낭비 |
+| **Immutability/Zod 규칙** | TypeScript 전용. Python은 Pydantic/TypedDict 사용 |
 | **Go 관련 에이전트** | Go 미사용 |
+| **database-reviewer** | DB 스키마 변경이 드물고, pr-review가 일반 리뷰 커버 |
 
 ---
 
-## 7. 패턴 학습 (Patterns to Follow)
+## 8. 패턴 학습 (Patterns to Follow)
 
-### 7.1 프로액티브 에이전트 트리거
+### 8.1 프로액티브 에이전트 트리거
 
-everything-claude-code의 핵심 철학: **사용자가 요청하기 전에 에이전트가 먼저 실행**
-
-```
-복잡한 기능 → planner 자동 실행 (사용자 확인 대기)
-코드 작성 완료 → code-reviewer 자동 실행
-버그 수정 → tdd-guide 자동 실행
-아키텍처 결정 → architect 자동 실행
-```
-
-GSD 적용: /execute 시 코드 작성 후 자동으로 /quick-check 트리거 검토
-
-### 7.2 3-Tier 모델 전략
-
-| 작업 | 모델 | 비용 |
-|------|------|------|
-| 탐색, 검색, 단순 편집 | Haiku | 1x |
-| 멀티파일 구현, 오케스트레이션 | Sonnet | 5x |
-| 복잡한 아키텍처, 보안 분석 | Opus | 15x |
-
-### 7.3 Strategic Compaction
-
-everything-claude-code는 컨텍스트 윈도우의 마지막 20%에 도달하면 **수동 컴팩션**을 권장. 자동 요약보다 선택적 보존이 효과적.
-
-보일러플레이트의 context-health-monitor 스킬이 유사한 역할을 하지만, 후크 기반 자동 트리거로 강화 가능.
-
-### 7.4 Iterative Retrieval Pattern
-
-서브에이전트 반환값을 오케스트레이터가 매번 평가 → 후속 질문 → 최대 3회 반복
+**현재 구현 상태**: 13 에이전트 모두 `description` 필드에 "Use proactively", "MANDATORY before" 등 프로액티브 트리거 키워드 포함.
 
 ```
-Orchestrator → Sub-agent: "Find auth implementation"
-Sub-agent → Result
-Orchestrator: "Which middleware handles JWT validation?"
-Sub-agent → Refined Result
-Orchestrator: Sufficient → Accept
+복잡한 기능 → planner (Opus) 자동 실행
+코드 변경 전 → impact-analysis (Opus) MANDATORY
+코드 작성 완료 → pr-review (Opus) 자동 실행
+버그 수정 → debugger (Opus) 자동 실행
+품질 체크 → clean (Haiku) 자동 실행
+```
+
+### 8.2 3-Tier 모델 전략 — 구현 완료
+
+| 작업 | 모델 | 에이전트 | 비용 |
+|------|------|---------|------|
+| 커밋, 포맷, PR 생성, 컨텍스트 모니터링 | Haiku | commit, clean, create-pr, context-health-monitor | 1x |
+| 구현, 검증, 계획 검토, 코드 분석 | Sonnet | executor, verifier, plan-checker, codebase-mapper | 5x |
+| 설계, 디버깅, 영향 분석, 리뷰, 아키텍처 | Opus | planner, debugger, impact-analysis, pr-review, arch-review | 15x |
+
+### 8.3 Strategic Compaction — 구현 완료
+
+**현재**: `pre-compact-save.sh`가 PreCompact 훅으로 등록. 자동/수동 컴팩션 전 STATE.md + JOURNAL.md 백업 + 상태 스냅샷을 additionalContext로 주입.
+
+`context-health-monitor` 스킬이 컨텍스트 복잡도 모니터링 + 상태 덤프 수행. Haiku 에이전트로 경량 실행.
+
+### 8.4 Iterative Retrieval Pattern
+
+서브에이전트 반환값을 오케스트레이터가 평가 → 후속 질문 → 최대 3회 반복.
+
+```
+Orchestrator → impact-analysis (Opus): "analyze_code_impact for auth module"
+impact-analysis → Result (affected files, risk score)
+Orchestrator → executor (Sonnet): "implement changes with minimal impact"
+executor → Implementation
+Orchestrator → verifier (Sonnet): "verify against spec"
+verifier → Verification Result
 ```
 
 ---
 
-## 8. Anti-Patterns to Avoid
+## 9. Anti-Patterns to Avoid (유지)
 
 | 패턴 | 사유 |
 |------|------|
-| **14 MCP 동시 활성** | 컨텍스트 윈도우 200k 중 70k만 가용. 보일러플레이트의 3 MCP가 효율적 |
-| **Node.js 후크 스크립트** | Python 프로젝트에 Node.js 의존성 추가는 복잡성 증가. Python 또는 셸 스크립트 권장 |
-| **console.log 후크** | Python 프로젝트에 해당 없음. print 문 제거는 ruff 규칙으로 대체 가능 |
-| **Prettier 후크** | Python은 ruff format 사용 |
-| **과도한 에이전트 분리** | 12 에이전트는 풀스택 JS/TS 프로젝트 기준. Python 보일러플레이트는 14 스킬 + 핵심 에이전트 2-3개가 적절 |
+| **14 MCP 동시 활성** | 컨텍스트 윈도우 200k 중 70k만 가용. 보일러플레이트의 3 MCP (33 도구)가 효율적 |
+| **Node.js 후크 스크립트** | Python 프로젝트에 Node.js 의존성 추가는 복잡성 증가. Python/Bash 스크립트 유지 |
+| **Opus 과다 사용** | everything-claude-code는 Opus 67%. 보일러플레이트는 Opus 38% (5/13)로 비용 효율적 |
+| **console.log/Prettier 후크** | Python 프로젝트에 해당 없음. ruff format/check으로 대체 (이미 구현) |
+| **에이전트 과잉 분리** | 언어별 에이전트(go-reviewer, go-build-resolver)는 범용 보일러플레이트에 부적합 |
 
 ---
 
-## 9. 종합 평가
+## 10. 종합 평가 (개정)
 
-### 9.1 요약
+### 10.1 요약
 
-| 축 | 보일러플레이트 | everything-claude-code |
-|---|---|---|
-| **방법론 체계** | ★★★★★ | ★★☆☆☆ |
-| **문서 템플릿** | ★★★★★ | ★☆☆☆☆ |
-| **코드 분석 (RAG)** | ★★★★★ | ☆☆☆☆☆ |
-| **에이전트 기억** | ★★★★☆ | ★★★☆☆ |
-| **인프라 자동화** | ★★★★☆ | ☆☆☆☆☆ |
-| **후크/자동화** | ☆☆☆☆☆ | ★★★★★ |
-| **서브에이전트** | ☆☆☆☆☆ | ★★★★★ |
-| **토큰 최적화** | ★★★☆☆ | ★★★★★ |
-| **보안 자동화** | ★★☆☆☆ | ★★★★☆ |
-| **배포/공유** | ★★☆☆☆ | ★★★★☆ |
+| 축 | 보일러플레이트 | everything-claude-code | 변화 |
+|---|:---:|:---:|---|
+| **방법론 체계** | ★★★★★ | ★★☆☆☆ | 변동 없음 |
+| **문서 템플릿** | ★★★★★ | ★☆☆☆☆ | 변동 없음 |
+| **코드 분석 (RAG)** | ★★★★★ | ☆☆☆☆☆ | 변동 없음 |
+| **에이전트 기억** | ★★★★☆ | ★★★☆☆ | 변동 없음 |
+| **인프라 자동화** | ★★★★☆ | ☆☆☆☆☆ | 변동 없음 |
+| **후크/자동화** | ★★★★☆ | ★★★★★ | ☆→★★★★ (+4) |
+| **서브에이전트** | ★★★★★ | ★★★★★ | ☆→★★★★★ (+5) |
+| **토큰 최적화** | ★★★★☆ | ★★★★★ | ★★★→★★★★ (+1) |
+| **보안 자동화** | ★★★☆☆ | ★★★★☆ | ★★→★★★ (+1) |
+| **배포/공유** | ★★★☆☆ | ★★★★☆ | ★★→★★★ (+1) |
 
-### 9.2 결론
+### 10.2 격차 변화 추적
 
-두 프로젝트는 **상호 보완적**:
+| 격차 | 초판 심각도 | 현재 심각도 | 상태 |
+|------|:---:|:---:|---|
+| 서브에이전트 아키텍처 | Critical | - | **CLOSED** |
+| 후크 시스템 | High | Low | **MOSTLY CLOSED** |
+| 모듈형 규칙 | Medium | Medium | 유지 (플러그인 전환 시 재검토) |
+| 동적 컨텍스트 | Low | - | **불필요 (설계 차이)** |
+| 보안 자동화 | High | Medium | **PARTIALLY CLOSED** |
+| 플러그인 배포 | Medium | Low | **리서치 완료, 실행 대기** |
+| 학습 자동화 | Medium | Medium | 유지 (SessionEnd 훅 미구현) |
 
-- **보일러플레이트**: 방법론(GSD) + 코드 분석(RAG) + 에이전트 기억(memory-graph) + 인프라에 강함
-- **everything-claude-code**: 자동화(후크) + 서브에이전트 분리 + 토큰 경제학 + 보안 자동 검증에 강함
+### 10.3 결론 (개정)
 
-**가장 효과적인 조합**: 보일러플레이트의 GSD 사이클 위에 everything-claude-code의 후크/서브에이전트/모델 분리를 선택적으로 얹는 구조.
+보일러플레이트는 초판 대비 **핵심 격차 대부분을 해소**했다:
+
+- **서브에이전트**: 0 → 13 (모델별 3-tier 분리, everything-claude-code보다 세밀)
+- **후크**: 0 → 5 (4 이벤트 커버, Python/Bash 네이티브)
+- **토큰 최적화**: 단일 모델 → 3-tier (Opus 38%, Sonnet 31%, Haiku 31%)
+
+**현재 상호 보완 관계:**
+
+| 보일러플레이트 우위 | everything-claude-code 우위 |
+|---|---|
+| GSD 방법론 (29 워크플로우) | 전용 보안 리뷰 (security-reviewer) |
+| 코드 분석 RAG (19 도구) | TDD 사이클 (tdd-guide) |
+| 에이전트 기억 (12 도구) | E2E 테스트 (e2e-runner) |
+| 3-tier 모델 (비용 효율 ↑) | 모듈형 규칙 (8개 분리 파일) |
+| 22 문서 템플릿 | 네이티브 플러그인 배포 |
+| 멀티 에이전트 (Claude/GitHub/Gemini) | SessionEnd 자동 학습 |
+| 인프라 (Makefile 21 타겟) | 14 MCP 광범위 통합 |
+
+**다음 단계**: 잔여 격차 3개(security-reviewer, SessionEnd 학습, 플러그인 배포) 중 **플러그인 배포를 우선** 실행하여 everything-claude-code와 동일한 배포 채널 확보 후, 보안/학습 에이전트를 추가하는 것이 효율적.
 
 ---
 
@@ -387,3 +498,11 @@ Orchestrator: Sufficient → Accept
 - `everything-claude-code/mcp-configs/mcp-servers.json` (14 MCP)
 - `everything-claude-code/scripts/lib/utils.js` (398줄)
 - `everything-claude-code/.claude-plugin/plugin.json`
+- **보일러플레이트 현재 코드베이스** (2026-01-28 기준):
+  - `.claude/skills/` (15 스킬, 15 스크립트)
+  - `.claude/agents/` (13 서브에이전트)
+  - `.claude/hooks/` (5 훅 스크립트)
+  - `.claude/settings.json` (훅 설정)
+  - `.agent/workflows/` (29 GSD 워크플로우)
+  - `.mcp.json` (3 MCP 서버, 33 도구)
+  - `.gsd/RESEARCH-plugin-feasibility.md` (플러그인 전환 리서치)
