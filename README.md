@@ -549,6 +549,31 @@ chmod +x .claude/hooks/*.sh .claude/hooks/*.py
 | [claude-code-plugins-plus-skills](https://github.com/jeremylongshore/claude-code-plugins-plus-skills) | 플러그인 예시 저장소 |
 | [Claude Code Issues](https://github.com/anthropics/claude-code/issues) | 버그 리포트 및 기능 요청 |
 
+### Awesome Lists & 큐레이션
+
+| 리소스 | 설명 |
+|--------|------|
+| [awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) | Claude Code 리소스 큐레이션 |
+| [everything-claude-code](https://github.com/affaan-m/everything-claude-code) | Claude Code 종합 가이드 |
+| [claude-code-tips](https://github.com/ykdojo/claude-code-tips) | Claude Code 팁 모음 |
+| [awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers) | MCP 서버 큐레이션 목록 |
+
+### AI Agent & LLM 표준
+
+| 리소스 | 설명 |
+|--------|------|
+| [Agent Skills](https://agentskills.io/home) | AI 에이전트 스킬 마켓플레이스 |
+| [llms.txt](https://llmstxt.org/) | LLM을 위한 웹사이트 정보 표준 |
+
+### 코드 스니펫 & 린팅
+
+| 리소스 | 설명 |
+|--------|------|
+| [Ruff Rules](https://docs.astral.sh/ruff/rules/) | Ruff 린터 규칙 전체 목록 |
+| [python-snippets](https://github.com/DevelopersToolbox/python-snippets) | Python 코드 스니펫 모음 |
+| [bash-snippets](https://github.com/DevelopersToolbox/bash-snippets) | Bash 스크립트 스니펫 모음 |
+| [GitHub Snippets Topic](https://github.com/topics/snippets) | 스니펫 관련 저장소 탐색 |
+
 ### 핵심 발견사항
 
 플러그인 개발 중 확인된 주요 사항:
