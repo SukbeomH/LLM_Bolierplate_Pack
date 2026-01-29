@@ -470,6 +470,69 @@ cp -r gsd-plugin ~/.claude/plugins/gsd
 
 ---
 
+## GSD Plugin 자동 릴리즈
+
+플러그인은 **release-please** 기반 GitHub Actions로 자동 릴리즈됩니다.
+
+### 릴리즈 플로우
+
+```
+feat(gsd-plugin): 새 기능 추가
+        ↓
+    push to master
+        ↓
+release-please가 Release PR 자동 생성
+  - plugin.json 버전 업데이트
+  - CHANGELOG.md 자동 생성
+        ↓
+    PR 리뷰 → 머지
+        ↓
+자동 릴리즈:
+  - Git 태그 (gsd-plugin-v1.1.0)
+  - GitHub Release
+  - gsd-plugin-1.1.0.zip 첨부
+```
+
+### Conventional Commits 규칙
+
+플러그인 변경 시 다음 커밋 형식을 사용합니다:
+
+| 커밋 타입 | 버전 변경 | 예시 |
+|----------|----------|------|
+| `fix(gsd-plugin):` | 패치 (1.0.1) | 버그 수정 |
+| `feat(gsd-plugin):` | 마이너 (1.1.0) | 새 기능 |
+| `feat(gsd-plugin)!:` | 메이저 (2.0.0) | Breaking change |
+
+```bash
+# 예시
+git commit -m "feat(gsd-plugin): 새로운 /gsd:analyze 명령 추가"
+git commit -m "fix(gsd-plugin): hook 스크립트 경로 수정"
+```
+
+### 릴리즈 설정 파일
+
+| 파일 | 용도 |
+|------|------|
+| `.github/workflows/release-plugin.yml` | 릴리즈 워크플로우 |
+| `release-please-config.json` | release-please 설정 |
+| `.release-please-manifest.json` | 버전 추적 |
+| `gsd-plugin/CHANGELOG.md` | 변경 이력 (자동 생성) |
+| `gsd-plugin/RELEASE.md` | 릴리즈 가이드 |
+
+### GitHub Release에서 설치
+
+```bash
+# 최신 버전
+curl -L https://github.com/SukbeomH/LLM_Bolierplate_Pack/releases/latest/download/gsd-plugin-*.zip -o gsd-plugin.zip
+unzip gsd-plugin.zip -d ~/.claude/plugins/gsd
+
+# 특정 버전
+VERSION="1.2.0"
+curl -L "https://github.com/SukbeomH/LLM_Bolierplate_Pack/releases/download/gsd-plugin-v${VERSION}/gsd-plugin-${VERSION}.zip" -o gsd-plugin.zip
+```
+
+---
+
 ## Make 명령어
 
 ```bash
