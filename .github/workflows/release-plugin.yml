@@ -17,9 +17,10 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
+      # Component-specific outputs (release-please v4 monorepo format)
+      release_created: ${{ steps.release.outputs['gsd-plugin--release_created'] }}
+      tag_name: ${{ steps.release.outputs['gsd-plugin--tag_name'] }}
+      version: ${{ steps.release.outputs['gsd-plugin--version'] }}
     steps:
       - name: Release Please
         uses: googleapis/release-please-action@v4
@@ -28,6 +29,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      - name: Debug outputs
+        run: |
+          echo "release_created: ${{ steps.release.outputs['gsd-plugin--release_created'] }}"
+          echo "tag_name: ${{ steps.release.outputs['gsd-plugin--tag_name'] }}"
+          echo "version: ${{ steps.release.outputs['gsd-plugin--version'] }}"
 
   build-and-upload:
     needs: release-please
