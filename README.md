@@ -16,6 +16,20 @@ AI 에이전트 기반 개발을 위한 프로젝트 보일러플레이트.
 | **Hooks** | 7 | 이벤트 기반 자동화 스크립트 |
 | **MCP Servers** | 2 | 코드 분석 + 에이전트 기억 |
 
+### 상세 문서
+
+각 구성요소의 상세 구현은 `docs/` 디렉토리에서 확인할 수 있습니다:
+
+| 문서 | 설명 |
+|------|------|
+| [Agents](docs/AGENTS.md) | 13개 서브에이전트 상세 (역할, capabilities, 실행 흐름) |
+| [Skills](docs/SKILLS.md) | 15개 스킬 상세 (트리거 조건, MCP 도구 연동) |
+| [Hooks](docs/HOOKS.md) | 7개 훅 스크립트 상세 (이벤트, 코드, 작동 예시) |
+| [Workflows](docs/WORKFLOWS.md) | 31개 명령어 상세 (GSD 사이클, 인자, 출력 형식) |
+| [MCP](docs/MCP.md) | MCP 서버 상세 (graph-code 19도구, memorygraph 12도구) |
+| [Linting](docs/LINTING.md) | Ruff/Mypy 설정 상세 (규칙, 제한, 자동 포맷) |
+| [GitHub Workflow](docs/GITHUB-WORKFLOW.md) | CI/CD 파이프라인 상세 (jobs, 캐싱, Issue 템플릿) |
+
 ---
 
 ## 디렉토리 구조
@@ -538,7 +552,6 @@ chmod +x .claude/hooks/*.sh .claude/hooks/*.py
 
 | 도구 | 링크 |
 |------|------|
-| Node.js | [nodejs.org](https://nodejs.org/) |
 | uv (Python 패키지 매니저) | [astral.sh/uv](https://astral.sh/uv/install.sh) |
 
 ### 커뮤니티 리소스
