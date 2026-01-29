@@ -11,6 +11,14 @@ PATTERNS_FILE="$GSD_DIR/PATTERNS.md"
 CURRENT_FILE="$GSD_DIR/CURRENT.md"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
+# Skip if .gsd/ doesn't exist
+if [ ! -d "$GSD_DIR" ]; then
+    exit 0
+fi
+
+# Clean old backup files (keep only latest)
+rm -f "$GSD_DIR"/*.pre-compact.bak 2>/dev/null || true
+
 # STATE.md 백업
 if [ -f "$STATE_FILE" ]; then
     cp "$STATE_FILE" "${STATE_FILE}.pre-compact.bak"

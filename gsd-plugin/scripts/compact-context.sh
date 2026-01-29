@@ -23,8 +23,18 @@ GSD_DIR="${CLAUDE_PROJECT_DIR:-.}/.gsd"
 ARCHIVE_DIR="$GSD_DIR/archive"
 YEAR_MONTH=$(date +%Y-%m)
 
+# Check if .gsd directory exists
+if [[ ! -d "$GSD_DIR" ]]; then
+    echo "[SKIP] .gsd/ directory not found at $GSD_DIR"
+    echo "Run /gsd:init to initialize GSD documents."
+    exit 0
+fi
+
 # Ensure archive directory exists
-mkdir -p "$ARCHIVE_DIR"
+mkdir -p "$ARCHIVE_DIR" 2>/dev/null || {
+    echo "[ERROR] Cannot create archive directory: $ARCHIVE_DIR"
+    exit 1
+}
 
 echo "================================================================"
 echo " Context Compaction"
