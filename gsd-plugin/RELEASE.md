@@ -192,6 +192,92 @@ unzip gsd-plugin.zip -d ~/.claude/plugins/gsd
 - Release PR이 머지되어야 ZIP 생성 job이 실행됨
 - Actions 탭에서 워크플로우 실행 상태 확인
 
+### GitHub Actions PR 생성 권한 오류
+
+**증상:**
+```
+GitHub Actions is not permitted to create or approve pull requests
+```
+
+**해결:**
+1. GitHub 저장소 → Settings → Actions → General
+2. "Workflow permissions" 섹션에서:
+   - ✅ "Read and write permissions" 선택
+   - ✅ "Allow GitHub Actions to create and approve pull requests" 체크
+
+### release-please 컴포넌트 출력 변수 문제
+
+**증상:** `build-and-upload` job이 `skipped`로 표시됨
+
+**원인:** release-please v4 모노레포 설정에서 출력 변수명이 컴포넌트 prefix를 포함함
+
+**해결:** 워크플로우에서 출력 변수명 수정
+```yaml
+# 잘못된 예
+release_created: ${{ steps.release.outputs.release_created }}
+
+# 올바른 예 (컴포넌트 prefix 포함)
+release_created: ${{ steps.release.outputs['gsd-plugin--release_created'] }}
+tag_name: ${{ steps.release.outputs['gsd-plugin--tag_name'] }}
+version: ${{ steps.release.outputs['gsd-plugin--version'] }}
+```
+
+### 수동 ZIP 업로드 (긴급 시)
+
+릴리즈는 생성되었으나 ZIP이 누락된 경우:
+
+```bash
+# 로컬에서 ZIP 생성
+cd /path/to/repo
+zip -r gsd-plugin-X.Y.Z.zip gsd-plugin/ \
+  -x "gsd-plugin/.git/*" \
+  -x "gsd-plugin/__pycache__/*" \
+  -x "gsd-plugin/*.pyc"
+
+# 기존 릴리즈에 업로드
+gh release upload gsd-plugin-vX.Y.Z gsd-plugin-X.Y.Z.zip
+
+# 정리
+rm gsd-plugin-X.Y.Z.zip
+```
+
+---
+
+## 첫 릴리즈 경험 (v1.1.0)
+
+### 타임라인
+
+| 시간 | 이벤트 |
+|------|--------|
+| 11:49 | 워크플로우 파일 생성 및 푸시 |
+| 11:54 | 워크플로우 실행 → PR 생성 권한 오류 |
+| 11:57 | GitHub 설정 변경 후 재실행 |
+| 11:57 | Release PR #1 생성 성공 |
+| 12:02 | PR 머지 → 릴리즈 생성 |
+| 12:02 | ZIP 미첨부 발견 (출력 변수 문제) |
+| 12:04 | 수동 ZIP 업로드 |
+| 12:05 | 워크플로우 수정 커밋 |
+
+### 발견된 이슈 및 해결
+
+1. **GitHub Actions 권한**
+   - 기본 설정에서는 PR 생성 불가
+   - 저장소 설정에서 명시적 허용 필요
+
+2. **release-please v4 출력 변수**
+   - 모노레포/컴포넌트 설정 시 `component--output` 형식
+   - 공식 문서에서 명확히 설명되지 않음
+
+3. **워크플로우 디버깅**
+   - `gh run view <id> --log-failed` 로 실패 원인 확인
+   - `gh run view <id> --json jobs` 로 job 상태 확인
+
+### 교훈
+
+- 첫 릴리즈 전 테스트 실행 권장 (`workflow_dispatch`)
+- 저장소 권한 설정 사전 확인 필수
+- release-please 출력 변수는 설정 방식에 따라 다름
+
 ---
 
 ## 참고 자료
