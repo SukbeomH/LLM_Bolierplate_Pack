@@ -27,9 +27,26 @@ echo "  [+] .agent/rules/"
 echo "  [+] templates/gsd/"
 echo "  [+] scripts/"
 
-# --- Phase 2: Skills Migration ---
+# --- Phase 2: Skills Migration (with model from agents) ---
 echo ""
 echo "[Phase 2] Migrating skills to Antigravity format..."
+
+# Model mapping function
+map_model() {
+    local model_raw="$1"
+    local model_key
+    model_key=$(echo "$model_raw" | tr '[:upper:]' '[:lower:]')
+
+    case "$model_key" in
+        haiku) echo "anthropic/claude-haiku-4-20250514" ;;
+        sonnet) echo "anthropic/claude-sonnet-4-20250514" ;;
+        opus) echo "anthropic/claude-opus-4-20250514" ;;
+        gemini|gemini-pro) echo "google/gemini-2.5-pro" ;;
+        gpt-4|gpt-4o) echo "openai/gpt-4o" ;;
+        */*) echo "$model_raw" ;;  # Already in provider/model format
+        *) echo "" ;;  # Unknown, skip
+    esac
+}
 
 # Skills are already in compatible format (YAML frontmatter with name/description)
 for skill_dir in "$BOILERPLATE"/.claude/skills/*/; do
@@ -40,11 +57,45 @@ for skill_dir in "$BOILERPLATE"/.claude/skills/*/; do
     # Copy SKILL.md and any subdirectories (scripts, examples, resources)
     cp -r "$skill_dir"/* "$target_dir/" 2>/dev/null || true
 
+    # Check if corresponding agent file exists with model setting
+    agent_file="$BOILERPLATE/.claude/agents/${skill_name}.md"
+    model_line=""
+    if [ -f "$agent_file" ]; then
+        # Extract model from agent frontmatter (handle CRLF)
+        model_raw=$(tr -d '\r' < "$agent_file" | sed -n '/^---/,/^---/p' | grep "^model:" | sed 's/model: *//' | tr -d '"')
+        if [ -n "$model_raw" ]; then
+            model_mapped=$(map_model "$model_raw")
+            if [ -n "$model_mapped" ]; then
+                model_line="model: $model_mapped"
+            fi
+        fi
+    fi
+
+    # Inject model into SKILL.md frontmatter if not already present
+    if [ -f "$target_dir/SKILL.md" ] && [ -n "$model_line" ]; then
+        # Check if model already exists in SKILL.md
+        if ! tr -d '\r' < "$target_dir/SKILL.md" | grep -q "^model:"; then
+            # Insert model after description line
+            if tr -d '\r' < "$target_dir/SKILL.md" | grep -q "^description:"; then
+                # Use sed to insert after description line
+                sed -i '' "/^description:/a\\
+$model_line
+" "$target_dir/SKILL.md" 2>/dev/null || \
+                # Fallback for GNU sed
+                sed -i "/^description:/a $model_line" "$target_dir/SKILL.md" 2>/dev/null || true
+            fi
+        fi
+    fi
+
     # Verify description exists in frontmatter (required for Antigravity)
     if [ -f "$target_dir/SKILL.md" ]; then
         # Handle CRLF line endings
         if tr -d '\r' < "$target_dir/SKILL.md" | grep -q "^description:"; then
-            echo "  [+] ${skill_name}"
+            if [ -n "$model_line" ]; then
+                echo "  [+] ${skill_name} (${model_raw:-default})"
+            else
+                echo "  [+] ${skill_name}"
+            fi
         else
             echo "  [WARN] ${skill_name} - missing description in frontmatter"
         fi
