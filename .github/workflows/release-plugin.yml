@@ -108,6 +108,20 @@ jobs:
             -x "*.log" \
             -x ".DS_Store"
 
+      - name: Create OpenCode ZIP
+        run: |
+          cd opencode-boilerplate
+          zip -r ../opencode-boilerplate-${{ steps.release-info.outputs.version }}.zip . \
+            -x ".git/*" \
+            -x "__pycache__/*" \
+            -x "*.pyc" \
+            -x ".pytest_cache/*" \
+            -x "node_modules/*" \
+            -x ".env" \
+            -x ".venv/*" \
+            -x "*.log" \
+            -x ".DS_Store"
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
@@ -115,6 +129,7 @@ jobs:
           files: |
             gsd-plugin-${{ steps.release-info.outputs.version }}.zip
             antigravity-boilerplate-${{ steps.release-info.outputs.version }}.zip
+            opencode-boilerplate-${{ steps.release-info.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -127,3 +142,4 @@ jobs:
           echo "- **Assets**:" >> $GITHUB_STEP_SUMMARY
           echo "  - gsd-plugin-${{ steps.release-info.outputs.version }}.zip" >> $GITHUB_STEP_SUMMARY
           echo "  - antigravity-boilerplate-${{ steps.release-info.outputs.version }}.zip" >> $GITHUB_STEP_SUMMARY
+          echo "  - opencode-boilerplate-${{ steps.release-info.outputs.version }}.zip" >> $GITHUB_STEP_SUMMARY

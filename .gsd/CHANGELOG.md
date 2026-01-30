@@ -32,6 +32,40 @@
 ## 변경 기록
 
 <!-- 아래에 세션별 변경사항이 자동으로 추가됩니다 -->
+### [2026-01-30 10:51] Session: b23b54dd
+
+**변경 파일**: 8개
+**추가/삭제**: +422 / -18
+
+#### 수정된 파일
+- .gsd/CHANGELOG.md
+- .gsd/SPEC.md
+- vectors.db-shm
+- vectors.db-wal
+
+#### 새 파일
+- .gsd/research/RESEARCH-multi-language-support.md
+- .gsd/research/RESEARCH-opencode-plugin-migration.md
+- .gsd/research/RESEARCH-prior-art-multi-language.md
+- .gsd/research/RESEARCH-python-specific-audit.md
+
+---
+
+### [2026-01-30 09:50] Session: 5329213c
+
+**변경 파일**: 2개
+**추가/삭제**: +0 / -0
+
+#### 수정된 파일
+- vectors.db-shm
+- vectors.db-wal
+
+#### 삭제된 파일
+- vectors.db-shm
+- vectors.db-wal
+
+---
+
 ### [2026-01-29 17:24] Session: 7cefb35f
 
 **변경 파일**: 11개
