@@ -106,12 +106,20 @@ else
     report_fail "Python" "not found — https://www.python.org/"
 fi
 
+# qlty CLI
+if command -v qlty &>/dev/null; then
+    QLTY_VER=$(qlty --version 2>/dev/null || echo "installed")
+    report_pass "qlty" "${QLTY_VER}"
+else
+    report_fail "qlty" "not found — curl -fsSL https://qlty.sh | sh"
+fi
+
 # memorygraph binary
 if command -v memorygraph &>/dev/null; then
     MG_VER=$(memorygraph --version 2>/dev/null || echo "installed")
     report_pass "memorygraph" "${MG_VER}"
 else
-    report_fail "memorygraph" "not found — pipx install memorygraphMCP"
+    report_fail "memorygraph" "not found — pipx install \"memorygraphMCP[falkordblite]\""
 fi
 
 # npx (for code-graph-rag)

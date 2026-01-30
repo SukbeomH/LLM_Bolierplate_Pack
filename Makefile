@@ -20,9 +20,13 @@ check-deps: ## Check required tools are installed
 
 install-memorygraph: ## Install memorygraph MCP server via pipx
 	@command -v memorygraph >/dev/null 2>&1 && echo "memorygraph already installed: $$(memorygraph --version)" || \
-		{ echo "Installing memorygraph..."; pipx install memorygraphMCP; }
+		{ echo "Installing memorygraph (with FalkorDBLite backend)..."; pipx install "memorygraphMCP[falkordblite]"; }
 
-install-deps: check-deps install-memorygraph ## Install all external dependencies
+install-qlty: ## Install Qlty CLI for code quality
+	@command -v qlty >/dev/null 2>&1 && echo "qlty already installed: $$(qlty --version 2>/dev/null)" || \
+		{ echo "Installing qlty..."; curl -fsSL https://qlty.sh | sh; }
+
+install-deps: check-deps install-memorygraph install-qlty ## Install all external dependencies
 	@echo ""
 	@echo "All dependencies installed."
 	@echo "Note: @er77/code-graph-rag-mcp is installed on-demand via npx."

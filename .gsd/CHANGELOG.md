@@ -32,6 +32,78 @@
 ## 변경 기록
 
 <!-- 아래에 세션별 변경사항이 자동으로 추가됩니다 -->
+### [2026-01-30 13:17] Session: 5ec7f65b
+
+**변경 파일**: 4개
+**추가/삭제**: +75 / -4
+
+#### 수정된 파일
+- .gsd/CHANGELOG.md
+- .mcp.json
+- Makefile
+- scripts/bootstrap.sh
+
+---
+
+### [2026-01-30 13:15] Session: 34a77fd7
+
+**변경 파일**: 4개
+**추가/삭제**: +62 / -4
+
+#### 수정된 파일
+- .gsd/CHANGELOG.md
+- .mcp.json
+- Makefile
+- scripts/bootstrap.sh
+
+---
+
+### [2026-01-30 13:15] Session: 9e0768f5
+
+**변경 파일**: 4개
+**추가/삭제**: +36 / -3
+
+#### 수정된 파일
+- .gsd/CHANGELOG.md
+- .mcp.json
+- Makefile
+- scripts/bootstrap.sh
+
+---
+
+### [2026-01-30 13:14] Session: db160e75
+
+**변경 파일**: 7개
+**추가/삭제**: +18 / -3
+
+#### 수정된 파일
+- .gsd/CHANGELOG.md
+- .mcp.json
+- Makefile
+- scripts/bootstrap.sh
+
+#### 새 파일
+- .qlty/.gitignore
+- .qlty/configs/.shellcheckrc
+- .qlty/qlty.toml
+
+---
+
+### [2026-01-30 13:10] Session: 960f3574
+
+**변경 파일**: 4개
+**추가/삭제**: +1 / -1
+
+#### 수정된 파일
+- .mcp.json
+
+#### 새 파일
+- .qlty/.gitignore
+- .qlty/configs/.shellcheckrc
+- .qlty/qlty.toml
+
+---
+
 ### [2026-01-30 11:38] Session: 4687720f
 
 **변경 파일**: 1개

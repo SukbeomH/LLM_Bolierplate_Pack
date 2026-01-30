@@ -12,7 +12,7 @@
     "memorygraph": {
       "type": "stdio",
       "command": "memorygraph",
-      "args": ["--profile", "extended"]
+      "args": ["--profile", "extended", "--backend", "falkordblite"]
     },
     "context7": {
       "type": "http",
