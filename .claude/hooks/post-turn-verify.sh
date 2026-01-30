@@ -26,6 +26,26 @@ except:
     fi
 
     # ─────────────────────────────────────────────────────
+    # CRLF → LF 변환 (쉘 스크립트, Python, JSON, YAML)
+    # ─────────────────────────────────────────────────────
+
+    CRLF_FIXED=0
+    while IFS= read -r line; do
+        status="${line:0:2}"
+        file="${line:3}"
+        if [[ "$status" == *D* ]]; then
+            continue
+        fi
+        filepath="$PROJECT_DIR/$file"
+        if [[ -f "$filepath" ]] && [[ "$file" =~ \.(sh|bash|py|json|yaml|yml|md)$ ]]; then
+            if file "$filepath" | grep -q "CRLF"; then
+                sed -i '' $'s/\r$//' "$filepath"
+                CRLF_FIXED=$((CRLF_FIXED + 1))
+            fi
+        fi
+    done < <(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)
+
+    # ─────────────────────────────────────────────────────
     # 변경된 Python 파일 감지
     # ─────────────────────────────────────────────────────
 
@@ -67,7 +87,11 @@ except:
         fi
     fi
 
-    echo '{"status":"success","lint_issues":0}'
+    if [[ "$CRLF_FIXED" -gt 0 ]]; then
+        echo "{\"status\":\"success\",\"lint_issues\":0,\"crlf_fixed\":${CRLF_FIXED}}"
+    else
+        echo '{"status":"success","lint_issues":0}'
+    fi
 }
 
 # 메인 실행 및 에러 캡처
