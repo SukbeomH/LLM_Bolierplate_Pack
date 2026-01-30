@@ -1,26 +1,24 @@
 #!/usr/bin/env bash
 # Hook: Stop — 대화 턴 종료 시 코드 품질 게이트
-# 수정된 Python 파일이 있으면 ruff check 결과를 경고로 출력
+# Qlty 우선 → ruff fallback (하위 호환)
+# 수정된 소스 파일이 있으면 lint 결과를 경고로 출력
 
 main() {
     set -uo pipefail
 
     PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    # JSON 파싱 추상화 로드
+    source "$HOOK_DIR/_json_parse.sh"
 
     # stdin에서 JSON 읽기
     INPUT=$(cat)
 
     # stop_hook_active 확인 — 무한 루프 방지
-    IS_ACTIVE=$(echo "$INPUT" | python3 -c "
-import json, sys
-try:
-    d = json.load(sys.stdin)
-    print(d.get('stop_hook_active', False))
-except:
-    print('False')
-" 2>/dev/null)
+    IS_ACTIVE=$(json_get "$INPUT" '.stop_hook_active // empty')
 
-    if [[ "$IS_ACTIVE" == "True" ]]; then
+    if [[ "$IS_ACTIVE" == "True" || "$IS_ACTIVE" == "true" ]]; then
         echo '{"status":"skipped","reason":"stop_hook_active"}'
         exit 0
     fi
@@ -46,45 +44,78 @@ except:
     done < <(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)
 
     # ─────────────────────────────────────────────────────
-    # 변경된 Python 파일 감지
+    # 변경된 소스 파일 감지 (모든 언어)
     # ─────────────────────────────────────────────────────
 
-    # 삭제된 파일 제외 (D 상태), 존재하는 .py 파일만 수집
-    PY_CHANGES=""
+    CODE_PATTERN='\.(py|ts|tsx|js|jsx|mjs|cjs|go|rs|java)$'
+    CHANGED_FILES=""
+    PY_ONLY=true
+
     while IFS= read -r line; do
         status="${line:0:2}"
         file="${line:3}"
-        # D(삭제) 상태 제외
         if [[ "$status" == *D* ]]; then
             continue
         fi
-        if [[ "$file" == *.py ]] && [[ -f "$PROJECT_DIR/$file" ]]; then
-            PY_CHANGES="${PY_CHANGES} ${file}"
+        if [[ "$file" =~ $CODE_PATTERN ]] && [[ -f "$PROJECT_DIR/$file" ]]; then
+            CHANGED_FILES="${CHANGED_FILES} ${file}"
+            if [[ "$file" != *.py ]]; then
+                PY_ONLY=false
+            fi
         fi
     done < <(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)
 
-    PY_CHANGES=$(echo "$PY_CHANGES" | xargs)
+    CHANGED_FILES=$(echo "$CHANGED_FILES" | xargs)
 
-    if [[ -z "$PY_CHANGES" ]]; then
-        echo '{"status":"skipped","reason":"no_python_changes"}'
+    if [[ -z "$CHANGED_FILES" ]]; then
+        echo '{"status":"skipped","reason":"no_code_changes"}'
         exit 0
     fi
 
     # ─────────────────────────────────────────────────────
-    # ruff check 실행 (자동 수정 불가능한 이슈만 리포트)
+    # Qlty 우선 → ruff fallback
     # ─────────────────────────────────────────────────────
 
-    RUFF_OUTPUT=$(cd "$PROJECT_DIR" && uv run ruff check --no-fix $PY_CHANGES 2>/dev/null || true)
+    LINT_OUTPUT=""
+    ISSUE_COUNT=0
 
-    if [[ -n "$RUFF_OUTPUT" ]]; then
-        # ruff 출력에서 "Found X errors" 패턴으로 이슈 개수 추출
-        ISSUE_COUNT=$(echo "$RUFF_OUTPUT" | grep -oE 'Found [0-9]+ errors?' | grep -oE '[0-9]+' || echo "0")
-        if [[ "$ISSUE_COUNT" -gt 0 ]]; then
-            # JSON 출력 (python json.dumps로 안전하게 이스케이프)
-            ISSUES_PREVIEW=$(echo "$RUFF_OUTPUT" | head -10 | python3 -c "import json,sys; print(json.dumps(sys.stdin.read().strip()))")
-            echo "{\"status\":\"warning\",\"lint_issues\":${ISSUE_COUNT},\"preview\":${ISSUES_PREVIEW}}"
+    if command -v qlty &>/dev/null && [[ -f "$PROJECT_DIR/.qlty/qlty.toml" ]]; then
+        # Qlty check (변경된 파일 대상)
+        LINT_OUTPUT=$(cd "$PROJECT_DIR" && qlty check 2>&1 || true)
+        # qlty check 출력에서 이슈 개수 추출
+        ISSUE_COUNT=$(echo "$LINT_OUTPUT" | grep -cE '^\s*(error|warning|E[0-9]|W[0-9])' || echo "0")
+        # qlty가 에러 개수를 출력하는 경우
+        QLTY_ERRORS=$(echo "$LINT_OUTPUT" | grep -oE '[0-9]+ (error|issue|problem)' | grep -oE '[0-9]+' | head -1 || echo "")
+        if [[ -n "$QLTY_ERRORS" && "$QLTY_ERRORS" -gt 0 ]]; then
+            ISSUE_COUNT="$QLTY_ERRORS"
+        fi
+    else
+        # Fallback: Python 파일만 ruff check
+        PY_CHANGES=""
+        for f in $CHANGED_FILES; do
+            if [[ "$f" == *.py ]]; then
+                PY_CHANGES="$PY_CHANGES $f"
+            fi
+        done
+        PY_CHANGES=$(echo "$PY_CHANGES" | xargs)
+
+        if [[ -z "$PY_CHANGES" ]]; then
+            echo '{"status":"skipped","reason":"no_python_changes_and_no_qlty"}'
             exit 0
         fi
+
+        LINT_OUTPUT=$(cd "$PROJECT_DIR" && uv run ruff check --no-fix $PY_CHANGES 2>/dev/null || true)
+
+        if [[ -n "$LINT_OUTPUT" ]]; then
+            ISSUE_COUNT=$(echo "$LINT_OUTPUT" | grep -oE 'Found [0-9]+ errors?' | grep -oE '[0-9]+' || echo "0")
+        fi
+    fi
+
+    if [[ "$ISSUE_COUNT" -gt 0 ]]; then
+        ISSUES_PREVIEW=$(echo "$LINT_OUTPUT" | head -10)
+        ISSUES_JSON=$(json_dumps "$ISSUES_PREVIEW")
+        echo "{\"status\":\"warning\",\"lint_issues\":${ISSUE_COUNT},\"preview\":${ISSUES_JSON}}"
+        exit 0
     fi
 
     if [[ "$CRLF_FIXED" -gt 0 ]]; then
@@ -99,12 +130,11 @@ ERROR_OUTPUT=$(main 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ] || echo "$ERROR_OUTPUT" | grep -qiE '(error|permission denied|no such file)'; then
-    python3 -c "
-import json, sys
-msg = sys.stdin.read().strip()
-msg = ' '.join(msg[:200].split())
-print(json.dumps({'status': 'error', 'message': msg}))
-" <<< "$ERROR_OUTPUT"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+    source "$HOOK_DIR/_json_parse.sh"
+    ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -3 | tr '\n' ' ' | cut -c1-200)
+    ERROR_JSON=$(json_dumps "$ERROR_MSG")
+    echo "{\"status\":\"error\",\"message\":${ERROR_JSON}}"
 else
     echo "$ERROR_OUTPUT"
 fi

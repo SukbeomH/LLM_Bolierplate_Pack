@@ -1,7 +1,7 @@
 ---
 name: bootstrap
-description: Complete initial project setup -- deps verification, MCP connection, indexing, codebase analysis, and memory initialization
-version: 1.1.0
+description: Complete initial project setup -- deps verification, Qlty integration, multi-language detection, MCP connection, indexing, codebase analysis, and memory initialization
+version: 2.0.0
 allowed-tools:
   - store_memory
   - search_memories
@@ -15,8 +15,8 @@ trigger: "First time running the boilerplate on a new project, or after cloning"
 
 # Skill: Bootstrap
 
-> **Goal**: Perform complete initial project setup in a single pass — from system dependency verification through MCP server connection, code indexing, codebase analysis, and memory initialization.
-> **Scope**: Combines system checks, environment setup, MCP tool integration, and documentation generation.
+> **Goal**: Perform complete initial project setup in a single pass — from system dependency verification through Qlty integration, multi-language detection, MCP server connection, code indexing, codebase analysis, and memory initialization.
+> **Scope**: Combines system checks, Qlty CLI setup, language/tool detection, environment setup, MCP tool integration, and documentation generation.
 
 <role>
 You are a bootstrap orchestrator. You combine the rigor of arch-review (validation-first) with the execution capability of executor (task completion). Your job is to take a freshly cloned boilerplate and make it fully operational.
@@ -89,6 +89,116 @@ else
     echo ".env already exists"
 fi
 ```
+
+---
+
+### Step 3.5: Qlty CLI Check
+
+Check if Qlty CLI is installed:
+
+```bash
+command -v qlty &>/dev/null && qlty --version
+```
+
+**If not installed:** Ask the user whether to install Qlty CLI:
+```
+"Qlty CLI가 설치되어 있지 않습니다. 설치하시겠습니까?
+Qlty는 70+ 린터/포맷터를 지원하는 통합 코드 품질 도구입니다."
+Options: [설치] [건너뛰기]
+```
+
+If user chooses install:
+```bash
+curl https://qlty.sh | sh
+```
+
+**If user skips or install fails:** Mark WARN. Continue without Qlty (Python fallback 유지).
+
+---
+
+### Step 3.6: Qlty Init
+
+If Qlty CLI is available, initialize the project:
+
+```bash
+qlty init
+```
+
+This creates `.qlty/qlty.toml` with auto-detected linters and formatters.
+
+Verify:
+```bash
+test -f .qlty/qlty.toml && echo "PASS" || echo "FAIL"
+```
+
+**If `qlty init` fails:** Mark WARN. Continue without Qlty integration.
+
+---
+
+### Step 3.7: Language Detection
+
+Detect the project's primary language using `scripts/detect-language.sh`:
+
+```bash
+source scripts/detect-language.sh
+LANG=$(detect_language .)
+PKG=$(detect_pkg_manager .)
+TEST=$(detect_test_runner .)
+```
+
+Ask user to confirm:
+```
+"이 프로젝트는 [{LANG}]로 감지됩니다. 맞습니까?"
+Options: [맞음] [다른 언어]
+```
+
+---
+
+### Step 3.8: Package Manager Detection
+
+Show detected package manager and confirm:
+```
+"패키지 관리자: [{PKG}] (lockfile: {lockfile})
+테스트 러너: [{TEST}]
+
+이 설정을 사용하시겠습니까?"
+Options: [그대로 사용] [일부 수정] [직접 설정]
+```
+
+---
+
+### Step 3.9: Qlty Detected Tools
+
+If Qlty is available, show detected plugins:
+```bash
+qlty plugins list 2>/dev/null
+```
+
+Display detected linters/formatters to user for confirmation.
+
+---
+
+### Step 3.10: User Confirmation
+
+Collect all detected settings and present to user for final confirmation before generating config.
+
+---
+
+### Step 3.11: Generate project-config.yaml
+
+Generate `.gsd/project-config.yaml` based on detection results and user confirmation:
+
+- Use template from `.gsd/templates/project-config.yaml`
+- Fill in detected values (language, package manager, test runner, Qlty settings)
+- Set `_meta.generated_at` to current timestamp
+- Set `_meta.user_confirmed` to true/false
+
+Verify:
+```bash
+test -f .gsd/project-config.yaml && echo "PASS" || echo "FAIL"
+```
+
+**If Qlty was not installed:** Set `qlty.enabled: false` in the config.
 
 ---
 
@@ -221,8 +331,10 @@ Output the structured bootstrap status report:
  BOOTSTRAP STATUS REPORT
 ================================================================
 System Prerequisites:  {PASS|FAIL} ({tool versions})
-Python Environment:    {PASS|FAIL} (uv synced, .venv ready)
+Language Environment:  {PASS|FAIL} ({language} detected, deps synced)
 Environment:           {PASS|FAIL} (.env configured)
+Qlty CLI:              {PASS|WARN|SKIP} ({version or reason})
+Project Config:        {PASS|FAIL} (project-config.yaml generated)
 Context Structure:     {PASS|FAIL} (reports/, research/, archive/, PATTERNS.md)
 Prompt Patch:          {PASS|WARN|SKIP} (.patch-workspace ready)
 MCP Servers:           graph-code {PASS|FAIL} / memorygraph {PASS|FAIL} / context7 {PASS|WARN}
@@ -259,3 +371,5 @@ Next: /new-project | /plan 1 | /map
 ## Scripts
 
 - `scripts/bootstrap.sh`: System dependency verification script (Node.js, npm, uv, pipx, Python, memorygraph, npx)
+- `scripts/detect-language.sh`: Language, package manager, and test runner detection functions
+- `scripts/load-config.sh`: project-config.yaml loader (exports environment variables)

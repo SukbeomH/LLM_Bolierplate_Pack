@@ -1,0 +1,51 @@
+# project-config.yaml — 프로젝트 환경 설정
+# 부트스트랩에서 Detect-Ask-Confirm 플로우로 자동 생성
+# 훅과 스킬에서 참조하여 언어에 무관한 동작 수행
+
+project:
+  name: ""                          # 프로젝트명
+  primary_language: ""              # python | node | go | rust
+
+language:
+  name: ""                          # Python, Node.js, Go, Rust
+  variant: ""                       # typescript, commonjs, esm 등 (nullable)
+  version: ""                       # 3.12, 20, 1.22 등 (nullable)
+
+package_manager:
+  name: ""                          # npm, yarn, pnpm, uv, cargo, go
+  lockfile: ""                      # uv.lock, package-lock.json 등
+  install: ""                       # "uv sync", "npm install"
+  add: ""                           # "uv add", "npm install --save"
+  run: ""                           # "uv run", "npx"
+
+qlty:
+  enabled: false
+  config_file: ".qlty/qlty.toml"
+  check_command: "qlty check"
+  fix_command: "qlty check --fix"
+  format_command: "qlty fmt"
+
+tools:
+  # Qlty가 담당하지 않는 영역
+  test_runner:
+    name: ""                        # jest, pytest, go test, cargo test
+    config_file: ""                 # jest.config.js, pyproject.toml 등
+    command: ""                     # "npm test", "uv run pytest tests/"
+
+environment:
+  dependency_dir: ""                # node_modules, .venv, target
+  dependency_file: ""               # package.json, pyproject.toml
+  ignore_dirs:                      # 무시할 디렉토리 목록
+    - node_modules
+    - .venv
+    - target
+    - __pycache__
+    - .git
+    - .qlty
+  file_extensions: []               # [".py"], [".ts", ".tsx", ".js", ".jsx"]
+
+_meta:
+  generated_by: "bootstrap"
+  generated_at: ""
+  user_confirmed: false
+  qlty_version: ""

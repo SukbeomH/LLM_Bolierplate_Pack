@@ -15,13 +15,17 @@ main() {
 
     PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
     SESSION_DIR="$PROJECT_DIR/.sessions"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    # JSON 파싱 추상화 로드
+    source "$HOOK_DIR/_json_parse.sh"
 
     # stdin에서 JSON 입력 읽기
     INPUT=$(cat)
 
     # JSON에서 transcript_path와 session_id 추출
-    TRANSCRIPT_PATH=$(echo "$INPUT" | python3 -c "import json,sys; data=json.load(sys.stdin); print(data.get('transcript_path',''))" 2>/dev/null || echo "")
-    SESSION_ID=$(echo "$INPUT" | python3 -c "import json,sys; data=json.load(sys.stdin); print(data.get('session_id',''))" 2>/dev/null || echo "")
+    TRANSCRIPT_PATH=$(json_get "$INPUT" '.transcript_path // empty')
+    SESSION_ID=$(json_get "$INPUT" '.session_id // empty')
 
     # transcript_path가 없으면 fallback으로 직접 탐색
     if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
@@ -70,12 +74,11 @@ ERROR_OUTPUT=$(main 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ] || echo "$ERROR_OUTPUT" | grep -qiE '(error|permission denied|no such file)'; then
-    python3 -c "
-import json, sys
-msg = sys.stdin.read().strip()
-msg = ' '.join(msg[:200].split())
-print(json.dumps({'status': 'error', 'message': msg}))
-" <<< "$ERROR_OUTPUT"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+    source "$HOOK_DIR/_json_parse.sh"
+    ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -3 | tr '\n' ' ' | cut -c1-200)
+    ERROR_JSON=$(json_dumps "$ERROR_MSG")
+    echo "{\"status\":\"error\",\"message\":${ERROR_JSON}}"
 else
     echo "$ERROR_OUTPUT"
 fi

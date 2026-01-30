@@ -10,21 +10,18 @@ main() {
     LAST_INDEXED="${INDEX_DIR}/.last-indexed-at"
     LOCK_FILE="${INDEX_DIR}/.index.lock"
     LOG_FILE="${INDEX_DIR}/.index.log"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    # JSON 파싱 추상화 로드
+    source "$HOOK_DIR/_json_parse.sh"
 
     # stdin에서 JSON 읽기
     INPUT=$(cat)
 
     # stop_hook_active 확인 — 무한 루프 방지
-    IS_ACTIVE=$(echo "$INPUT" | python3 -c "
-import json, sys
-try:
-    d = json.load(sys.stdin)
-    print(d.get('stop_hook_active', False))
-except:
-    print('False')
-" 2>/dev/null)
+    IS_ACTIVE=$(json_get "$INPUT" '.stop_hook_active // empty')
 
-    if [[ "$IS_ACTIVE" == "True" ]]; then
+    if [[ "$IS_ACTIVE" == "True" || "$IS_ACTIVE" == "true" ]]; then
         echo '{"status":"skipped","reason":"stop_hook_active"}'
         exit 0
     fi
@@ -100,12 +97,11 @@ ERROR_OUTPUT=$(main 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ] || echo "$ERROR_OUTPUT" | grep -qiE '(error|permission denied|no such file)'; then
-    python3 -c "
-import json, sys
-msg = sys.stdin.read().strip()
-msg = ' '.join(msg[:200].split())
-print(json.dumps({'status': 'error', 'message': msg}))
-" <<< "$ERROR_OUTPUT"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+    source "$HOOK_DIR/_json_parse.sh"
+    ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -3 | tr '\n' ' ' | cut -c1-200)
+    ERROR_JSON=$(json_dumps "$ERROR_MSG")
+    echo "{\"status\":\"error\",\"message\":${ERROR_JSON}}"
 else
     echo "$ERROR_OUTPUT"
 fi

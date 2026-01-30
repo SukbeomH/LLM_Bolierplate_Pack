@@ -15,12 +15,17 @@ main() {
 
     PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
     CHANGELOG="$PROJECT_DIR/.gsd/CHANGELOG.md"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    # JSON 파싱 추상화 로드
+    source "$HOOK_DIR/_json_parse.sh"
 
     # stdin에서 JSON 입력 읽기
     INPUT=$(cat)
 
     # JSON에서 session_id 추출
-    SESSION_ID=$(echo "$INPUT" | python3 -c "import json,sys; data=json.load(sys.stdin); print(data.get('session_id','unknown'))" 2>/dev/null || echo "unknown")
+    SESSION_ID=$(json_get "$INPUT" '.session_id // empty')
+    [[ -z "$SESSION_ID" ]] && SESSION_ID="unknown"
 
     # CHANGELOG 파일이 없으면 종료
     if [ ! -f "$CHANGELOG" ]; then
@@ -123,16 +128,12 @@ ERROR_OUTPUT=$(main 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ] || echo "$ERROR_OUTPUT" | grep -qiE '(error|permission denied|no such file)'; then
-    # 에러가 있으면 JSON으로 출력
-    python3 -c "
-import json, sys
-msg = sys.stdin.read().strip()
-# 처음 200자만, 줄바꿈을 공백으로
-msg = ' '.join(msg[:200].split())
-print(json.dumps({'status': 'error', 'message': msg}))
-" <<< "$ERROR_OUTPUT"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+    source "$HOOK_DIR/_json_parse.sh"
+    ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -3 | tr '\n' ' ' | cut -c1-200)
+    ERROR_JSON=$(json_dumps "$ERROR_MSG")
+    echo "{\"status\":\"error\",\"message\":${ERROR_JSON}}"
 else
-    # 정상 출력
     echo "$ERROR_OUTPUT"
 fi
 
