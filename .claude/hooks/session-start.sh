@@ -7,7 +7,11 @@ main() {
 
     PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
     GSD_DIR="$PROJECT_DIR/.gsd"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
     CONTEXT_PARTS=()
+
+    # JSON 파싱 추상화 로드
+    source "$HOOK_DIR/_json_parse.sh"
 
     # 1. PATTERNS.md 로드 (핵심 패턴, 2KB 제한)
     PATTERNS_FILE="$GSD_DIR/PATTERNS.md"
@@ -65,18 +69,9 @@ main() {
             COMBINED="${COMBINED}${part}
 "
         done
-        # Python으로 JSON escape 처리
-        python3 -c "
-import json, sys
-ctx = sys.stdin.read().strip()
-if ctx:
-    print(json.dumps({
-        'hookSpecificOutput': {
-            'hookEventName': 'SessionStart',
-            'additionalContext': ctx
-        }
-    }))
-" <<< "$COMBINED"
+        # JSON escape 처리
+        CTX_JSON=$(json_dumps "$COMBINED")
+        echo "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":${CTX_JSON}}}"
     fi
 }
 
@@ -85,12 +80,11 @@ ERROR_OUTPUT=$(main 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ] || echo "$ERROR_OUTPUT" | grep -qiE '(error|permission denied|no such file)'; then
-    python3 -c "
-import json, sys
-msg = sys.stdin.read().strip()
-msg = ' '.join(msg[:200].split())
-print(json.dumps({'status': 'error', 'message': msg}))
-" <<< "$ERROR_OUTPUT"
+    HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+    source "$HOOK_DIR/_json_parse.sh"
+    ERROR_MSG=$(echo "$ERROR_OUTPUT" | head -3 | tr '\n' ' ' | cut -c1-200)
+    ERROR_JSON=$(json_dumps "$ERROR_MSG")
+    echo "{\"status\":\"error\",\"message\":${ERROR_JSON}}"
 else
     echo "$ERROR_OUTPUT"
 fi

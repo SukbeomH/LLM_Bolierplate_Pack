@@ -46,7 +46,7 @@ For GSD phases:
 ### Step 3: Stage and Commit
 
 Use the `commit` skill logic to:
-1. Run pre-commit checks (`ruff`, `mypy`, `pytest`)
+1. Run pre-commit checks (`qlty check` or `ruff`/`mypy` fallback, + config-based test)
 2. Analyze diff for logical splits
 3. Create conventional emoji commits
 
@@ -67,9 +67,8 @@ gh pr create --title "<title>" --body "$(cat <<'EOF'
 <list of key changes with file references>
 
 ## Test Plan
-- [ ] Unit tests pass (`uv run pytest tests/`)
-- [ ] Lint clean (`uv run ruff check .`)
-- [ ] Type check clean (`uv run mypy .`)
+- [ ] Quality checks pass (`qlty check` or `uv run ruff check .` + `uv run mypy .`)
+- [ ] Tests pass (per project-config.yaml test runner)
 - [ ] <specific manual verification steps>
 
 ## GSD Context

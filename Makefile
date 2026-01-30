@@ -3,9 +3,9 @@
 export
 
 .PHONY: status index setup install-deps \
-        install-memorygraph init-env check-deps lint lint-fix test typecheck \
+        install-memorygraph init-env check-deps lint lint-fix fmt test typecheck \
         clean patch-prompt patch-restore patch-clean \
-        build build-plugin build-antigravity help
+        build build-plugin build-antigravity help generate-claude-md
 
 # ─────────────────────────────────────────────────────
 # Prerequisites Check
@@ -87,17 +87,48 @@ setup: ## Full initial setup (install deps → env → index)
 # Code Quality
 # ─────────────────────────────────────────────────────
 
-lint: ## Run ruff linter
-	uv run ruff check .
+lint: ## Run linter (qlty or ruff)
+	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
+		qlty check; \
+	else \
+		uv run ruff check .; \
+	fi
 
-lint-fix: ## Run ruff with auto-fix
-	uv run ruff check --fix .
+lint-fix: ## Run linter with auto-fix (qlty or ruff)
+	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
+		qlty check --fix; \
+	else \
+		uv run ruff check --fix .; \
+	fi
 
-test: ## Run pytest
-	uv run pytest tests/
+fmt: ## Format code (qlty or ruff)
+	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
+		qlty fmt --all; \
+	else \
+		uv run ruff format .; \
+	fi
 
-typecheck: ## Run mypy type checker
-	uv run mypy .
+test: ## Run tests (config-based or pytest)
+	@if [ -f .gsd/project-config.yaml ]; then \
+		TEST_CMD=$$(grep -A2 'test_runner:' .gsd/project-config.yaml | grep 'command:' | sed 's/.*command:[[:space:]]*//' | sed 's/^["'"'"']//' | sed 's/["'"'"']$$//'); \
+		if [ -n "$$TEST_CMD" ]; then \
+			eval "$$TEST_CMD"; \
+		else \
+			uv run pytest tests/; \
+		fi; \
+	else \
+		uv run pytest tests/; \
+	fi
+
+typecheck: ## Run type checker (qlty or mypy)
+	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
+		qlty check; \
+	else \
+		uv run mypy .; \
+	fi
+
+generate-claude-md: ## Generate CLAUDE.md from project-config.yaml
+	@bash scripts/generate-claude-md.sh
 
 # ─────────────────────────────────────────────────────
 # System Prompt Patching

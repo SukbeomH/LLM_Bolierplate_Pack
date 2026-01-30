@@ -20,6 +20,13 @@ This skill is the shipping mechanism for GSD executor's atomic commit requiremen
 
 Run quality checks before committing:
 
+**Qlty 경로** (`.qlty/qlty.toml` 존재 시):
+```bash
+qlty check                        # Lint (all detected linters)
+# Test: project-config.yaml의 tools.test_runner.command
+```
+
+**Fallback 경로**:
 ```bash
 uv run ruff check .              # Lint
 uv run mypy .                    # Type check
