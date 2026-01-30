@@ -61,7 +61,7 @@ jobs:
             VERSION=$(echo "$TAG" | sed 's/gsd-plugin-v//')
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             # Get latest release tag
-            TAG=$(gh release view --json tagName -q .tagName)
+            TAG=$(gh release view --repo "${{ github.repository }}" --json tagName -q .tagName)
             VERSION=$(echo "$TAG" | sed 's/gsd-plugin-v//')
           else
             TAG="${{ needs.release-please.outputs.tag_name }}"
