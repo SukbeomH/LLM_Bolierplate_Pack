@@ -7,14 +7,14 @@
   "include-v-in-tag": true,
   "tag-separator": "-",
   "packages": {
-    "gsd-plugin": {
+    ".": {
       "component": "gsd-plugin",
       "changelog-path": "CHANGELOG.md",
       "release-type": "simple",
       "extra-files": [
         {
           "type": "json",
-          "path": ".claude-plugin/plugin.json",
+          "path": "gsd-plugin/.claude-plugin/plugin.json",
           "jsonpath": "$.version"
         }
       ]
