@@ -43,6 +43,11 @@ environment:
     - .qlty
   file_extensions: [".py"]
 
+memory:
+  tenant_id: "boilerplate"     # project.name과 일치
+  visibility: "project"         # 기본 visibility
+  multi_tenant: true
+
 _meta:
   generated_by: "bootstrap"
   generated_at: "2026-01-30T13:20:00+09:00"

@@ -79,7 +79,11 @@ secrets/
 .code-graph-rag/
 .graph-index/
 
-# Local logs
+# Integrated Agent Data & Logs
+.agent/data/
+.agent/logs/
+
+# Legacy/External Local Logs (Symlinked or specific)
 .logs/
 logs_llm/
 *.log
