@@ -8,6 +8,237 @@
 ## 변경 기록
 
 <!-- 아래에 세션별 변경사항이 자동으로 추가됩니다 -->
+### [2026-02-02 11:12] Session: 0e9c7989
+
+**변경 파일**: 4개
+**추가/삭제**: +222 / -143
+
+#### 수정된 파일
+- .gsd/CHANGELOG.md
+- .sessions/.gitkeep
+- opencode-boilerplate/scripts/bash-guard.py
+- tests/test_sample.py
+
+#### 삭제된 파일
+- .sessions/.gitkeep
+- opencode-boilerplate/scripts/bash-guard.py
+
+---
+
+### [2026-02-02 11:12] Session: fd65b05c
+
+**변경 파일**: 4개
+**추가/삭제**: +205 / -143
+
+#### 수정된 파일
+- .gsd/CHANGELOG.md
+- .sessions/.gitkeep
+- opencode-boilerplate/scripts/bash-guard.py
+- tests/test_sample.py
+
+#### 삭제된 파일
+- .sessions/.gitkeep
+- opencode-boilerplate/scripts/bash-guard.py
+
+---
+
+### [2026-02-02 11:09] Session: 177790d8
+
+**변경 파일**: 54개
+**추가/삭제**: +252 / -5123
+
+#### 수정된 파일
+- .agent/skills
+- .agent/workflows/add-phase.md
+- .agent/workflows/add-todo.md
+- .agent/workflows/audit-milestone.md
+- .agent/workflows/bootstrap.md
+- .agent/workflows/bug-fix.md
+- .agent/workflows/check-todos.md
+- .agent/workflows/complete-milestone.md
+- .agent/workflows/debug.md
+- .agent/workflows/discuss-phase.md
+- .agent/workflows/execute.md
+- .agent/workflows/feature-dev.md
+- .agent/workflows/format.md
+- .agent/workflows/handoff.md
+- .agent/workflows/help.md
+- .agent/workflows/insert-phase.md
+- .agent/workflows/list-phase-assumptions.md
+- .agent/workflows/map.md
+- .agent/workflows/new-milestone.md
+- .agent/workflows/new-project.md
+- .agent/workflows/pause.md
+- .agent/workflows/plan-milestone-gaps.md
+- .agent/workflows/plan.md
+- .agent/workflows/progress.md
+- .agent/workflows/quick-check.md
+- .agent/workflows/remove-phase.md
+- .agent/workflows/research-phase.md
+- .agent/workflows/resume.md
+- .agent/workflows/update.md
+- .agent/workflows/verify.md
+- .agent/workflows/web-search.md
+- .agent/workflows/whats-new.md
+- .claude/agents/arch-review.md
+- .claude/agents/clean.md
+- .claude/agents/codebase-mapper.md
+- .claude/agents/commit.md
+- .claude/agents/context-health-monitor.md
+- .claude/agents/create-pr.md
+- .claude/agents/debugger.md
+- .claude/agents/executor.md
+- .claude/agents/impact-analysis.md
+- .claude/agents/plan-checker.md
+- .claude/agents/planner.md
+- .claude/agents/pr-review.md
+- .claude/agents/verifier.md
+- .gemini/GEMINI.md
+- .gsd/CHANGELOG.md
+- CLAUDE.md
+- tests/test_sample.py
+
+#### 새 파일
+- .claude/agents/bootstrap.md
+- .claude/hooks/compact-context.sh
+- .claude/hooks/organize-docs.sh
+- .claude/hooks/scaffold-gsd.sh
+- .claude/hooks/scaffold-infra.sh
+
+#### 삭제된 파일
+- .agent/skills
+- .agent/workflows/add-phase.md
+- .agent/workflows/add-todo.md
+- .agent/workflows/audit-milestone.md
+- .agent/workflows/bootstrap.md
+- .agent/workflows/bug-fix.md
+- .agent/workflows/check-todos.md
+- .agent/workflows/complete-milestone.md
+- .agent/workflows/debug.md
+- .agent/workflows/discuss-phase.md
+- .agent/workflows/execute.md
+- .agent/workflows/feature-dev.md
+- .agent/workflows/format.md
+- .agent/workflows/handoff.md
+- .agent/workflows/help.md
+- .agent/workflows/insert-phase.md
+- .agent/workflows/list-phase-assumptions.md
+- .agent/workflows/map.md
+- .agent/workflows/new-milestone.md
+- .agent/workflows/new-project.md
+- .agent/workflows/pause.md
+- .agent/workflows/plan-milestone-gaps.md
+- .agent/workflows/plan.md
+- .agent/workflows/progress.md
+- .agent/workflows/quick-check.md
+- .agent/workflows/remove-phase.md
+- .agent/workflows/research-phase.md
+- .agent/workflows/resume.md
+- .agent/workflows/update.md
+- .agent/workflows/verify.md
+- .agent/workflows/web-search.md
+- .agent/workflows/whats-new.md
+
+---
+
+### [2026-02-02 11:09] Session: cf886703
+
+**변경 파일**: 53개
+**추가/삭제**: +154 / -5123
+
+#### 수정된 파일
+- .agent/skills
+- .agent/workflows/add-phase.md
+- .agent/workflows/add-todo.md
+- .agent/workflows/audit-milestone.md
+- .agent/workflows/bootstrap.md
+- .agent/workflows/bug-fix.md
+- .agent/workflows/check-todos.md
+- .agent/workflows/complete-milestone.md
+- .agent/workflows/debug.md
+- .agent/workflows/discuss-phase.md
+- .agent/workflows/execute.md
+- .agent/workflows/feature-dev.md
+- .agent/workflows/format.md
+- .agent/workflows/handoff.md
+- .agent/workflows/help.md
+- .agent/workflows/insert-phase.md
+- .agent/workflows/list-phase-assumptions.md
+- .agent/workflows/map.md
+- .agent/workflows/new-milestone.md
+- .agent/workflows/new-project.md
+- .agent/workflows/pause.md
+- .agent/workflows/plan-milestone-gaps.md
+- .agent/workflows/plan.md
+- .agent/workflows/progress.md
+- .agent/workflows/quick-check.md
+- .agent/workflows/remove-phase.md
+- .agent/workflows/research-phase.md
+- .agent/workflows/resume.md
+- .agent/workflows/update.md
+- .agent/workflows/verify.md
+- .agent/workflows/web-search.md
+- .agent/workflows/whats-new.md
+- .claude/agents/arch-review.md
+- .claude/agents/clean.md
+- .claude/agents/codebase-mapper.md
+- .claude/agents/commit.md
+- .claude/agents/context-health-monitor.md
+- .claude/agents/create-pr.md
+- .claude/agents/debugger.md
+- .claude/agents/executor.md
+- .claude/agents/impact-analysis.md
+- .claude/agents/plan-checker.md
+- .claude/agents/planner.md
+- .claude/agents/pr-review.md
+- .claude/agents/verifier.md
+- .gemini/GEMINI.md
+- CLAUDE.md
+- tests/test_sample.py
+
+#### 새 파일
+- .claude/agents/bootstrap.md
+- .claude/hooks/compact-context.sh
+- .claude/hooks/organize-docs.sh
+- .claude/hooks/scaffold-gsd.sh
+- .claude/hooks/scaffold-infra.sh
+
+#### 삭제된 파일
+- .agent/skills
+- .agent/workflows/add-phase.md
+- .agent/workflows/add-todo.md
+- .agent/workflows/audit-milestone.md
+- .agent/workflows/bootstrap.md
+- .agent/workflows/bug-fix.md
+- .agent/workflows/check-todos.md
+- .agent/workflows/complete-milestone.md
+- .agent/workflows/debug.md
+- .agent/workflows/discuss-phase.md
+- .agent/workflows/execute.md
+- .agent/workflows/feature-dev.md
+- .agent/workflows/format.md
+- .agent/workflows/handoff.md
+- .agent/workflows/help.md
+- .agent/workflows/insert-phase.md
+- .agent/workflows/list-phase-assumptions.md
+- .agent/workflows/map.md
+- .agent/workflows/new-milestone.md
+- .agent/workflows/new-project.md
+- .agent/workflows/pause.md
+- .agent/workflows/plan-milestone-gaps.md
+- .agent/workflows/plan.md
+- .agent/workflows/progress.md
+- .agent/workflows/quick-check.md
+- .agent/workflows/remove-phase.md
+- .agent/workflows/research-phase.md
+- .agent/workflows/resume.md
+- .agent/workflows/update.md
+- .agent/workflows/verify.md
+- .agent/workflows/web-search.md
+- .agent/workflows/whats-new.md
+
+---
+
 ### [2026-02-02 10:37] Session: 563d8fbd
 
 **변경 파일**: 2개
