@@ -56,7 +56,7 @@ main() {
             "$HOOK_DIR/mcp-store-memory.sh" \
                 "Pre-compact: $BRANCH [$TIMESTAMP]" \
                 "$STATE_SUMMARY" \
-                "session-snapshot,pre-compact,auto,branch:$BRANCH" 2>/dev/null &
+                "session-snapshot,pre-compact,auto,branch:$BRANCH" 2>/dev/null || true
         fi
     fi
 

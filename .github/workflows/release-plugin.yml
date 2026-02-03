@@ -8,6 +8,7 @@ on:
       - '.claude/**'
       - '.agent/**'
       - 'scripts/build-*.sh'
+      - 'Makefile'
       - 'CLAUDE.md'
       - 'release-please-config.json'
       - '.release-please-manifest.json'

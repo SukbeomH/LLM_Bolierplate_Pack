@@ -1,5 +1,5 @@
-# Use bash for all recipes
-SHELL := /opt/homebrew/bin/bash
+# Use bash for all recipes (portable across macOS/Linux/CI)
+SHELL := $(shell command -v bash)
 
 # Load .env if exists
 -include .env
