@@ -108,37 +108,61 @@ echo "  [=] Total skills: ${SKILLS_COUNT}"
 echo ""
 echo "[Phase 3] Copying workflows..."
 
-# Workflows need description in frontmatter for Antigravity
-for workflow in "$BOILERPLATE"/.agent/workflows/*.md; do
-    [ -f "$workflow" ] || continue
-    filename=$(basename "$workflow")
-    target="$ANTIGRAVITY/.agent/workflows/${filename}"
+WORKFLOWS_COUNT=0
+if [ -d "$BOILERPLATE/.agent/workflows" ]; then
+    # Workflows need description in frontmatter for Antigravity
+    for workflow in "$BOILERPLATE"/.agent/workflows/*.md; do
+        [ -f "$workflow" ] || continue
+        filename=$(basename "$workflow")
+        target="$ANTIGRAVITY/.agent/workflows/${filename}"
 
-    # Check if workflow has description in frontmatter (handle CRLF)
-    if tr -d '\r' < "$workflow" | grep -q "^description:"; then
-        cp "$workflow" "$target"
-        echo "  [+] ${filename}"
-    else
-        # Add description frontmatter based on filename
-        workflow_name="${filename%.md}"
-        desc="Workflow for ${workflow_name//-/ }"
-
-        # Check if file has frontmatter (handle CRLF)
-        if head -1 "$workflow" | tr -d '\r' | grep -q "^---$"; then
-            # Insert description after first ---
-            awk 'NR==1{print; print "description: \"'"$desc"'\""; next}1' "$workflow" > "$target"
+        # Check if workflow has description in frontmatter (handle CRLF)
+        if tr -d '\r' < "$workflow" | grep -q "^description:"; then
+            cp "$workflow" "$target"
+            echo "  [+] ${filename}"
         else
-            # Add new frontmatter
-            echo "---" > "$target"
-            echo "description: \"${desc}\"" >> "$target"
-            echo "---" >> "$target"
-            echo "" >> "$target"
-            cat "$workflow" >> "$target"
+            # Add description frontmatter based on filename
+            workflow_name="${filename%.md}"
+            desc="Workflow for ${workflow_name//-/ }"
+
+            # Check if file has frontmatter (handle CRLF)
+            if head -1 "$workflow" | tr -d '\r' | grep -q "^---$"; then
+                # Insert description after first ---
+                awk 'NR==1{print; print "description: \"'"$desc"'\""; next}1' "$workflow" > "$target"
+            else
+                # Add new frontmatter
+                echo "---" > "$target"
+                echo "description: \"${desc}\"" >> "$target"
+                echo "---" >> "$target"
+                echo "" >> "$target"
+                cat "$workflow" >> "$target"
+            fi
+            echo "  [+] ${filename} (added description)"
         fi
-        echo "  [+] ${filename} (added description)"
-    fi
-done
-WORKFLOWS_COUNT=$(ls "$ANTIGRAVITY/.agent/workflows/"*.md 2>/dev/null | wc -l | tr -d ' ')
+    done
+    WORKFLOWS_COUNT=$(ls "$ANTIGRAVITY/.agent/workflows/"*.md 2>/dev/null | wc -l | tr -d ' ')
+else
+    echo "  [SKIP] .agent/workflows/ not found — generating from skills"
+    for skill_dir in "$BOILERPLATE"/.claude/skills/*/; do
+        skill_name=$(basename "$skill_dir")
+        skill_file="$skill_dir/SKILL.md"
+        [ -f "$skill_file" ] || continue
+        desc=$(sed -n '/^---/,/^---/p' "$skill_file" | tr -d '\r' | grep "^description:" | sed 's/description: *//' | tr -d '"')
+        [ -z "$desc" ] && desc="Workflow for ${skill_name//-/ }"
+        cat > "$ANTIGRAVITY/.agent/workflows/${skill_name}.md" << WFEOF
+---
+description: "${desc}"
+---
+
+# ${skill_name}
+
+${desc}
+
+Invoke the **${skill_name}** skill.
+WFEOF
+    done
+    WORKFLOWS_COUNT=$(ls "$ANTIGRAVITY/.agent/workflows/"*.md 2>/dev/null | wc -l | tr -d ' ')
+fi
 echo "  [=] Total workflows: ${WORKFLOWS_COUNT}"
 
 # --- Phase 4: Rules from CLAUDE.md ---
@@ -663,8 +687,8 @@ rules_count=$(ls "$ANTIGRAVITY/.agent/rules/"*.md 2>/dev/null | wc -l | tr -d ' 
 echo "  Skills:    ${skill_count} (expected: 15)"
 [ "$skill_count" -ge 14 ] || echo "    [WARN] Low skill count"
 
-echo "  Workflows: ${workflow_count} (expected: 30)"
-[ "$workflow_count" -ge 29 ] || echo "    [WARN] Low workflow count"
+echo "  Workflows: ${workflow_count}"
+[ "$workflow_count" -ge 1 ] || echo "    [WARN] No workflows found"
 
 echo "  Rules:     ${rules_count} (expected: 3)"
 [ "$rules_count" -ge 3 ] || echo "    [WARN] Missing rules"
