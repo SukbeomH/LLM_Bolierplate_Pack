@@ -429,7 +429,17 @@ gaps: [...]  # If gaps_found
 - [ ] VERIFICATION.md created
 - [ ] Results returned to orchestrator
 
-## Scripts
+## 네이티브 도구 활용
 
-- `scripts/detect_stubs.py`: Scan Python files for stub implementations (pass, NotImplementedError, TODO, Ellipsis). Output: structured report
-- `scripts/check_artifacts.sh`: Verify file existence and substance from a list or PLAN.md. Output: JSON with status per file
+Stub 탐지와 아티팩트 검증은 네이티브 도구로 수행:
+
+```
+# Stub/placeholder 패턴 탐지
+Grep(pattern: "TODO|FIXME|NotImplementedError|pass$|return null|return \\{\\}", path: "src/", output_mode: "content")
+
+# 파일 존재 확인
+Glob(pattern: "src/**/*.{ts,js,py}")
+
+# 파일 substance 확인 (빈 파일/최소 구현 탐지)
+Read(file_path: "{file}") → 라인 수와 내용 확인
+```

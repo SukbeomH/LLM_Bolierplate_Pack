@@ -4,11 +4,11 @@ description: Analyzes diffs, splits logical changes, creates conventional emoji 
 ---
 
 ## Quick Reference
-- **Pre-commit**: `qlty check` 또는 `uv run ruff check . && uv run mypy .`
+- **Pre-commit**: `shellcheck *.sh` (선택적), `git diff --stat` 확인
 - **Commit format**: `<emoji> <type>(<scope>): <description>`
 - **Types**: feat, fix, docs, style, refactor, perf, test, chore, ci
 - **GSD scope**: `(phase-N.M)` 형식 — 예: `feat(phase-1.2): add login endpoint`
-- **Split signals**: 다른 모듈, 혼합 유형(feature+test+config), 독립 버그 수정
+- **Split signals**: 다른 모듈, 혼합 유형(feature+config), 독립 버그 수정
 
 ---
 
@@ -35,11 +35,9 @@ qlty check                        # Lint (all detected linters)
 # Test: project-config.yaml의 tools.test_runner.command
 ```
 
-**Fallback 경로**:
+**Shell 스크립트 검사**:
 ```bash
-uv run ruff check .              # Lint
-uv run mypy .                    # Type check
-uv run pytest tests/ -x -q       # Quick test (fail-fast)
+shellcheck *.sh                  # Shell script lint (선택)
 ```
 
 If checks fail, report failures and ask whether to:
@@ -158,6 +156,17 @@ git add pyproject.toml uv.lock
 git commit -m "chore(deps): add jose and bcrypt dependencies"
 ```
 
-## Scripts
+## 네이티브 도구 활용
 
-- `scripts/analyze_diff.py`: Analyze git diff for logical split candidates. Detects multi-concern changes and suggests separate commits. Output: JSON
+Diff 분석과 커밋 분할은 git 명령과 네이티브 도구로 수행:
+
+```bash
+# 변경된 파일 목록
+git diff --name-only HEAD~1
+
+# 파일별 변경 통계
+git diff --stat
+
+# 논리적 분할 판단 (서로 다른 디렉토리/모듈)
+git diff --name-only | xargs -I{} dirname {}  | sort -u
+```

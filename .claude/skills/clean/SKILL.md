@@ -1,13 +1,12 @@
 ---
 name: clean
-description: Runs all code quality tools (qlty or ruff/mypy) and auto-fixes issues across the codebase
+description: Runs shell script quality checks (shellcheck, shfmt) across the codebase
 ---
 
 ## Quick Reference
-- **Lint**: `qlty check --fix` (fallback: `uv run ruff check . --fix`)
-- **Format**: `qlty fmt --all` (fallback: `uv run ruff format .`)
-- **Type check**: Included in `qlty check` (fallback: `uv run mypy .`)
-- **Test**: `project-config.yaml` 설정 또는 `uv run pytest tests/ -x -q`
+- **Lint**: `shellcheck *.sh` (shell script 정적 분석)
+- **Format**: `shfmt -w -i 4 *.sh` (shell script 포맷팅)
+- **Script**: `bash .claude/skills/clean/scripts/run_quality_checks.sh`
 - **Output**: `=== Clean Report ===` 형식, Overall CLEAN/ISSUES_REMAIN
 
 ---
@@ -15,66 +14,44 @@ description: Runs all code quality tools (qlty or ruff/mypy) and auto-fixes issu
 # GSD Clean Skill
 
 <role>
-You fix all linting, formatting, and type-checking issues in the codebase.
+You fix all shell script linting and formatting issues in the codebase.
 Use this before committing or as a pre-execution quality gate.
-Qlty CLI가 설치되어 있으면 `qlty check`/`qlty fmt`를 사용하고, 없으면 ruff/mypy fallback을 사용합니다.
 </role>
 
 ---
 
 ## Workflow
 
-### Step 1: Lint + Auto-Fix
+### Step 1: ShellCheck (Lint)
 
-**Qlty 경로** (`.qlty/qlty.toml` 존재 시):
 ```bash
-qlty check --fix                  # Auto-fix lint issues (all languages)
-qlty fmt --all                    # Format entire project
+# 모든 shell 스크립트 린트
+find . -name "*.sh" -exec shellcheck {} \;
+
+# 또는 스크립트 사용
+bash .claude/skills/clean/scripts/run_quality_checks.sh
 ```
 
-**Fallback 경로** (Qlty 미설치 시):
+Report what was found:
+```
+SHELLCHECK_ISSUES: <N> issues found
+```
+
+If issues exist, list them with file:line references.
+
+### Step 2: shfmt (Format)
+
 ```bash
-uv run ruff check . --fix         # Auto-fix lint issues
-uv run ruff format .              # Format code
-```
+# 포맷 검사
+shfmt -d -i 4 script.sh
 
-Report what was fixed:
-```
-LINT_FIXED: <N> issues auto-fixed
-LINT_REMAINING: <N> issues require manual fix
-```
-
-If issues remain, list them with file:line references.
-
-### Step 2: Type Check
-
-**Qlty 경로**: Type checking은 `qlty check`에 포함됨 (mypy/tsc 플러그인)
-
-**Fallback 경로**:
-```bash
-uv run mypy .
+# 자동 수정
+shfmt -w -i 4 script.sh
 ```
 
 Report results:
 ```
-TYPECHECK_ERRORS: <N>
-```
-
-If type errors exist, provide fix suggestions with file:line references.
-
-### Step 3: Test
-
-Test runner는 `project-config.yaml`의 `tools.test_runner.command`에서 읽어 실행합니다.
-
-**Fallback** (config 없을 시):
-```bash
-uv run pytest tests/ -x -q --tb=short
-```
-
-Report results:
-```
-TESTS_PASSED: <N>/<total>
-TESTS_FAILED: <N> (if any)
+FORMAT: PASS | NEEDS_FORMAT | FIXED
 ```
 
 ---
@@ -83,10 +60,8 @@ TESTS_FAILED: <N> (if any)
 
 ```
 === Clean Report ===
-Lint (Qlty|Ruff): <PASS|FIXED|FAIL> (<N> fixed, <N> remaining)
-Format:       <PASS|FIXED>
-Type Check:   <PASS|FAIL> (<N> errors)
-Tests:        <PASS|FAIL> (<N>/<total>)
+ShellCheck:   <PASS|FAIL|SKIP> (<N> issues)
+Format:       <PASS|NEEDS_FORMAT|FIXED|SKIP>
 ===
 Overall:      <CLEAN|ISSUES_REMAIN>
 ```
@@ -95,18 +70,28 @@ Overall:      <CLEAN|ISSUES_REMAIN>
 
 ## Flags
 
-- `--fix-only`: Only auto-fix, don't report remaining issues
-- `--no-test`: Skip test step
-- `--strict`: Treat warnings as errors
+- `--fix-only`: Only auto-fix formatting, don't report remaining issues
+
+---
+
+## Installation
+
+```bash
+# macOS
+brew install shellcheck shfmt
+
+# Ubuntu/Debian
+apt install shellcheck
+go install mvdan.cc/sh/v3/cmd/shfmt@latest
+```
 
 ---
 
 ## GSD Integration
 
 - **Pre-execute**: Run `/clean` before `/execute` to ensure clean baseline
-- **Pre-commit**: `commit` skill calls clean checks automatically
-- **CI alignment**: Same tools as CI pipeline (`qlty check` or `ruff check`, `mypy`, `pytest`)
+- **Pre-commit**: Clean checks can be run before committing shell scripts
 
 ## Scripts
 
-- `scripts/run_quality_checks.sh`: Run all quality tools with structured report output. Supports Qlty and fallback paths. Flags: --no-test, --fix-only, --strict
+- `scripts/run_quality_checks.sh`: Run shellcheck and shfmt with structured report output

@@ -513,81 +513,26 @@ context:
 - [ ] Discovery level assessed (0-3)
 - [ ] TDD considered for complex logic
 
-## Scripts
+## 네이티브 도구 활용
 
-### assess_discovery_level.py
-Assess discovery level (0-3) for a planning task based on keywords and project context.
+PLAN.md 분석과 Discovery Level 평가는 네이티브 도구로 수행:
 
-```bash
-python3 scripts/assess_discovery_level.py "Add JWT authentication"
+```
+# Discovery Level 평가 (키워드 기반)
+# L0: skip (기존 코드 수정), L1: quick (단순 추가), L2: standard (새 기능), L3: deep (아키텍처)
+Grep(pattern: "auth|security|database|api", path: "src/", output_mode: "count")
+
+# 기존 PLAN.md 검색
+Glob(pattern: ".gsd/phases/*/*.md")
+
+# 과거 플랜 deviation 확인
+bash .claude/hooks/md-recall-memory.sh "deviation" "." 5 compact
 ```
 
-Output: JSON with level, level_name, action, reasons.
-
-### plan_to_json.py
-Convert PLAN.md to JSON format for automation and PRD integration.
-
-**Basic usage:**
-```bash
-# Single file
-python3 scripts/plan_to_json.py .gsd/phases/1/01-PLAN.md
-
-# With output file
-python3 scripts/plan_to_json.py .gsd/phases/1/01-PLAN.md -o plan.json
-
-# All plans in directory
-python3 scripts/plan_to_json.py .gsd/phases/1/ --all
-```
-
-**PRD integration:**
-```bash
-# Convert to PRD task format (for prd-active.json)
-python3 scripts/plan_to_json.py .gsd/phases/1/01-PLAN.md --prd-format
-```
-
-**Options:**
-| Option | Description |
-|--------|-------------|
-| `-o, --output FILE` | Write to file instead of stdout |
-| `--all` | Process all PLAN.md files in directory |
-| `--prd-format` | Output in PRD task format |
-| `--compact` | Compact JSON (no indentation) |
-
-**Output structure:**
-```json
-{
-  "id": "1.1",
-  "title": "Plan Title",
-  "phase": 1,
-  "plan": 1,
-  "wave": 1,
-  "depends_on": [],
-  "files_modified": ["src/file.ts"],
-  "autonomous": true,
-  "tasks": [
-    {
-      "type": "auto",
-      "name": "Task name",
-      "files": ["src/file.ts"],
-      "action": "Implementation details",
-      "verify": "npm test",
-      "done": "Tests pass"
-    }
-  ],
-  "verification": ["Check 1", "Check 2"],
-  "success_criteria": ["Criteria 1"]
-}
-```
-
-**PRD format output:**
-```json
-[
-  {
-    "id": "TASK-11-01",
-    "plan_ref": "1.1.1",
-    "title": "Task name",
-    "status": "pending",
-    "commit": null
-  }
-]
-```
+**Discovery Level 기준:**
+| Level | 조건 | 액션 |
+|-------|------|------|
+| L0 | 기존 파일 수정만 | Skip discovery |
+| L1 | 단순 기능 추가 | Quick verify |
+| L2 | 새 모듈/기능 | Standard research |
+| L3 | 아키텍처 변경 | Deep dive |

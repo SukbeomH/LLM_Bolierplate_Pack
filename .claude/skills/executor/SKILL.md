@@ -15,7 +15,7 @@ allowed-tools:
 - **Commit**: `git commit -m "feat({phase}-{plan}): {task}"` — task당 1 commit
 - **Checkpoint types**: human-verify (90%), decision (9%), human-action (1%)
 - **Output**: SUMMARY.md (`.gsd/phases/{N}/{plan}-SUMMARY.md`)
-- **PRD 업데이트**: `python scripts/update_prd.py complete-plan {ref} --commit {hash}`
+- **Memory 저장**: `md-store-memory.sh "Execution Summary: {plan}" "{content}" "execution,summary" "execution-summary"`
 
 ---
 
@@ -453,26 +453,17 @@ git commit -m "feat({phase}-{plan}): {task description}"
 1. **Task 커밋 직후** — 각 task가 커밋되면 즉시 PRD 업데이트
 2. **Plan 완료 시** — SUMMARY.md 작성 후 해당 plan의 모든 task 완료 확인
 
-### PRD Update Commands
+### PRD 상태 관리
 
-**Task ID로 완료 처리:**
-```bash
-python .claude/skills/executor/scripts/update_prd.py complete TASK-001 --commit abc1234
-```
+PRD 파일은 직접 편집하거나 메모리 시스템을 통해 기록:
 
-**Plan 참조로 완료 처리 (phase.plan.task 형식):**
 ```bash
-python .claude/skills/executor/scripts/update_prd.py complete-plan 1.2.1 --commit abc1234 --summary "인증 모듈 구현 완료"
-```
-
-**Task 시작 표시:**
-```bash
-python .claude/skills/executor/scripts/update_prd.py start TASK-001
-```
-
-**현재 상태 확인:**
-```bash
-python .claude/skills/executor/scripts/update_prd.py status
+# 실행 결과 메모리에 저장
+bash .claude/hooks/md-store-memory.sh \
+  "Execution: Plan 1.2" \
+  "Task 완료. Commit: abc1234" \
+  "execution,summary,phase-1" \
+  "execution-summary"
 ```
 
 ### Integration with Task Commit
@@ -487,8 +478,8 @@ git commit -m "feat(1-2): implement user authentication"
 # 2. 커밋 해시 획득
 COMMIT_HASH=$(git rev-parse --short HEAD)
 
-# 3. PRD 업데이트
-python .claude/skills/executor/scripts/update_prd.py complete-plan 1.2.1 --commit $COMMIT_HASH
+# 3. 메모리에 실행 결과 저장
+bash .claude/hooks/md-store-memory.sh "Plan 1.2 Complete" "Commit: $COMMIT_HASH" "execution" "execution-summary"
 ```
 
 ### PRD File Structure
@@ -595,7 +586,17 @@ One task = one commit. Always.
 ### ✅ Verification before done
 Run verify step. Confirm done criteria. Then commit.
 
-## Scripts
+## 네이티브 도구 활용
 
-- `scripts/parse_plan.py`: Parse PLAN.md and extract tasks into machine-readable JSON format
-- `scripts/update_prd.py`: PRD task state manager — complete, start, add, status commands
+PLAN.md 파싱과 상태 관리는 네이티브 도구로 수행:
+
+```
+# PLAN.md에서 태스크 추출
+Grep(pattern: "<task id=", path: ".gsd/phases/", output_mode: "content")
+
+# 완료된 태스크 확인
+Grep(pattern: "status:.*done|status:.*completed", path: ".gsd/", output_mode: "files_with_matches")
+
+# 실행 결과 메모리 저장
+bash .claude/hooks/md-store-memory.sh "Execution: {plan}" "{summary}" "execution,summary" "execution-summary"
+```

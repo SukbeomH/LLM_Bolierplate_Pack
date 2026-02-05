@@ -10,16 +10,16 @@ tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 
 ## 탑재 Skills
 
-- `bootstrap` — 핵심 부트스트랩 로직 (시스템 검증, 환경 설정, 메모리 디렉토리 검증, 코드베이스 분석)
+- `bootstrap` — 핵심 부트스트랩 로직 (시스템 검증, 메모리 디렉토리 검증, 코드베이스 분석)
 - `codebase-mapper` — 코드베이스 구조 분석 및 문서 생성
+- `memory-protocol` — 부트스트랩 상태 저장
 
 ## 오케스트레이션
 
-1. `bootstrap` skill로 시스템 전제조건 검증 (uv, git)
-2. Python 환경 설정 + 의존성 설치
-3. 메모리 디렉토리 검증 (.gsd/memories/)
-4. `codebase-mapper` skill로 아키텍처 문서 생성
-5. 부트스트랩 상태를 파일 기반 메모리에 저장
+1. `bootstrap` skill로 시스템 전제조건 검증 (git, bash)
+2. 메모리 디렉토리 검증 (.gsd/memories/ 14개 타입 + _schema/)
+3. `codebase-mapper` skill로 아키텍처 문서 생성
+4. **메모리 저장**: 부트스트랩 완료 상태를 `bootstrap` 타입으로 저장
 
 ## 제약
 
