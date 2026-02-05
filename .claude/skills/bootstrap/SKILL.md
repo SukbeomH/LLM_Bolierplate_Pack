@@ -1,22 +1,30 @@
 ---
 name: bootstrap
-description: Complete initial project setup -- deps verification, Qlty integration, multi-language detection, MCP connection, indexing, codebase analysis, and memory initialization
-version: 2.0.0
+description: Complete initial project setup -- deps verification, Qlty integration, multi-language detection, codebase analysis, and memory initialization
+version: 3.0.0
 allowed-tools:
-  - memory_store
-  - memory_search
-  - memory_stats
-  - index
-  - get_graph_health
-  - get_graph_stats
-  - resolve-library-id
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Grep
+  - Glob
 trigger: "First time running the boilerplate on a new project, or after cloning"
+---
+
+## Quick Reference
+- **시작**: `bash scripts/bootstrap.sh` (필수 도구 검증)
+- **Python**: `uv sync` → `.venv` 생성 확인
+- **Qlty**: `qlty init` → `.qlty/qlty.toml` 생성
+- **Output**: BOOTSTRAP STATUS REPORT (READY / NEEDS ATTENTION)
+- **메모리 저장**: `.gsd/memories/bootstrap/`에 기록
+
 ---
 
 # Skill: Bootstrap
 
-> **Goal**: Perform complete initial project setup in a single pass — from system dependency verification through Qlty integration, multi-language detection, MCP server connection, code indexing, codebase analysis, and memory initialization.
-> **Scope**: Combines system checks, Qlty CLI setup, language/tool detection, environment setup, MCP tool integration, and documentation generation.
+> **Goal**: Perform complete initial project setup in a single pass — from system dependency verification through Qlty integration, multi-language detection, codebase analysis, and memory initialization.
+> **Scope**: Combines system checks, Qlty CLI setup, language/tool detection, environment setup, and documentation generation.
 
 <role>
 You are a bootstrap orchestrator. You combine the rigor of arch-review (validation-first) with the execution capability of executor (task completion). Your job is to take a freshly cloned boilerplate and make it fully operational.
@@ -24,10 +32,8 @@ You are a bootstrap orchestrator. You combine the rigor of arch-review (validati
 **Core responsibilities:**
 - Verify all system prerequisites before proceeding
 - Set up Python environment and dependencies
-- Connect and verify all MCP servers
-- Index the codebase for graph-based analysis
 - Generate architecture documentation
-- Store bootstrap state in memory graph
+- Store bootstrap state in `.gsd/memories/`
 - Report final status with actionable next steps
 </role>
 
@@ -36,10 +42,8 @@ You are a bootstrap orchestrator. You combine the rigor of arch-review (validati
 ## Prerequisites
 
 - This skill assumes a fresh clone or first-time setup
-- Node.js >= 18 must be installed
 - `uv` must be installed (Python package manager)
-- `pipx` must be installed (for mcp-memory-service)
-- `.mcp.json` must exist in project root
+- `.gsd/memories/` directory structure must exist (created by scaffold-gsd.sh)
 
 ---
 
@@ -258,72 +262,49 @@ test -f .gsd/PATTERNS.md && echo "PASS" || echo "FAIL"
 
 ---
 
-### Step 6: MCP Server Verification
+### Step 6: Memory Directory Verification
 
-Test connectivity to each configured MCP server:
+Verify `.gsd/memories/` 디렉토리 구조:
 
-| Server | Test | Required |
-|--------|------|----------|
-| graph-code | `get_graph_health()` | YES |
-| memory | `memory_stats()` | YES |
-| context7 | `resolve-library-id(libraryName: "langchain")` | NO (WARN only) |
+```bash
+ls .gsd/memories/ | wc -l  # 14 directories expected
+```
 
-**If graph-code fails:** Mark FAIL. Skip Step 6 (indexing). Continue to Step 7.
-**If memory fails:** Mark FAIL. Skip Step 9 (memory store). Continue.
-**If context7 fails:** Mark WARN. Continue normally.
+**If missing:** Create directories:
+```bash
+mkdir -p .gsd/memories/{architecture-decision,root-cause,debug-eliminated,debug-blocked,health-event,session-handoff,execution-summary,deviation,pattern-discovery,bootstrap,session-summary,session-snapshot,security-finding,general}
+```
 
 ---
 
-### Step 7: Code Index
-
-Index the codebase using code-graph-rag:
-
-```
-index(".")
-```
-
-Verify indexing results:
-
-```
-get_graph_stats()
-```
-
-Record the entity count and file count from the stats response.
-
-**If indexing fails:** Mark FAIL. Continue to Step 8. Suggest running `/map` later to retry.
-
----
-
-### Step 8: Codebase Analysis
+### Step 7: Codebase Analysis
 
 Delegate to the `codebase-mapper` skill to analyze the project and generate documentation:
 
 - `.gsd/ARCHITECTURE.md`
 - `.gsd/STACK.md`
 
-**If codebase-mapper fails:** Mark FAIL. Continue to Step 9.
+**If codebase-mapper fails:** Mark FAIL. Continue to Step 8.
 
 ---
 
-### Step 9: Initial Memory
+### Step 8: Initial Memory
 
-Store the bootstrap record in memory graph:
+Store the bootstrap record in `.gsd/memories/bootstrap/`:
 
-```
-memory_store(
-  content: "## Project Bootstrap\n\nBootstrap completed. System prerequisites verified. MCP servers connected. Codebase indexed ({N} entities, {M} files). Documentation generated.",
-  metadata: {
-    tags: "bootstrap,init,setup",
-    type: "bootstrap"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Project Bootstrap" \
+  "Bootstrap completed. System prerequisites verified. Documentation generated." \
+  "bootstrap,init,setup" \
+  "bootstrap"
 ```
 
-**If memory store fails:** Mark WARN. Continue to Step 10.
+**If memory store fails:** Mark WARN. Continue to Step 9.
 
 ---
 
-### Step 10: Status Report
+### Step 9: Status Report
 
 Output the structured bootstrap status report:
 
@@ -337,15 +318,14 @@ Environment:           {PASS|FAIL} (.env configured)
 Qlty CLI:              {PASS|WARN|SKIP} ({version or reason})
 Project Config:        {PASS|FAIL} (project-config.yaml generated)
 Context Structure:     {PASS|FAIL} (reports/, research/, archive/, PATTERNS.md)
+Memory Directory:      {PASS|FAIL} (.gsd/memories/ — 14 type directories)
 Prompt Patch:          {PASS|WARN|SKIP} (.patch-workspace ready)
-MCP Servers:           graph-code {PASS|FAIL} / memory {PASS|FAIL} / context7 {PASS|WARN}
-Code Index:            {PASS|FAIL} ({N} entities, {M} files)
 Documentation:         {PASS|FAIL} (ARCHITECTURE.md, STACK.md)
 Memory:                {PASS|WARN} (bootstrap record stored)
 ================================================================
  RESULT: READY / NEEDS ATTENTION
 ================================================================
-Next: /new-project | /plan 1 | /map
+Next: /new-project | /plan 1
 ================================================================
 ```
 
@@ -362,8 +342,7 @@ Next: /new-project | /plan 1 | /map
 | `uv sync` fails | STOP. Check pyproject.toml and Python version |
 | `claude` CLI or patch files missing | SKIP Step 4. Prompt patching is optional |
 | `make patch-prompt` fails | WARN the step, continue. Retry manually later |
-| MCP server connection fails | FAIL the step, continue to next. If graph-code fails, skip indexing |
-| Indexing fails | FAIL the step, continue. Suggest `/map` for retry |
+| Memory directory missing | Create directories automatically |
 | codebase-mapper fails | FAIL the step, continue |
 | Memory store fails | WARN the step, continue |
 

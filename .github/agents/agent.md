@@ -29,10 +29,8 @@ You are a **Senior Staff Engineer** specialized in this project's architecture.
 | Layer | Technology |
 |-------|------------|
 | **Agent Orchestration** | LangChain v1.2+, LangGraph |
-| **Protocol** | Model Context Protocol (MCP) |
-| **Code Analysis** | code-graph-rag (Tree-sitter + SQLite, `@er77/code-graph-rag-mcp`) |
-| **Agent Memory** | memory-graph (MCP) |
-| **MCP Config** | `.mcp.json` (Claude Code), `langchain-mcp-adapters` (optional, for custom agents) |
+| **Code Analysis** | 네이티브 Claude Code 도구(Grep, Glob, Read) + Python 스크립트 |
+| **Agent Memory** | 파일 기반 마크다운 (`.gsd/memories/`) |
 | **Methodology** | Get Shit Done (GSD) |
 
 ### Key Directories
@@ -41,10 +39,7 @@ You are a **Senior Staff Engineer** specialized in this project's architecture.
 | `.github/agents/` | This agent specification (6-Core) |
 | `.claude/skills/` | Modular skill definitions (SKILL.md) |
 | `.gsd/` | GSD documents (SPEC, ROADMAP, STATE, DECISIONS, phases/) |
-| `.mcp.json` | MCP server connection configuration (Claude Code) |
-
-### URN Schema
-- **Local**: `urn:local:{project_id}:{file_path}:{symbol}`
+| `.gsd/memories/` | File-based agent memory (14 type directories) |
 
 ---
 
@@ -79,7 +74,7 @@ uv run pytest tests/
 # Check system prerequisites
 bash scripts/bootstrap.sh
 
-# Check MCP tools status
+# Check environment status
 make status
 ```
 
@@ -140,119 +135,60 @@ make status
 
 ---
 
-## 4. code-graph-rag Tools
+## 4. Code Analysis Tools
 
-**Always prefer code-graph-rag tools over manual file reading.** These tools provide AST-based code analysis via Tree-sitter + SQLite (`@er77/code-graph-rag-mcp`).
+네이티브 Claude Code 도구와 Python 스크립트를 사용한 코드 분석.
 
 ### Quick Reference
 
 | I want to... | Tool | Example |
 |--------------|------|---------|
-| Find code / gather context | `query` | `"find where user authentication is handled"` |
-| Search code semantically | `semantic_search` | `"error handling patterns"` |
-| See what depends on X | `list_entity_relationships` | `entityName: "UserService"` |
-| Analyze change impact | `analyze_code_impact` | `entityId: "UserService"` |
-| Find quality risks / hotspots | `analyze_hotspots` | `metric: "complexity"` |
-| Detect duplicate code | `detect_code_clones` | `minSimilarity: 0.8` |
-| Find similar code | `find_similar_code` | `code: "def authenticate(...):"` |
-| List file entities | `list_file_entities` | `filePath: "src/auth.py"` |
-| Get refactoring suggestions | `suggest_refactoring` | `filePath: "src/utils.py"` |
-| Cross-language search | `cross_language_search` | `query: "authentication"` |
-| Find related concepts | `find_related_concepts` | `entityId: "AuthModule"` |
-| Index the codebase | `index` | `directory: "."` |
-| Clean re-index | `clean_index` | `directory: "."` |
-| Get graph overview | `get_graph` | `limit: 100` |
-| Get graph stats | `get_graph_stats` | — |
-| Get graph health | `get_graph_health` | — |
-| Reset graph data | `reset_graph` | — |
-| Get system metrics | `get_metrics` | — |
-| Get server version | `get_version` | — |
-
-### Tool Details
-
-#### `query`
-**Use when:** Finding code, gathering context, understanding dependencies, architecture
-```
-"Find where user authentication is handled"
-"I need to add rate limiting. Gather all relevant context."
-"What depends on the UserService class?"
-"Give me an overview of this project's architecture"
-```
-
-#### `semantic_search`
-**Use when:** Searching code by meaning, not just text matching
-```
-"error handling patterns"
-"authentication middleware"
-```
-
-#### `analyze_code_impact`
-**Use when:** Before refactoring — understanding what would break
-```
-entityId: "AuthModule", depth: 2
-```
-
-#### `analyze_hotspots`
-**Use when:** Finding complexity, coupling, or change-frequency hotspots
-```
-metric: "complexity" | "changes" | "coupling"
-```
-
-#### `index`
-**Use when:** After creating new files or making major structural changes
-```
-directory: ".", incremental: true
-```
-
-> Total 19 MCP tools available (query, semantic_search, find_similar_code, analyze_code_impact, detect_code_clones, analyze_hotspots, suggest_refactoring, cross_language_search, find_related_concepts, list_file_entities, list_entity_relationships, index, clean_index, get_graph, get_graph_stats, get_graph_health, reset_graph, get_metrics, get_version).
+| Find code / gather context | `Grep` | `Grep(pattern: "authenticate", path: "src/")` |
+| Search by file patterns | `Glob` | `Glob(pattern: "src/**/*.py")` |
+| Read file contents | `Read` | `Read(file_path: "src/auth.py")` |
+| Analyze change impact | `scripts/find_dependents.py` | `python3 scripts/find_dependents.py src/auth.py` |
+| Find circular imports | `scripts/find_circular_imports.py` | `python3 scripts/find_circular_imports.py src/` |
 
 ---
 
-## 5. Memory System (mcp-memory-service)
+## 5. Memory System (File-based)
 
-**Store and retrieve project knowledge that persists across sessions.**
+**`.gsd/memories/` 마크다운 파일로 프로젝트 지식을 세션 간 유지.**
 
 ### Quick Reference
 
 | I want to... | Use... |
 |--------------|--------|
-| Save project knowledge | `memory_store` |
-| Search memories (semantic) | `memory_search` (mode: "semantic") |
-| Search memories (tags) | `memory_search` (tags filter) |
-| Update a memory | `memory_update` |
-| Delete a memory | `memory_delete` |
-| Get memory stats | `memory_stats` |
-| List memories (paginated) | `memory_list` |
-| Auto-link related memories | `memory_graph` |
-| Check memory quality | `memory_quality` |
+| Save project knowledge | `bash .claude/hooks/md-store-memory.sh <title> <content> [tags] [type]` |
+| Search memories | `Grep(pattern: "query", path: ".gsd/memories/")` |
+| Search by type | `Glob(pattern: ".gsd/memories/{type}/*.md")` |
+| Recall memories | `bash .claude/hooks/md-recall-memory.sh <query>` |
+| List all memories | `Glob(pattern: ".gsd/memories/**/*.md")` |
 
-### Project Scoping
+### Memory Types (14)
 
-프로젝트별 DB 파일 경로로 격리합니다 (`MCP_MEMORY_SQLITE_PATH` 환경변수).
+`architecture-decision`, `root-cause`, `debug-eliminated`, `debug-blocked`, `health-event`, `session-handoff`, `execution-summary`, `deviation`, `pattern-discovery`, `bootstrap`, `session-summary`, `session-snapshot`, `security-finding`, `general`
 
-**저장 시**:
-```
-memory_store(
-  content: "## {title}\n\n{content}",
-  metadata: {
-    tags: "comma,separated,tags",
-    type: "general"
-  }
-)
-```
+### Memory File Format
 
-**검색 시**:
-```
-memory_search(query: "search terms", mode: "semantic", limit: 5)
-memory_search(query: "tag filter", tags: ["tag1", "tag2"])
+`.gsd/memories/{type}/{YYYY-MM-DD}_{slug}.md`:
+```markdown
+---
+title: "{title}"
+tags: [tag1, tag2]
+type: {type}
+created: {ISO-8601}
+---
+## {title}
+{content}
 ```
 
 ### When to Store Memories
 
-1. **After making a decision**: Store the rationale
-2. **When discovering a pattern**: Document it for consistency
-3. **When fixing a tricky bug**: Save the root cause
-4. **When learning a project convention**: Capture it
+1. **After making a decision**: Store the rationale (`architecture-decision`)
+2. **When discovering a pattern**: Document it for consistency (`pattern-discovery`)
+3. **When fixing a tricky bug**: Save the root cause (`root-cause`)
+4. **When learning a project convention**: Capture it (`general`)
 
 ---
 
@@ -260,28 +196,28 @@ memory_search(query: "tag filter", tags: ["tag1", "tag2"])
 
 ### Pattern 1: Exploration First
 When starting work on an unfamiliar area:
-1. **Architecture overview:** Use `query` ("how is [area] structured?")
-2. **Find entry points:** Use `query` ("find [component] entry points")
-3. **Trace the flow:** Use `query` ("trace execution from [start] to [end]")
-4. **Check dependencies:** Use `list_entity_relationships` (entityName: "[component]")
+1. **Architecture overview:** `Grep(pattern: "[area]", path: "src/")` + `Glob(pattern: "src/**/*.py")`
+2. **Find entry points:** `Grep(pattern: "def main|if __name__", path: "src/")`
+3. **Trace the flow:** `Grep(pattern: "[function]", path: "src/")` 으로 호출 체인 추적
+4. **Check dependencies:** `python3 scripts/find_dependents.py [file]`
 
 ### Pattern 2: Pre-Refactoring
 Before making changes:
-1. **Impact analysis:** Use `analyze_code_impact` (entityId: "[target]")
-2. **Find consumers:** Use `list_entity_relationships` (entityName: "[module]")
-3. **Gather context:** Use `query` ("context for modifying [target]")
+1. **Impact analysis:** `python3 scripts/find_dependents.py [target_file]`
+2. **Find consumers:** `Grep(pattern: "import.*[module]", path: "src/")`
+3. **Gather context:** `Read` 대상 파일 + 관련 파일
 
 ### Pattern 3: Feature Implementation
 When adding new features:
-1. **Find patterns:** Use `semantic_search` ("find similar implementations to [feature]")
-2. **Gather context:** Use `query` ("context for implementing [feature]")
-3. **Check conventions:** Use `recall_memories` to check past decisions
+1. **Find patterns:** `Grep(pattern: "[similar feature]", path: "src/")`
+2. **Gather context:** `Read` 관련 소스 파일
+3. **Check conventions:** `Grep(pattern: "[convention]", path: ".gsd/memories/")`
 
 ### Pattern 4: Debugging
 When tracking down issues:
-1. **Find the code:** Use `semantic_search` ("find [error/symptom] related code")
-2. **Trace execution:** Use `query` ("trace [function] call chain")
-3. **Check known issues:** Use `recall_memories` to check past bugs
+1. **Find the code:** `Grep(pattern: "[error/symptom]", path: "src/")`
+2. **Trace execution:** `Grep(pattern: "[function]")` 으로 호출 체인 추적
+3. **Check known issues:** `Grep(pattern: "[issue]", path: ".gsd/memories/root-cause/")`
 
 ---
 
@@ -307,24 +243,6 @@ def intent_classifier(state: AgentState) -> Command:
     return Command(goto="local_retriever")
 ```
 
-### MCP Integration
-```python
-# Use langchain-mcp-adapters (optional: uv add langchain-mcp-adapters)
-from langchain_mcp_adapters.client import MultiServerMCPClient
-
-async def get_tools():
-    client = MultiServerMCPClient({
-        "graph-code": {
-            "command": "npx",
-            "args": ["-y", "@er77/code-graph-rag-mcp", "."],
-            "transport": "stdio",
-            "env": {"MCP_TIMEOUT": "80000", "NODE_OPTIONS": "--max-old-space-size=4096"}
-        }
-    })
-    return await client.get_tools()
-```
-> **Note**: Claude Code uses `.mcp.json` for native MCP connections. The above pattern is for building custom LangChain agents.
-
 ---
 
 ## 8. Boundaries (3-Tier Rule)
@@ -334,8 +252,8 @@ You MUST strictly adhere to these operational boundaries.
 ### Always (Mandatory)
 | Action | Reason |
 |--------|--------|
-| Use `analyze_code_impact` for impact analysis before refactoring | Understand impact |
-| Use `query` for context before new features | Gather all context |
+| Grep/Glob 기반 impact analysis before refactoring | Understand impact |
+| Grep/Read for context before new features | Gather all context |
 | Read `.gsd/SPEC.md` before implementation | Ensure task context is clear |
 | Update `.gsd/STATE.md` after completing a task | Maintain state persistence |
 
@@ -348,7 +266,6 @@ You MUST strictly adhere to these operational boundaries.
 ### Never (Forbidden)
 | Action | Consequence |
 |--------|-------------|
-| Read files manually when code-graph-rag tools are available | Inefficient |
 | Read or print `.env` files | Security breach |
 | Commit hardcoded secrets/passwords | Credential leak |
 | Assume API signatures without verification | Hallucination risk |
@@ -383,21 +300,21 @@ Follow GSD methodology for all tasks.
 ### Feature Development
 ```
 1. /plan → Create execution plans
-2. recall_memories → Check past decisions
-3. query → Gather context
+2. Grep .gsd/memories/ → Check past decisions
+3. Grep/Read → Gather context
 4. /execute → Implement with STATE.md updates
-5. store_memory → Save new patterns/decisions
+5. md-store-memory.sh → Save new patterns/decisions
 6. /verify → Empirical validation
 ```
 
 ### Bug Fix
 ```
 1. Reproduce issue
-2. recall_memories → Check known issues
-3. query → Trace execution ("trace [function] call chain")
-4. analyze_code_impact → Check impact (entityId: "[target]")
+2. Grep .gsd/memories/root-cause/ → Check known issues
+3. Grep → Trace execution flow
+4. scripts/find_dependents.py → Check impact
 5. Implement fix
-6. store_memory → Document the root cause
+6. md-store-memory.sh → Document the root cause
 7. Verify with tests
 ```
 
@@ -405,39 +322,20 @@ Follow GSD methodology for all tasks.
 ```
 1. Read .gsd/SPEC.md
 2. Read .gsd/STATE.md
-3. recall_memories → Check stored knowledge
-4. query → If unfamiliar area ("how is [area] structured?")
+3. md-recall-memory.sh → Check stored knowledge
+4. Grep/Read → If unfamiliar area
 5. Resume from last checkpoint
 ```
 
 ### After Major Decision
 ```
 1. Document in DECISIONS.md
-2. store_memory → Persist for future sessions
+2. md-store-memory.sh → Persist for future sessions
 ```
 
 ---
 
 > **Note**: This specification follows the extended 9-section structure.
-> - **code-graph-rag Tools**: 19 MCP tools from `@er77/code-graph-rag-mcp` (Tree-sitter + SQLite)
-> - **mcp-memory-service Tools** (8개): `memory_store`, `memory_search`, `memory_update`, `memory_delete`, `memory_stats`, `memory_list`, `memory_graph`, `memory_quality`. 권한: `mcp__memory__*` 와일드카드
-> - **context7 Tools** (2): `resolve-library-id`, `query-docs`
+> - **Code Analysis**: 네이티브 Claude Code 도구(Grep, Glob, Read) + Python 스크립트
+> - **Memory System**: 파일 기반 `.gsd/memories/` (14 type directories)
 > - **Claude Skills** (14): Methodology skills in `.claude/skills/` — arch-review, clean, codebase-mapper, commit, context-health-monitor, create-pr, debugger, empirical-validation, executor, impact-analysis, plan-checker, planner, pr-review, verifier
-> - **code-graph-rag Reference**: https://github.com/er77/code-graph-rag-mcp
-
-### Troubleshooting
-
-**code-graph-rag MCP 서버 연결 실패:**
-```bash
-# Node.js / npm 설치 확인
-node --version
-npm --version
-
-# 수동 테스트
-npx -y @er77/code-graph-rag-mcp --version
-
-# 타임아웃 발생 시 .mcp.json의 MCP_TIMEOUT 값 조정
-```
-
-If you encounter timeout errors, increase the `MCP_TIMEOUT` value in `.mcp.json` env section (default: 80000ms).
-For memory issues with large codebases, adjust `NODE_OPTIONS` in `.mcp.json` (default: `--max-old-space-size=4096`).

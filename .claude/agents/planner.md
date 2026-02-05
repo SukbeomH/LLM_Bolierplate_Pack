@@ -11,7 +11,7 @@ tools: ["Read", "Grep", "Glob"]
 ## 탑재 Skills
 
 - `planner` — 핵심 플래닝 로직 (Goal-Backward, Discovery, 태스크 분해)
-- `impact-analysis` — 코드 변경 영향 분석 (리팩토링 플랜 수립 시)
+- `impact-analysis` — 코드 변경 영향 분석 (리팩토링 플랜 수립 시, Grep/Glob 기반)
 
 ## 오케스트레이션
 

@@ -1,27 +1,35 @@
 ---
 name: arch-review
 description: Validates architectural rules and ensures design quality
-version: 2.0.0
+version: 3.0.0
 allowed-tools:
-  - query
-  - analyze_hotspots
-  - list_entity_relationships
-  - detect_code_clones
   - Read
+  - Grep
+  - Glob
+  - Bash
 trigger: "Before merging PRs or completing major features"
+---
+
+## Quick Reference
+- **순환 import**: `python3 scripts/find_circular_imports.py`
+- **복잡도 검사**: `bash scripts/check_complexity.sh`
+- **레이어 검증**: UI → Service → Repository 순방향만 허용
+- **Severity**: LOW (log), MEDIUM (DECISIONS.md 기록), HIGH (block), CRITICAL (stop)
+- **Memory recall**: `.gsd/memories/architecture-decision/` 검색 후 일관성 확인
+
 ---
 
 # Skill: Architecture Review
 
 > **Goal**: Validate code changes against architectural rules and patterns.
-> **Scope**: Uses code-graph-rag for architecture validation.
+> **Scope**: Uses Grep/Glob/Read 및 스크립트로 architecture validation 수행.
 
 ---
 
 ## Prerequisites
 
-- Node.js must be installed (`node --version`)
-- code-graph-rag MCP server must be configured in `.mcp.json` (`@er77/code-graph-rag-mcp`)
+- Python 3.12+ (`python3 --version`)
+- `scripts/check_complexity.sh`, `scripts/find_circular_imports.py` (프로젝트 내 포함)
 
 ---
 
@@ -30,21 +38,35 @@ trigger: "Before merging PRs or completing major features"
 아키텍처 리뷰 전 과거 결정 사항을 recall하여 일관성을 검증한다:
 
 ```
-memory_search(query: "architecture decision", mode: "semantic")
+Grep(pattern: "architecture|arch.*decision", path: ".gsd/memories/architecture-decision/", output_mode: "files_with_matches")
 ```
 
-과거 `architecture-decision` 메모리와 현재 변경의 일관성을 확인.
-semantic 결과가 부족하면 `memory_search(query: "architecture", tags: ["arch", "decision"])` 로 보충.
+매칭된 파일을 Read하여 과거 `architecture-decision` 메모리와 현재 변경의 일관성을 확인.
+결과가 부족하면 broader 검색:
+
+```
+Grep(pattern: "architecture|design.*pattern", path: ".gsd/memories/", output_mode: "files_with_matches")
+```
 
 ---
 
 ## Procedure
 
 ### Step 1: Run Local Architecture Check
-Use code-graph-rag to verify local structure compliance.
+Grep/Glob을 사용하여 구조 검증:
+
+```bash
+# 순환 import 검출
+python3 scripts/find_circular_imports.py
+
+# 복잡도 검사
+bash scripts/check_complexity.sh
+```
 
 ```
-query("check architecture layering violations in src/")
+# 레이어 위반 검출 (예: UI가 Repository를 직접 호출)
+Grep(pattern: "from.*repository.*import|import.*repository", path: "src/ui/", output_mode: "files_with_matches")
+Grep(pattern: "from.*ui.*import|import.*ui", path: "src/repository/", output_mode: "files_with_matches")
 ```
 
 ### Step 2: Verify Boundary Compliance

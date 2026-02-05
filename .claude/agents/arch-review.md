@@ -11,7 +11,7 @@ tools: ["Read", "Grep", "Glob"]
 ## 탑재 Skills
 
 - `arch-review` — 핵심 아키텍처 검증 로직 (레이어 격리, 순환 의존성, 패턴 일관성)
-- `impact-analysis` — 구조적 변경의 영향도 사전 분석
+- `impact-analysis` — 구조적 변경의 영향도 사전 분석 (Grep/Glob/스크립트 기반)
 
 ## 오케스트레이션
 

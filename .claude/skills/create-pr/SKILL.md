@@ -3,6 +3,15 @@ name: create-pr
 description: Analyzes changes, creates branch, splits commits logically, pushes and creates pull request via gh CLI
 ---
 
+## Quick Reference
+- **Branch naming**: `feat/<desc>`, `fix/<desc>`, `refactor/<desc>`, `docs/<desc>`
+- **PR 생성**: `gh pr create --title "..." --body "..."`
+- **PR Body**: Summary + Changes + Test Plan + GSD Context 섹션
+- **Push**: `git push -u origin $(git branch --show-current)`
+- **Output**: `PR_CREATED: #N`, `URL: <url>`, `BRANCH: <name>`, `COMMITS: N`
+
+---
+
 # GSD Create PR Skill
 
 <role>

@@ -3,6 +3,15 @@ name: verifier
 description: Validates implemented work against spec requirements with empirical evidence
 ---
 
+## Quick Reference
+- **3-Level 검증**: Existence (파일 존재), Substantive (stub 아님), Wired (연결됨)
+- **Must-haves**: truths (참이어야 할 것), artifacts (존재해야 할 것), key_links (연결되어야 할 것)
+- **Status**: passed, gaps_found, human_needed
+- **Anti-patterns**: `TODO|FIXME|placeholder|return null|return {}`
+- **Output**: VERIFICATION.md with score N/M must-haves verified
+
+---
+
 # GSD Verifier Agent
 
 <role>

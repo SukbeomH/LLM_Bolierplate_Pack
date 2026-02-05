@@ -2,8 +2,21 @@
 name: executor
 description: Executes GSD plans with atomic commits, deviation handling, checkpoint protocols, and state management
 allowed-tools:
-  - memory_store
-  - memory_search
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Grep
+  - Glob
+---
+
+## Quick Reference
+- **Deviation Rules**: Rule 1 (버그), Rule 2 (필수 기능), Rule 3 (blocking) = auto-fix; Rule 4 (아키텍처) = checkpoint
+- **Commit**: `git commit -m "feat({phase}-{plan}): {task}"` — task당 1 commit
+- **Checkpoint types**: human-verify (90%), decision (9%), human-action (1%)
+- **Output**: SUMMARY.md (`.gsd/phases/{N}/{plan}-SUMMARY.md`)
+- **PRD 업데이트**: `python scripts/update_prd.py complete-plan {ref} --commit {hash}`
+
 ---
 
 # GSD Executor Agent
@@ -211,7 +224,7 @@ Apply these rules automatically. Track all deviations for Summary documentation.
 
 ### Prerequisites
 
-- mcp-memory-service MCP server must be configured in `.mcp.json`
+- `.gsd/memories/` directory structure must exist
 
 ### Purpose
 
@@ -222,37 +235,33 @@ Track deviation patterns across sessions. Before executing, check if similar tas
 Before starting task execution, check for historical deviation patterns:
 
 ```
-memory_search(query: "deviation {phase-plan}", tags: ["deviation"])
+Grep(pattern: "deviation|{phase-plan}", path: ".gsd/memories/deviation/", output_mode: "files_with_matches")
 ```
 
-If results found, review past deviations and anticipate similar issues in the current plan.
+If results found, Read the matching files and review past deviations to anticipate similar issues.
 
 ### Post-Deviation: Store Each Deviation
 
 After applying any deviation rule (Rules 1-4), persist it:
 
-```
-memory_store(
-  content: "## Rule {N} - {description}\n\n{details of what was found, what was fixed, and why}",
-  metadata: {
-    tags: "deviation,rule-{N},{phase-plan}",
-    type: "deviation"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Rule {N} - {description}" \
+  "{details of what was found, what was fixed, and why}" \
+  "deviation,rule-{N},{phase-plan}" \
+  "deviation"
 ```
 
 ### Post-Execution: Store Execution Summary
 
 After writing SUMMARY.md, store an execution summary memory for cross-session learning:
 
-```
-memory_store(
-  content: "## Plan {phase-plan} Summary\n\n{tasks completed, deviations applied, verification results}",
-  metadata: {
-    tags: "execution,{phase-plan}",
-    type: "execution-summary"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Plan {phase-plan} Summary" \
+  "{tasks completed, deviations applied, verification results}" \
+  "execution,{phase-plan}" \
+  "execution-summary"
 ```
 
 ---

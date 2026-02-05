@@ -62,8 +62,8 @@ main() {
         CONTEXT_PARTS+=("$RECENT_COMMITS")
     fi
 
-    # 6. Memory Recall (mcp-memory-service에서 최근 프로젝트 메모리)
-    MEMORY_OUTPUT=$("$HOOK_DIR/mcp-recall-memory.sh" "project context" "$PROJECT_DIR" 5 2>/dev/null || true)
+    # 6. Memory Recall (파일 기반 메모리에서 최근 프로젝트 메모리)
+    MEMORY_OUTPUT=$("$HOOK_DIR/md-recall-memory.sh" "project context" "$PROJECT_DIR" 5 2>/dev/null || true)
     if [ -n "$MEMORY_OUTPUT" ]; then
         CONTEXT_PARTS+=("")
         CONTEXT_PARTS+=("## Recent Memory Context")

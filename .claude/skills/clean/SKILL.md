@@ -3,6 +3,15 @@ name: clean
 description: Runs all code quality tools (qlty or ruff/mypy) and auto-fixes issues across the codebase
 ---
 
+## Quick Reference
+- **Lint**: `qlty check --fix` (fallback: `uv run ruff check . --fix`)
+- **Format**: `qlty fmt --all` (fallback: `uv run ruff format .`)
+- **Type check**: Included in `qlty check` (fallback: `uv run mypy .`)
+- **Test**: `project-config.yaml` 설정 또는 `uv run pytest tests/ -x -q`
+- **Output**: `=== Clean Report ===` 형식, Overall CLEAN/ISSUES_REMAIN
+
+---
+
 # GSD Clean Skill
 
 <role>

@@ -5,10 +5,9 @@ SHELL := $(shell command -v bash)
 -include .env
 export
 
-.PHONY: status index index-reset setup install-deps \
-        install-memory init-env check-deps lint lint-fix fmt test typecheck \
-        clean patch-prompt patch-restore patch-clean \
-        build build-plugin build-antigravity build-opencode help generate-claude-md
+.PHONY: status setup install-deps init-env check-deps clean \
+        patch-prompt patch-restore patch-clean \
+        build build-plugin build-antigravity build-opencode help
 
 # ─────────────────────────────────────────────────────
 # Prerequisites Check
@@ -21,18 +20,13 @@ check-deps: ## Check required tools are installed
 # Installation
 # ─────────────────────────────────────────────────────
 
-install-memory: ## Install mcp-memory-service via pipx
-	@command -v memory >/dev/null 2>&1 && echo "mcp-memory-service already installed: $$(memory --version)" || \
-		{ echo "Installing mcp-memory-service..."; pipx install mcp-memory-service; }
-
 install-qlty: ## Install Qlty CLI for code quality
 	@command -v qlty >/dev/null 2>&1 && echo "qlty already installed: $$(qlty --version 2>/dev/null)" || \
 		{ echo "Installing qlty..."; curl -fsSL https://qlty.sh | sh; }
 
-install-deps: check-deps install-memory install-qlty ## Install all external dependencies
+install-deps: check-deps install-qlty ## Install all external dependencies
 	@echo ""
 	@echo "All dependencies installed."
-	@echo "Note: @er77/code-graph-rag-mcp is installed on-demand via npx."
 
 # ─────────────────────────────────────────────────────
 # Environment Setup
@@ -43,7 +37,7 @@ init-env: ## Create .env from .env.example (if not exists)
 		echo ".env already exists. Skipping."; \
 	else \
 		cp .env.example .env; \
-		echo ".env created. Edit CONTEXT7_API_KEY before running MCP servers."; \
+		echo ".env created."; \
 	fi
 
 # ─────────────────────────────────────────────────────
@@ -51,92 +45,29 @@ init-env: ## Create .env from .env.example (if not exists)
 # ─────────────────────────────────────────────────────
 
 status: ## Show tool status
-	@echo "=== MCP Tools ==="
-	@command -v memory >/dev/null 2>&1 && echo "  mcp-memory-service: $$(memory --version)" || echo "  mcp-memory-service: not installed"
-	@echo "  code-graph-rag: @er77/code-graph-rag-mcp (npx, on-demand)"
-	@echo ""
 	@echo "=== Environment ==="
 	@test -f .env && echo "  .env: exists" || echo "  .env: MISSING (run: make init-env)"
-
-# ─────────────────────────────────────────────────────
-# code-graph-rag Indexing
-# ─────────────────────────────────────────────────────
-
-index: ## Index codebase with code-graph-rag (via MCP)
-	@bash scripts/index-codebase.sh "$(CURDIR)"
-
-index-reset: ## Re-index codebase from scratch (reset graph)
-	@bash scripts/index-codebase.sh "$(CURDIR)" true
+	@echo ""
+	@echo "=== Memory ==="
+	@test -d .gsd/memories && echo "  .gsd/memories/: exists ($$(ls .gsd/memories/ | wc -l | tr -d ' ') type dirs)" || echo "  .gsd/memories/: MISSING"
 
 # ─────────────────────────────────────────────────────
 # Full Setup
 # ─────────────────────────────────────────────────────
 
-setup: ## Full initial setup (install deps → env → index)
+setup: ## Full initial setup (install deps → env)
 	@echo "========================================="
 	@echo "  Boilerplate Full Setup"
 	@echo "========================================="
 	@$(MAKE) --no-print-directory install-deps
 	@$(MAKE) --no-print-directory init-env
 	@echo ""
-	@echo "--- Indexing Codebase ---"
-	@$(MAKE) --no-print-directory index
-	@echo ""
 	@echo "========================================="
 	@echo "  Setup Complete!"
 	@echo "========================================="
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Edit .env — set CONTEXT7_API_KEY (optional)"
-	@echo "  2. Restart Claude Code to load MCP servers"
-	@echo "  3. Run: /new-project to start a GSD workflow"
-
-# ─────────────────────────────────────────────────────
-# Code Quality
-# ─────────────────────────────────────────────────────
-
-lint: ## Run linter (qlty or ruff)
-	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
-		qlty check; \
-	else \
-		uv run ruff check .; \
-	fi
-
-lint-fix: ## Run linter with auto-fix (qlty or ruff)
-	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
-		qlty check --fix; \
-	else \
-		uv run ruff check --fix .; \
-	fi
-
-fmt: ## Format code (qlty or ruff)
-	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
-		qlty fmt --all; \
-	else \
-		uv run ruff format .; \
-	fi
-
-test: ## Run tests (config-based or pytest)
-	@if [ -f .gsd/project-config.yaml ]; then \
-		TEST_CMD=$$(grep -A2 'test_runner:' .gsd/project-config.yaml | grep 'command:' | sed 's/.*command:[[:space:]]*//' | sed 's/^["'"'"']//' | sed 's/["'"'"']$$//'); \
-		if [ -n "$$TEST_CMD" ]; then \
-			eval "$$TEST_CMD"; \
-		else \
-			uv run pytest tests/; \
-		fi; \
-	else \
-		uv run pytest tests/; \
-	fi
-
-typecheck: ## Run type checker (qlty or mypy)
-	@if command -v qlty >/dev/null 2>&1 && [ -f .qlty/qlty.toml ]; then \
-		qlty check; \
-	else \
-		uv run mypy .; \
-	fi
-
-generate-claude-md: ## Generate CLAUDE.md from project-config.yaml
-	@bash scripts/generate-claude-md.sh
+	@echo "  1. Run: /new-project to start a GSD workflow"
 
 # ─────────────────────────────────────────────────────
 # System Prompt Patching

@@ -3,6 +3,15 @@ name: plan-checker
 description: Validates plans before execution to catch issues early
 ---
 
+## Quick Reference
+- **6 검증 차원**: Requirement Coverage, Task Completeness, Dependency Correctness, Key Links, Scope Sanity, Verification Derivation
+- **Tasks/plan**: 2-3 target, 4 warning, 5+ blocker
+- **Files/plan**: 5-8 target, 10 warning, 15+ blocker
+- **Status**: PASSED (0 blockers, 0-2 warnings), ISSUES_FOUND (any blocker/3+ warnings)
+- **Output**: 구조화된 issue YAML (dimension, severity, description, fix_hint)
+
+---
+
 # GSD Plan Checker Agent
 
 <role>

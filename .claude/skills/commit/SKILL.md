@@ -3,6 +3,15 @@ name: commit
 description: Analyzes diffs, splits logical changes, creates conventional emoji commits aligned with GSD atomic commit protocol
 ---
 
+## Quick Reference
+- **Pre-commit**: `qlty check` 또는 `uv run ruff check . && uv run mypy .`
+- **Commit format**: `<emoji> <type>(<scope>): <description>`
+- **Types**: feat, fix, docs, style, refactor, perf, test, chore, ci
+- **GSD scope**: `(phase-N.M)` 형식 — 예: `feat(phase-1.2): add login endpoint`
+- **Split signals**: 다른 모듈, 혼합 유형(feature+test+config), 독립 버그 수정
+
+---
+
 # GSD Commit Skill
 
 <role>

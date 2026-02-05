@@ -1,13 +1,22 @@
 ---
 name: impact-analysis
 description: Analyzes change impact before code modifications to prevent regression
-version: 2.0.0
+version: 3.0.0
 allowed-tools:
-  - analyze_code_impact
-  - query
-  - list_entity_relationships
   - Read
+  - Grep
+  - Glob
+  - Bash
 trigger: "Before ANY code modification or refactoring"
+---
+
+## Quick Reference
+- **필수**: 모든 파일 수정 전 실행 (신규 standalone 파일 제외)
+- **스크립트**: `python3 scripts/find_dependents.py <file>`
+- **Grep 패턴**: `from {module} import|import {module}` (의존성 추적)
+- **Impact score**: 1-10, score > 7이면 human approval 필요
+- **Output**: JSON (target_files, impact_score, incoming_deps, outgoing_deps, warnings)
+
 ---
 
 # Skill: Impact Analysis
@@ -19,8 +28,8 @@ trigger: "Before ANY code modification or refactoring"
 
 ## Prerequisites
 
-- Node.js must be installed (`node --version`)
-- code-graph-rag MCP server must be configured in `.mcp.json` (`@er77/code-graph-rag-mcp`)
+- Python 3.12+ (`python3 --version`)
+- `scripts/find_dependents.py` (프로젝트 내 포함)
 
 ---
 
@@ -34,11 +43,22 @@ target_files = ["src/utils.py", "src/models.py"]
 ```
 
 ### Step 2: Run Impact Analysis
-Execute the `analyze_code_impact` tool for each target entity, or use `query` for broader analysis.
+Grep과 Glob을 사용하여 의존성 체인을 분석한다.
 
+**방법 1: 스크립트 사용 (권장)**
+```bash
+python3 scripts/find_dependents.py src/utils.py
+python3 scripts/find_dependents.py src/models.py
 ```
-analyze_code_impact(entityId: "utils", depth: 2)
-analyze_code_impact(entityId: "models", depth: 2)
+
+**방법 2: 네이티브 도구 직접 사용**
+```
+# import/require 검색으로 의존성 추적
+Grep(pattern: "from utils import|import utils", path: "src/", output_mode: "files_with_matches")
+Grep(pattern: "from models import|import models", path: "src/", output_mode: "files_with_matches")
+
+# 테스트 커버리지 확인
+Grep(pattern: "utils|models", path: "tests/", output_mode: "files_with_matches")
 ```
 
 ### Step 3: Review Impact Report
@@ -65,7 +85,7 @@ If high impact is detected:
 | Rule | Description |
 |------|-------------|
 | **Mandatory** | You MUST NOT skip this step for any file modification |
-| **Exception** | New standalone files don't require analysis (but run `index` after) |
+| **Exception** | New standalone files don't require analysis |
 | **Escalation** | If impact score > 7, require human approval before proceeding |
 
 ---
