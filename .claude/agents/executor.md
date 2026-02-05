@@ -11,14 +11,14 @@ PLAN.md를 원자적으로 실행하고 태스크별 커밋을 생성한다.
 ## 탑재 Skills
 
 - `executor` — 핵심 실행 로직 (Atomic Execution, Deviation Handling, Checkpoint)
-- `memory-protocol` — 실행 중 발견/결정 사항의 메모리 저장 프로토콜
+- `memory-protocol` — 실행 중 발견/결정 사항의 파일 기반 메모리 (.gsd/memories/) 저장 프로토콜
 
 ## 오케스트레이션
 
 1. PLAN.md 로드 → 태스크 목록 파싱
 2. `executor` skill로 태스크별 순차 실행:
    - 파일 생성/수정 → verify 명령 실행 → done 기준 확인 → 원자적 커밋
-3. 이탈 발생 시 `memory-protocol`로 deviation 기록
+3. 이탈 발생 시 `memory-protocol`로 deviation 기록을 파일 기반으로 저장
 4. 전체 verification 체크리스트 실행
 5. SUMMARY.md 생성
 

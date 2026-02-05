@@ -3,6 +3,15 @@ name: empirical-validation
 description: Requires proof before marking work complete — no "trust me, it works"
 ---
 
+## Quick Reference
+- **원칙**: "The code looks correct" ≠ 검증. 경험적 증거 필수
+- **UI**: Screenshot으로 시각 상태 확인 (`browser_subagent`)
+- **API**: `curl` 명령으로 응답 확인 (`run_command`)
+- **Build/Test**: 성공 출력 캡처 (`run_command`)
+- **금지 문구**: "This should work", "Based on my understanding" 등
+
+---
+
 # Empirical Validation
 
 ## Core Principle

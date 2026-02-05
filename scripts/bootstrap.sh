@@ -85,14 +85,6 @@ else
     report_fail "uv" "not found — curl -LsSf https://astral.sh/uv/install.sh | sh"
 fi
 
-# pipx
-if command -v pipx &>/dev/null; then
-    PIPX_VER=$(pipx --version 2>/dev/null)
-    report_pass "pipx" "${PIPX_VER}"
-else
-    report_fail "pipx" "not found — brew install pipx && pipx ensurepath"
-fi
-
 # Python >= 3.11
 if command -v python3 &>/dev/null; then
     PY_VER=$(python3 --version | awk '{print $2}')
@@ -114,19 +106,12 @@ else
     report_fail "qlty" "not found — curl -fsSL https://qlty.sh | sh"
 fi
 
-# mcp-memory-service binary
-if command -v memory &>/dev/null; then
-    MG_VER=$(memory --version 2>/dev/null || echo "installed")
-    report_pass "mcp-memory-service" "${MG_VER}"
+# .gsd/memories/ directory
+if [[ -d ".gsd/memories" ]]; then
+    MEM_COUNT=$(ls .gsd/memories/ 2>/dev/null | wc -l | tr -d ' ')
+    report_pass ".gsd/memories/" "${MEM_COUNT} type directories"
 else
-    report_fail "mcp-memory-service" "not found — pipx install mcp-memory-service"
-fi
-
-# npx (for code-graph-rag)
-if command -v npx &>/dev/null; then
-    report_pass "npx" "available"
-else
-    report_fail "npx" "not found — install Node.js"
+    report_warn ".gsd/memories/" "missing — will be created by bootstrap"
 fi
 
 # ─────────────────────────────────────────────────────
@@ -212,19 +197,6 @@ if command -v claude &>/dev/null; then
     fi
 else
     report_skip "claude CLI" "not found — prompt patching unavailable"
-fi
-
-# ─────────────────────────────────────────────────────
-# Index (Warn)
-# ─────────────────────────────────────────────────────
-
-echo ""
-echo "--- Index ---"
-
-if [[ -d .code-graph-rag ]]; then
-    report_pass ".code-graph-rag/" "exists"
-else
-    report_warn ".code-graph-rag/" "missing — will be created by indexing"
 fi
 
 # ─────────────────────────────────────────────────────

@@ -15,7 +15,7 @@ tools: ["Read", "Grep", "Glob"]
 ## 오케스트레이션
 
 1. 대상 파일 식별
-2. `impact-analysis` skill로 code-graph-rag 의존성 체인 조회
+2. `impact-analysis` skill로 Grep/Glob/스크립트 기반 의존성 체인 조회
 3. 직접/간접 영향 범위 계산 + 위험 요인 평가
 4. 영향도 점수 + 위험 경고 출력
 

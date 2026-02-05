@@ -47,16 +47,17 @@ main() {
         bash "$COMPACT_SCRIPT" 2>/dev/null || true
     fi
 
-    # mcp-memory-service에 pre-compact 스냅샷 저장 (백그라운드, 실패 무시)
+    # 파일 기반 메모리에 pre-compact 스냅샷 저장 (실패 무시)
     BRANCH=$(git -C "$PROJECT_DIR" branch --show-current 2>/dev/null || echo "unknown")
-    if [ -f "$STATE_FILE" ] && command -v memory &>/dev/null; then
+    if [ -f "$STATE_FILE" ]; then
         STATE_SUMMARY=$(head -40 "$STATE_FILE" 2>/dev/null || true)
         if [ -n "$STATE_SUMMARY" ]; then
             HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
-            "$HOOK_DIR/mcp-store-memory.sh" \
+            "$HOOK_DIR/md-store-memory.sh" \
                 "Pre-compact: $BRANCH [$TIMESTAMP]" \
                 "$STATE_SUMMARY" \
-                "session-snapshot,pre-compact,auto,branch:$BRANCH" 2>/dev/null || true
+                "session-snapshot,pre-compact,auto,branch:$BRANCH" \
+                "session-snapshot" 2>/dev/null || true
         fi
     fi
 

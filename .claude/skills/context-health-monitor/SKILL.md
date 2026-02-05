@@ -2,9 +2,20 @@
 name: context-health-monitor
 description: Monitors context complexity and triggers state dumps before quality degrades
 allowed-tools:
-  - memory_store
-  - memory_search
-  - memory_list
+  - Read
+  - Write
+  - Grep
+  - Glob
+  - Bash
+---
+
+## Quick Reference
+- **3-Strike Rule**: 동일 이슈 3회 실패 → STOP → STATE.md dump → fresh session
+- **Circular**: 동일 접근 2회 → 다른 방향 제안 또는 `/pause`
+- **Context >60%**: `/compact` 실행 (auto-compaction 80% 전에)
+- **PATTERNS.md**: 2KB 제한, 20개 항목 미만 유지
+- **Memory**: `health-event`, `session-handoff` 타입으로 저장
+
 ---
 
 # Context Health Monitor
@@ -74,7 +85,7 @@ When context window usage exceeds ~60%:
 
 ### Prerequisites
 
-- mcp-memory-service MCP server must be configured in `.mcp.json`
+- `.gsd/memories/` directory structure must exist
 
 ### Purpose
 
@@ -85,17 +96,15 @@ Detect recurring failure patterns across sessions. Store health events for trend
 Check if the same issue has recurred, then store the event:
 
 ```
-memory_search(query: "3-strike {issue}", tags: ["3-strike"])
+Grep(pattern: "3-strike|{issue}", path: ".gsd/memories/health-event/", output_mode: "files_with_matches")
 ```
 
-```
-memory_store(
-  content: "## 3-Strike: {issue}\n\n{approaches tried, errors seen, current hypothesis}",
-  metadata: {
-    tags: "health,3-strike,{component}",
-    type: "health-event"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "3-Strike: {issue}" \
+  "{approaches tried, errors seen, current hypothesis}" \
+  "health,3-strike,{component}" \
+  "health-event"
 ```
 
 If the search reveals the same issue appeared before, flag it as a recurring problem in the state dump.
@@ -105,42 +114,38 @@ If the search reveals the same issue appeared before, flag it as a recurring pro
 Check if the same loop pattern was seen before, then store:
 
 ```
-memory_search(query: "circular {approach}", tags: ["circular"])
+Grep(pattern: "circular|{approach}", path: ".gsd/memories/health-event/", output_mode: "files_with_matches")
 ```
 
-```
-memory_store(
-  content: "## Circular: {approach}\n\n{what repeated, why it looped}",
-  metadata: {
-    tags: "health,circular,{component}",
-    type: "health-event"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Circular: {approach}" \
+  "{what repeated, why it looped}" \
+  "health,circular,{component}" \
+  "health-event"
 ```
 
 ### On Session Handoff
 
 Persist session context for the next session:
 
-```
-memory_store(
-  content: "## Handoff: {reason}\n\n{current state, recommendations for next session}",
-  metadata: {
-    tags: "health,handoff",
-    type: "session-handoff"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Handoff: {reason}" \
+  "{current state, recommendations for next session}" \
+  "health,handoff" \
+  "session-handoff"
 ```
 
 ### Proactive Check
 
-When this skill activates, scan recent memory activity for failure trends:
+When this skill activates, scan recent memory files for failure trends:
 
 ```
-memory_list(page: 1, page_size: 10)
+Glob(pattern: ".gsd/memories/health-event/*.md")
 ```
 
-Review the results for clusters of `3-strike`, `circular`, or `blocked` tags. If a trend is detected (2+ similar events), warn the user proactively before beginning work.
+Read the most recent files and review for clusters of `3-strike`, `circular`, or `blocked` keywords. If a trend is detected (2+ similar events), warn the user proactively before beginning work.
 
 ---
 

@@ -3,6 +3,15 @@ name: pr-review
 description: Multi-persona code review (Dev, QA, Security, Arch, DevOps, UX) with severity triage and actionable feedback
 ---
 
+## Quick Reference
+- **6 Personas**: Developer, QA, Security, Architecture, DevOps, UX
+- **Severity**: [Blocker] 머지 불가, [High] 수정 권장, [Medium] 후속 PR, [Nitpick] 선택적
+- **명령어**: `gh pr view <PR>`, `gh pr diff <PR>`
+- **Output**: Summary + Findings (severity별) + Statistics + Verdict
+- **Verdict**: APPROVE | REQUEST_CHANGES based on blocker count
+
+---
+
 # GSD PR Review Skill
 
 <role>

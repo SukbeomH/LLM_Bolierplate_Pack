@@ -4,13 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이트. code-graph-rag(AST 인덱싱) + memory-graph(에이전트 기억)와 GSD(Get Shit Done) 문서 기반 방법론을 결합.
+AI 에이전트 기반 개발을 위한 경량 프로젝트 보일러플레이트. 네이티브 Claude Code 도구(Grep, Glob, Read)와 파일 기반 메모리 시스템(`.gsd/memories/`)을 활용하며 GSD(Get Shit Done) 문서 기반 방법론을 결합.
 
-Primary language is Python 3.12. Documentation is bilingual (Korean/English).
+**외부 종속성 없음**: 순수 bash 스크립트 + 마크다운 파일 기반. Documentation is bilingual (Korean/English).
 
 ## Repository Layout
 
-- **.agent/** — Runtime data only (SQLite DB, MCP logs, agent.md symlink)
 - **.claude/** — Single source of truth for agent configuration:
   - `agents/` — Agent definitions (14 agents, skill 래핑 구조)
   - `skills/` — Modular skill definitions (16 skills)
@@ -20,12 +19,12 @@ Primary language is Python 3.12. Documentation is bilingual (Korean/English).
 - **.gsd/** — GSD documents and context management:
   - `SPEC.md`, `PLAN.md`, `DECISIONS.md`, `STATE.md` — Core working docs
   - `PATTERNS.md` — Distilled learnings for fresh sessions (2KB limit)
+  - `memories/` — File-based agent memory (14 type directories)
   - `reports/` — Analysis reports (REPORT-*.md)
   - `research/` — Research documents (RESEARCH-*.md)
   - `archive/` — Monthly archives (journal, changelog, prd)
   - `templates/` — Document templates
 - **.gemini/** — Gemini agent config (CLAUDE.md 참조로 축소)
-- **.mcp.json** — MCP server config (graph-code, memory, context7)
 - **scripts/** — Utility scripts
 
 ### Agent-Skill 래핑 구조
@@ -37,22 +36,11 @@ Skill은 "어떻게(How)"를 정의하고, Agent는 "언제/무엇과 함께(Whe
 
 ## Commands
 
-**Package manager: `uv` only. Never use pip or poetry.**
-
 ```bash
-uv sync                              # Install/sync dependencies
-uv add <package> [--dev]             # Add dependency
-uv run pytest tests/ [-k "name"]     # Run tests
-uv run ruff check . [--fix]          # Lint
-uv run mypy .                        # Type check
-```
-
-```bash
-make setup                    # Full setup (install → env → index)
+make setup                    # Full setup (install → env)
 make status                   # Tool & environment status
-make index                    # code-graph-rag indexing
 make check-deps               # Verify prerequisites
-make clean                    # Index data + patch workspace cleanup
+make clean                    # Patch workspace cleanup
 make patch-prompt             # System prompt patching (토큰 절감)
 make patch-restore            # Patch 원복
 make patch-clean              # Patch workspace 삭제
@@ -60,25 +48,34 @@ make patch-clean              # Patch workspace 삭제
 
 ## Architecture
 
-- **code-graph-rag** (MCP stdio, `@er77/code-graph-rag-mcp`): Tree-sitter + SQLite 기반 AST 코드 분석 — 19개 MCP 도구 (`query`, `semantic_search`, `analyze_code_impact`, `analyze_hotspots`, `detect_code_clones`, `find_similar_code`, `list_file_entities`, `list_entity_relationships`, `suggest_refactoring`, `cross_language_search`, `find_related_concepts`, `index`, `clean_index`, `get_graph`, `get_graph_stats`, `get_graph_health`, `reset_graph`, `get_metrics`, `get_version`). 코드 탐색 시 파일 직접 읽기보다 우선 사용
-- **mcp-memory-service** (MCP stdio, `memory server`): doobidoo/mcp-memory-service 기반 에이전트 기억 저장. 핵심 도구 — `memory_store`, `memory_search`, `memory_update`, `memory_delete`, `memory_stats`, `memory_list`, `memory_graph`, `memory_quality`. 권한: `mcp__memory__*` 와일드카드 사용
-- **MCP Config**: `.mcp.json` — 도구 상세는 `.github/agents/agent.md` Section 4-5 참조
-- **Memory Isolation**: 프로젝트별 DB 파일 경로로 격리 (`MCP_MEMORY_SQLITE_PATH`). multi-tenant 미사용 (단일 사용자)
+**외부 종속성 없음**: 순수 bash 스크립트 + 네이티브 Claude Code 도구만 사용. MCP 서버, 외부 API 호출 불필요.
+
+- **코드 분석**: 네이티브 Claude Code 도구(Grep, Glob, Read)
+- **에이전트 메모리**: `.gsd/memories/{type}/` 마크다운 파일 기반. 14개 타입 디렉토리 + `_schema/` 스키마 디렉토리
+- **메모리 도구**: `.claude/hooks/md-store-memory.sh` (저장, A-Mem 확장), `.claude/hooks/md-recall-memory.sh` (검색, 2-hop)
 - **GSD Workflow**: SPEC.md → PLAN.md → EXECUTE → VERIFY. Working docs in `.gsd/`
 
 ## Memory Protocol
 
-mcp-memory-service 사용 시 아래 규칙을 따른다. 상세는 `.claude/skills/memory-protocol/SKILL.md` 참조.
+파일 기반 메모리 시스템 (A-Mem 확장). 상세는 `.claude/skills/memory-protocol/SKILL.md` 참조.
 
 ### Session Start
-- `memory_search(query: "{project context}", mode: "semantic")` 필수 실행
-- semantic 결과가 부족할 때만 tag 필터로 보충
+- `Grep(pattern: "{project context}", path: ".gsd/memories/")` 또는 `md-recall-memory.sh` 실행
+- 결과가 부족할 때 `Glob(pattern: ".gsd/memories/{type}/*.md")`로 타입별 탐색
 
 ### Search Protocol
 | 방식 | 용도 | 순서 |
 |------|------|------|
-| `memory_search(mode: "semantic")` | Broad context (세션/태스크 시작) | **1st** |
-| `memory_search(tags: [...])` | Narrow filter (태그/타입 특정) | **2nd** |
+| `md-recall-memory.sh <query> [path] [limit] [mode] [hop]` | 훅 기반 검색 (2-hop 지원) | **권장** |
+| `Grep(path: ".gsd/memories/")` | Broad context (세션/태스크 시작) | **1st** |
+| `Glob(pattern: ".gsd/memories/{type}/*.md")` | Narrow filter (타입 특정) | **2nd** |
+
+### Storage (A-Mem 확장)
+```bash
+md-store-memory.sh <title> <content> [tags] [type] [keywords] [contextual_desc] [related]
+```
+- **중복 방지**: 동일 title 저장 시 `[SKIP:DUPLICATE]` 반환
+- **2-hop 검색**: `related` 필드로 연결된 메모리 자동 추적
 
 ### Storage Triggers
 | Trigger | Type |
@@ -91,41 +88,47 @@ mcp-memory-service 사용 시 아래 규칙을 따른다. 상세는 `.claude/ski
 | Execution summary | `execution-summary` |
 | Session end (auto) | `session-summary` |
 
-### Required Fields (memory_store)
-- `content`: `## {title}\n\n{상세 내용}` (title을 markdown 헤더로 포함)
-- `metadata.tags`: 콤마 구분 태그 문자열 (최소 2개)
-- `metadata.type`: Type Registry에서 선택
+### Memory File Format (A-Mem 확장)
+`.gsd/memories/{type}/{YYYY-MM-DD}_{slug}.md`:
+```markdown
+---
+title: "{title}"
+tags: [tag1, tag2]
+type: {type}
+created: {ISO-8601}
+contextual_description: "{1줄 요약}"
+keywords: [keyword1, keyword2]
+related: [related_file_slug]
+---
+## {title}
+{content}
+```
 
-## Code Style
+### Schema Validation
+`.gsd/memories/_schema/`에서 타입별 JSON Schema와 관계 정의:
+- `base.schema.json`: 공통 필드 스키마
+- `type-relations.yaml`: 14개 타입 간 관계 (Ontology)
 
-See `pyproject.toml` for full Ruff/Mypy configuration. Key constraints:
-- Line-length 100, max-complexity 10, max-args 6
-- Use `TypedDict` for state definitions
-- `*Factory`, `Create*` patterns exempt from naming rules
-
-## Validation & Testing
+## Validation
 
 검증은 경험적 증거 기반. "잘 되는 것 같다"는 증거가 아님.
 
-- **결과 우선**: 기능 동작 확인 후 스타일 수정. 기능이 깨지면 실패
+- **결과 우선**: 기능 동작 확인 후 스타일 수정
 - **실패 전수 보고**: 모든 실패를 수집하여 보고 (첫 번째에서 멈추지 않음)
-- **조건부 성공**: 실제 결과 확인 후에만 성공 출력. 무조건적 "All tests passed!" 금지
+- **조건부 성공**: 실제 결과 확인 후에만 성공 출력
 - **3회 연속 실패 시**: 접근 방식 변경 — 웹 검색, 공식 문서, 또는 fresh session
-- **mock 최소화**: 외부 API/네트워크만 mock. 실제 객체 우선
-- **새 기능 = 새 테스트**: 버그 수정 시 회귀 테스트 추가
 
 ## Agent Boundaries
 
 ### Always
-- `analyze_code_impact` for impact analysis before refactoring or deleting code
+- Grep/Glob 기반 impact analysis before refactoring or deleting code
 - Read `.gsd/SPEC.md` before implementation
 - Verify empirically — 명령 실행 결과로 증명
 - Atomic commits per task
 
 ### Ask First
-- Adding external dependencies (`uv add`)
+- Adding external dependencies
 - Deleting files outside task scope
-- Changing public API signatures or database schema
 - Architectural decisions affecting 3+ modules
 
 ### Never

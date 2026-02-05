@@ -1,56 +1,91 @@
 ---
 name: memory-protocol
-description: Memory operation rules — recall/store/search protocol, field requirements, importance scoring, relationship types
-version: 2.0.0
+description: Memory operation rules — file-based recall/store protocol, field requirements, type registry
+version: 4.0.0
 allowed-tools:
-  - memory_store
-  - memory_search
-  - memory_graph
-  - memory_update
-  - memory_delete
-  - memory_stats
-  - memory_list
+  - Read
+  - Write
+  - Grep
+  - Glob
+  - Bash
+---
+
+## Quick Reference
+- **Recall**: `Grep → Glob` 순서, 또는 `md-recall-memory.sh <query> [path] [limit] [mode] [hop]`
+- **Store**: `md-store-memory.sh <title> <content> [tags] [type] [keywords] [contextual_desc] [related]`
+- **A-Mem 필드**: `contextual_description`, `keywords`, `related` (2-hop 검색용)
+- **중복 방지**: 동일 title/slug → 자동 스킵 (Nemori Predict-Calibrate)
+- **스키마**: `.gsd/memories/_schema/*.schema.json`, `type-relations.yaml`
+
 ---
 
 # Memory Protocol
 
-> **Goal**: mcp-memory-service 사용 규칙을 중앙 정의하여 모든 스킬과 훅이 일관된 메모리 패턴을 따르도록 한다.
-> **Scope**: search/store 순서, 필수 필드, importance 점수(AI 자동), relationship 워크어라운드, type 레지스트리.
+> **Goal**: `.gsd/memories/` 파일 기반 메모리 시스템의 사용 규칙을 중앙 정의하여 모든 스킬과 훅이 일관된 메모리 패턴을 따르도록 한다.
+> **Scope**: search/store 순서, 필수 필드, type 레지스트리, A-Mem 확장 필드, 2-hop 검색. 모든 메모리는 마크다운 파일로 저장/검색.
 
 ---
 
 ## Recall Protocol
 
-메모리 조회는 반드시 **semantic search → tag search** 순서를 따른다.
+메모리 조회는 반드시 **Grep 텍스트 검색 → 태그 필터링** 순서를 따른다.
 
-### 1. memory_search (semantic, 우선)
+### 1. Grep 검색 (우선)
 세션/태스크 시작 시 broad context를 먼저 가져온다:
 
-```
-memory_search(
-  query: "{task or feature description}",
-  mode: "semantic"
-)
+```bash
+# .gsd/memories/ 전체에서 키워드 검색
+grep -rli "{keyword}" .gsd/memories/ | sort -r | head -5
 ```
 
-### 2. memory_search (tag 필터, 보충)
-semantic 결과가 부족하거나 특정 태그/타입으로 좁혀야 할 때:
+또는 Grep 도구 사용:
+```
+Grep(pattern: "{keyword}", path: ".gsd/memories/", output_mode: "files_with_matches")
+```
+
+### 2. 태그 기반 필터 (보충)
+특정 타입이나 태그로 좁혀야 할 때:
 
 ```
-memory_search(
-  query: "{specific symptom}",
-  tags: ["debug", "root-cause"]
-)
+Glob(pattern: ".gsd/memories/{type}/*.md")
 ```
+
+```
+Grep(pattern: "tags:.*{tag}", path: ".gsd/memories/", output_mode: "files_with_matches")
+```
+
+### 3. 훅 기반 검색 (자동화)
+훅에서 사용할 때:
+
+```bash
+# 기본 검색 (compact 모드, 2-hop)
+bash .claude/hooks/md-recall-memory.sh "{query}" "$PROJECT_DIR" 5
+
+# 상세 검색 (full 모드)
+bash .claude/hooks/md-recall-memory.sh "{query}" "$PROJECT_DIR" 5 full
+
+# 1-hop만 (related 추적 안함)
+bash .claude/hooks/md-recall-memory.sh "{query}" "$PROJECT_DIR" 5 compact 1
+```
+
+### 4. 2-hop 이웃 검색 (A-Mem)
+검색된 메모리의 `related` 필드를 자동 추적하여 연결된 메모리도 함께 반환:
+
+```bash
+# hop=2 (기본값): related 필드의 메모리도 포함
+bash .claude/hooks/md-recall-memory.sh "auth" "." 5 compact 2
+```
+
+Output에서 `[→related]` 표시로 2-hop 결과 구분 가능.
 
 ### When to Recall
 | Timing | Required | Example |
 |--------|----------|---------|
-| Session start | YES | 세션 시작 시 프로젝트 컨텍스트 search |
-| Task start | YES | 관련 과거 작업/결정 search |
-| Debug start | YES | 유사 버그/eliminated hypotheses search |
-| Plan creation | YES | 과거 deviation/execution-summary search |
-| Arch review | YES | 과거 architecture-decision search |
+| Session start | YES (자동: session-start.sh) | 프로젝트 컨텍스트 검색 |
+| Task start | YES | 관련 과거 작업/결정 검색 |
+| Debug start | YES | 유사 버그/eliminated hypotheses 검색 |
+| Plan creation | YES | 과거 deviation/execution-summary 검색 |
+| Arch review | YES | 과거 architecture-decision 검색 |
 | Before store | NO | 중복 방지 목적으로 선택적 |
 
 ---
@@ -59,13 +94,50 @@ memory_search(
 
 ### Required Fields
 
-모든 `memory_store` 호출에 아래 필드는 **필수**:
+모든 메모리 파일은 아래 YAML frontmatter를 **필수** 포함:
 
-| Field | Description |
-|-------|-------------|
-| `content` | `## {title}\n\n{상세 내용}` (title을 markdown 헤더로 포함) |
-| `metadata.tags` | 콤마 구분 태그 문자열 (최소 2개) |
-| `metadata.type` | Type Registry에서 선택 |
+| Field | Description | Required |
+|-------|-------------|----------|
+| `title` | 메모리 제목 (markdown 헤더로도 반복) | ✓ |
+| `tags` | YAML 배열 (최소 2개) | ✓ |
+| `type` | Type Registry에서 선택 | ✓ |
+| `created` | ISO-8601 타임스탬프 | ✓ |
+| `contextual_description` | A-Mem: 1줄 요약 (200자 제한) | 자동생성 |
+| `keywords` | A-Mem: LLM 생성 검색 키워드 | 권장 |
+| `related` | A-Mem Link: 관련 메모리 파일명 배열 | 선택 |
+
+### 파일 저장 방법
+
+**방법 1: 훅 사용 (권장, A-Mem 확장)**
+```bash
+# 기본
+bash .claude/hooks/md-store-memory.sh "{title}" "{content}" "{tag1,tag2}" "{type}"
+
+# A-Mem 확장 필드 포함
+bash .claude/hooks/md-store-memory.sh "{title}" "{content}" "{tags}" "{type}" "{keywords}" "{contextual_desc}" "{related}"
+```
+
+**중복 방지 (Nemori Predict-Calibrate):**
+- 동일 날짜+title이면 `[SKIP:DUPLICATE]` 반환하고 저장 안 함
+- 중복 시 기존 파일 경로 출력
+
+**방법 2: 직접 파일 생성**
+```markdown
+---
+title: "{title}"
+tags:
+  - tag1
+  - tag2
+type: {type}
+created: {ISO-8601}
+---
+
+## {title}
+
+{content}
+```
+
+파일 경로: `.gsd/memories/{type}/{YYYY-MM-DD}_{slug}.md`
 
 ### Storage Triggers
 
@@ -88,7 +160,7 @@ memory_search(
 
 ## Importance Scoring
 
-mcp-memory-service는 AI 기반 자동 품질 점수를 사용한다. 수동 importance 지정 불가.
+파일 기반 시스템에서 중요도는 content의 상세도와 태그 풍부도로 결정된다.
 중요도를 높이려면 content에 맥락과 증거를 풍부하게 기술한다.
 
 | 중요도 수준 | Content 전략 |
@@ -102,51 +174,84 @@ mcp-memory-service는 AI 기반 자동 품질 점수를 사용한다. 수동 imp
 
 ## Relationship Handling
 
-mcp-memory-service는 `memory_graph`를 통해 자동 연관을 생성한다.
-명시적 relationship 타입(`caused-by`, `solved-by` 등)은 지원되지 않으므로 태그 인코딩으로 대응:
+### A-Mem Link (권장)
+`related` 필드를 사용하여 메모리 간 연결:
 
-### 태그 인코딩 워크어라운드
-
-관련 메모리를 연결할 때 태그에 `related:{content_hash_prefix}` 패턴을 사용:
-
-```
-memory_store(
-  content: "## Root Cause: {cause}\n\n{evidence}",
-  metadata: {
-    tags: "debug,root-cause,related:abc123",
-    type: "root-cause"
-  }
-)
+```yaml
+related:
+  - 2024-01-15_auth-token-expired
+  - 2024-01-16_jwt-validation-fix
 ```
 
-### 연관 조회
+### 연관 조회 (2-hop)
 
-`memory_graph`의 자동 연관 기능 또는 태그 검색으로 조회:
+`md-recall-memory.sh`가 자동으로 `related` 필드를 추적:
+```bash
+# hop=2 (기본): 검색 결과 + related 메모리
+bash .claude/hooks/md-recall-memory.sh "auth" "." 5 compact 2
+```
 
+### 태그 기반 연결 (레거시)
+태그에 `related:{slug}` 패턴도 여전히 지원:
+
+```yaml
+tags:
+  - debug
+  - root-cause
+  - related:2024-01-15_auth-token-expired
 ```
-memory_search(query: "related issue", tags: ["related:abc123"])
+
+---
+
+## Type Relations (Ontology)
+
+`.gsd/memories/_schema/type-relations.yaml`에서 14개 타입 간 관계 정의:
+
+| Relation | 의미 | 예시 |
+|----------|-----|------|
+| `resolves` | A가 B 문제를 해결 | root-cause → debug-eliminated |
+| `informs` | A가 B 결정에 영향 | architecture-decision → pattern-discovery |
+| `triggers` | A 발생 시 B 생성 | debug-blocked → health-event |
+| `generates` | A에서 B 도출 | root-cause → pattern-discovery |
+
+### Search Chains (최적화된 검색 순서)
+```yaml
+debugging_chain: [debug-blocked, debug-eliminated, root-cause, pattern-discovery]
+architecture_chain: [bootstrap, architecture-decision, pattern-discovery]
+session_chain: [session-snapshot, session-summary, session-handoff]
 ```
+
+---
+
+## Schema Validation
+
+`.gsd/memories/_schema/` 디렉토리에 JSON Schema 정의:
+
+- `base.schema.json`: 공통 필드 (A-Mem 확장 포함)
+- `root-cause.schema.json`: 근본 원인 전용 필드
+- `architecture-decision.schema.json`: ADR 스타일 필드
+- `session-summary.schema.json`: Nemori 서사 형태 필드
 
 ---
 
 ## Type Registry
 
-| Type | Description | Primary Tags |
-|------|------------|-------------|
-| `architecture-decision` | 아키텍처 결정 사항 | `arch,decision` |
-| `root-cause` | 디버깅 근본 원인 | `debug,root-cause` |
-| `debug-eliminated` | 배제된 가설 | `debug,eliminated` |
-| `debug-blocked` | 3-strike로 차단된 조사 | `debug,blocked,3-strike` |
-| `health-event` | 컨텍스트 건강 이벤트 | `health,context` |
-| `session-handoff` | 세션 인수인계 정보 | `handoff,session` |
-| `execution-summary` | 실행 결과 요약 | `execution,summary` |
-| `deviation` | 계획 대비 이탈 | `deviation,plan` |
-| `pattern-discovery` | 발견된 패턴/학습 | `pattern,learning` |
-| `bootstrap` | 프로젝트 초기 설정 기록 | `bootstrap,setup` |
-| `session-summary` | 세션 종료 요약 | `session,auto` |
-| `session-snapshot` | Pre-compact 스냅샷 | `session-snapshot,pre-compact` |
-| `security-finding` | 보안 발견 사항 | `security,finding` |
-| `general` | 기타 | context-dependent |
+| Type | Description | Primary Tags | Directory |
+|------|------------|-------------|-----------|
+| `architecture-decision` | 아키텍처 결정 사항 | `arch,decision` | `memories/architecture-decision/` |
+| `root-cause` | 디버깅 근본 원인 | `debug,root-cause` | `memories/root-cause/` |
+| `debug-eliminated` | 배제된 가설 | `debug,eliminated` | `memories/debug-eliminated/` |
+| `debug-blocked` | 3-strike로 차단된 조사 | `debug,blocked,3-strike` | `memories/debug-blocked/` |
+| `health-event` | 컨텍스트 건강 이벤트 | `health,context` | `memories/health-event/` |
+| `session-handoff` | 세션 인수인계 정보 | `handoff,session` | `memories/session-handoff/` |
+| `execution-summary` | 실행 결과 요약 | `execution,summary` | `memories/execution-summary/` |
+| `deviation` | 계획 대비 이탈 | `deviation,plan` | `memories/deviation/` |
+| `pattern-discovery` | 발견된 패턴/학습 | `pattern,learning` | `memories/pattern-discovery/` |
+| `bootstrap` | 프로젝트 초기 설정 기록 | `bootstrap,setup` | `memories/bootstrap/` |
+| `session-summary` | 세션 종료 요약 | `session,auto` | `memories/session-summary/` |
+| `session-snapshot` | Pre-compact 스냅샷 | `session-snapshot,pre-compact` | `memories/session-snapshot/` |
+| `security-finding` | 보안 발견 사항 | `security,finding` | `memories/security-finding/` |
+| `general` | 기타 | context-dependent | `memories/general/` |
 
 ---
 
@@ -154,8 +259,8 @@ memory_search(query: "related issue", tags: ["related:abc123"])
 
 | Anti-Pattern | Why | Instead |
 |-------------|-----|---------|
-| search without semantic first | Semantic이 broader context 제공 | semantic search → tag search 순서 |
+| Grep 없이 바로 파일 열기 | 관련 없는 파일 읽는 시간 낭비 | Grep 검색 → 관련 파일만 Read |
 | content에 title 미포함 | 검색 시 맥락 부족 | `## {title}\n\n{content}` 형식 사용 |
 | 단일 태그 사용 | 검색 정밀도 저하 | 최소 2개 태그 (type + domain) |
 | 매 커밋마다 자동 저장 | noise > signal | Trigger 테이블의 시점만 저장 |
-| 중복 저장 | DB 비대화 | 저장 전 search로 중복 확인 (선택적) |
+| 중복 저장 | 디렉토리 비대화 | 저장 전 Grep으로 중복 확인 (선택적) |

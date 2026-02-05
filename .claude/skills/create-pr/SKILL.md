@@ -3,6 +3,15 @@ name: create-pr
 description: Analyzes changes, creates branch, splits commits logically, pushes and creates pull request via gh CLI
 ---
 
+## Quick Reference
+- **Branch naming**: `feat/<desc>`, `fix/<desc>`, `refactor/<desc>`, `docs/<desc>`
+- **PR 생성**: `gh pr create --title "..." --body "..."`
+- **PR Body**: Summary + Changes + Test Plan + GSD Context 섹션
+- **Push**: `git push -u origin $(git branch --show-current)`
+- **Output**: `PR_CREATED: #N`, `URL: <url>`, `BRANCH: <name>`, `COMMITS: N`
+
+---
+
 # GSD Create PR Skill
 
 <role>
@@ -46,7 +55,7 @@ For GSD phases:
 ### Step 3: Stage and Commit
 
 Use the `commit` skill logic to:
-1. Run pre-commit checks (`qlty check` or `ruff`/`mypy` fallback, + config-based test)
+1. Run pre-commit checks (shellcheck for shell scripts)
 2. Analyze diff for logical splits
 3. Create conventional emoji commits
 
@@ -67,8 +76,8 @@ gh pr create --title "<title>" --body "$(cat <<'EOF'
 <list of key changes with file references>
 
 ## Test Plan
-- [ ] Quality checks pass (`qlty check` or `uv run ruff check .` + `uv run mypy .`)
-- [ ] Tests pass (per project-config.yaml test runner)
+- [ ] Quality checks pass (shellcheck for shell scripts)
+- [ ] Manual verification completed
 - [ ] <specific manual verification steps>
 
 ## GSD Context
@@ -127,6 +136,17 @@ BRANCH: <branch-name>
 COMMITS: <count>
 ```
 
-## Scripts
+## 네이티브 도구 활용
 
-- `scripts/prepare_pr_body.py`: Generate structured PR body from git log and diff stats following GSD template
+PR 본문 생성은 git 명령과 네이티브 도구로 수행:
+
+```bash
+# 커밋 로그 수집
+git log --oneline origin/main..HEAD
+
+# diff 통계
+git diff --stat origin/main..HEAD
+
+# PR 생성 (gh CLI)
+gh pr create --title "{title}" --body "{body}"
+```

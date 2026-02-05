@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Hook: Stop — 세션 컨텍스트 저장
+# Hook: Stop — 세션 컨텍스트 저장 (외부 종속성 없음)
 # .gsd/.modified-this-session 플래그가 있을 때만 실행
-# 1) claude -p (haiku)로 CURRENT.md 생성
-# 2) mcp-memory-service JSON-RPC로 세션 메모리 저장
+# 1) 순수 bash 템플릿으로 CURRENT.md 생성 (Nemori 서사 형태)
+# 2) 파일 기반 메모리로 세션 메모리 저장 (A-Mem 확장)
 # 백그라운드 실행으로 hook timeout 회피
 
 set -uo pipefail
@@ -29,66 +29,76 @@ RECENT_COMMITS=$(git -C "$PROJECT_DIR" log --oneline -3 2>/dev/null)
 (
     TS=$(date '+%Y-%m-%d %H:%M:%S')
 
-    # ── 1. CURRENT.md 생성 (claude -p haiku) ──
-    RESULT=$(claude -p "You are a session context saver. Output ONLY markdown.
+    # ── 1. CURRENT.md 생성 (순수 bash 템플릿, Nemori 서사 형태) ──
+    mkdir -p "$(dirname "$CURRENT_MD")"
 
-Git context:
-Branch: $BRANCH
-Modified files:
-$MODIFIED
+    # 변경 파일 수 계산
+    FILE_COUNT=$(echo "$MODIFIED" | grep -c '.' 2>/dev/null || echo "0")
 
-Diff stats:
-$DIFF_STAT
+    # 변경 파일 목록 추출 (상태 코드 제거)
+    FILE_LIST=$(echo "$MODIFIED" | sed 's/^[[:space:]MADRC?]*//' | head -10)
 
-Recent commits:
-$RECENT_COMMITS
+    # 최근 커밋에서 작업 내용 추론
+    LAST_COMMIT_MSG=$(echo "$RECENT_COMMITS" | head -1 | sed 's/^[a-f0-9]* //')
 
-Generate CURRENT.md with these sections:
-- **Active Task**: Infer from changes
-- **Branch**: $BRANCH
-- **Working Files**: Modified file paths
-- **Recent Changes**: 1-2 sentence summary
-- **Last Updated**: $TS" \
-    --model haiku \
-    --system-prompt "Output only markdown. No tools. No conversation." \
-    --disallowedTools "Bash,Edit,Write,Read,Glob,Grep,Task,WebFetch,WebSearch" \
-    --output-format text 2>/dev/null) || true
+    # 주요 변경 디렉토리 추출
+    MAIN_DIRS=$(echo "$FILE_LIST" | xargs -I{} dirname {} 2>/dev/null | sort -u | head -3 | tr '\n' ', ' | sed 's/,$//')
 
-    if [[ -n "$RESULT" ]]; then
-        mkdir -p "$(dirname "$CURRENT_MD")"
-        echo "$RESULT" > "$CURRENT_MD"
-        echo "[$TS] CURRENT.md saved" >> "$LOG_FILE"
-    else
-        # fallback: claude -p 실패 시 기본 템플릿
-        mkdir -p "$(dirname "$CURRENT_MD")"
-        cat > "$CURRENT_MD" <<EOF
+    # Nemori 서사 형태 템플릿
+    cat > "$CURRENT_MD" <<EOF
 # Current Session Context
 
+## Session Narrative
+> On $TS, the developer was working on the **$BRANCH** branch, modifying $FILE_COUNT files across \`${MAIN_DIRS:-the project}\`. ${LAST_COMMIT_MSG:+The recent work involved: "$LAST_COMMIT_MSG".}
+
+## Context Snapshot
+- **Active Task**: ${LAST_COMMIT_MSG:-Ongoing development}
 - **Branch**: $BRANCH
+- **Files Changed**: $FILE_COUNT
 - **Last Updated**: $TS
 
 ## Working Files
 \`\`\`
 ${MODIFIED:-No changes detected}
 \`\`\`
-EOF
-        echo "[$TS] CURRENT.md saved (fallback)" >> "$LOG_FILE"
-    fi
 
-    # ── 2. mcp-memory-service 저장 (변경 파일이 1개 이상일 때) ──
+## Recent Commits
+\`\`\`
+${RECENT_COMMITS:-No recent commits}
+\`\`\`
+
+## Diff Stats
+\`\`\`
+${DIFF_STAT:-No diff available}
+\`\`\`
+EOF
+    echo "[$TS] CURRENT.md saved (pure bash template)" >> "$LOG_FILE"
+
+    # ── 2. 파일 기반 메모리 저장 (변경 파일이 1개 이상일 때) ──
+    # Nemori + A-Mem: 서사 형태 + 확장 필드로 저장
     FILE_COUNT=$(echo "$MODIFIED" | grep -c '.' 2>/dev/null || echo "0")
-    if [[ "$FILE_COUNT" -ge 1 ]] && command -v memory &>/dev/null; then
+    if [[ "$FILE_COUNT" -ge 1 ]]; then
         # CURRENT.md가 있으면 풍부한 content 사용, 없으면 fallback
         if [[ -f "$CURRENT_MD" ]]; then
             MEMORY_CONTENT=$(head -30 "$CURRENT_MD" 2>/dev/null || true)
         else
-            MEMORY_CONTENT="Branch: $BRANCH. Files changed: $FILE_COUNT. $(echo "$RECENT_COMMITS" | head -1)"
+            MEMORY_CONTENT="On $TS, the developer worked on the $BRANCH branch, modifying $FILE_COUNT files. $(echo "$RECENT_COMMITS" | head -1)"
         fi
-        "$HOOK_DIR/mcp-store-memory.sh" \
+
+        # A-Mem 확장 필드: keywords, contextual_description
+        # 변경 파일에서 키워드 추출
+        KEYWORDS=$(echo "$MODIFIED" | head -5 | sed 's/^[[:space:]MADRC?]*//' | xargs -I{} basename {} 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+        CONTEXTUAL_DESC="Session on $BRANCH: $FILE_COUNT files modified"
+
+        "$HOOK_DIR/md-store-memory.sh" \
             "Session [$TS]: $BRANCH" \
             "$MEMORY_CONTENT" \
-            "session-summary,branch:$BRANCH,auto" 2>/dev/null \
-            && echo "[$TS] Memory stored" >> "$LOG_FILE" \
+            "session-summary,branch:$BRANCH,auto" \
+            "session-summary" \
+            "$KEYWORDS" \
+            "$CONTEXTUAL_DESC" \
+            "" 2>/dev/null \
+            && echo "[$TS] Memory stored (A-Mem extended)" >> "$LOG_FILE" \
             || echo "[$TS] Memory store failed" >> "$LOG_FILE"
     fi
 ) &

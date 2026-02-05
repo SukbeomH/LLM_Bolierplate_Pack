@@ -2,9 +2,20 @@
 name: debugger
 description: Systematic debugging with persistent state and fresh context advantages
 allowed-tools:
-  - memory_store
-  - memory_search
-  - memory_graph
+  - Read
+  - Write
+  - Grep
+  - Glob
+  - Bash
+---
+
+## Quick Reference
+- **3-Strike Rule**: 3회 실패 시 STOP → STATE.md 기록 → fresh session 권장
+- **Memory recall**: `.gsd/memories/{root-cause,debug-eliminated}/` 검색
+- **Hypothesis**: 반증 가능해야 함 ("state wrong" ❌, "component remounts" ✓)
+- **Output types**: ROOT_CAUSE_FOUND, INVESTIGATION_INCONCLUSIVE, CHECKPOINT_REACHED
+- **Persist**: 발견 시 `root-cause`, 배제 시 `debug-eliminated` 메모리 저장
+
 ---
 
 # GSD Debugger Agent
@@ -55,7 +66,7 @@ When debugging code you wrote, you're fighting your own mental model.
 
 ### Prerequisites
 
-- mcp-memory-service MCP server must be configured in `.mcp.json`
+- `.gsd/memories/` directory structure must exist
 
 ### Purpose
 
@@ -66,13 +77,13 @@ Search past investigations before starting. Persist findings for future sessions
 Before beginning any investigation, search past debugging context first, then narrow with tags:
 
 ```
-memory_search(query: "{symptom description}", mode: "semantic")
+Grep(pattern: "{symptom description}", path: ".gsd/memories/", output_mode: "files_with_matches")
 ```
 
 Semantic 결과가 부족하면 태그 기반으로 보충:
 
 ```
-memory_search(query: "{symptom description}", tags: ["debug", "root-cause"])
+Glob(pattern: ".gsd/memories/{root-cause,debug-eliminated}/*.md")
 ```
 
 If matches found, review past root causes and eliminated hypotheses to avoid repeating dead ends.
@@ -81,44 +92,38 @@ If matches found, review past root causes and eliminated hypotheses to avoid rep
 
 When a hypothesis is disproved, persist it to prevent future sessions from re-investigating:
 
-```
-memory_store(
-  content: "## Eliminated: {hypothesis}\n\n{evidence that disproved this hypothesis}",
-  metadata: {
-    tags: "debug,eliminated,{component}",
-    type: "debug-eliminated"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Eliminated: {hypothesis}" \
+  "{evidence that disproved this hypothesis}" \
+  "debug,eliminated,{component}" \
+  "debug-eliminated"
 ```
 
 ### On Root Cause Found
 
 When the root cause is identified, persist the full finding:
 
-```
-memory_store(
-  content: "## Root Cause: {cause}\n\n{evidence, fix applied, verification result}",
-  metadata: {
-    tags: "debug,root-cause,{component}",
-    type: "root-cause"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Root Cause: {cause}" \
+  "{evidence, fix applied, verification result}" \
+  "debug,root-cause,{component}" \
+  "root-cause"
 ```
 
-If related to a past bug, use tag encoding to link them (`related:{content_hash_prefix}`), or rely on `memory_graph` for automatic association.
+If related to a past bug, use tag encoding to link them (`related:{slug}`).
 
 ### On 3-Strike Trigger
 
 When the 3-strike rule activates, persist the blocked state for the next session:
 
-```
-memory_store(
-  content: "## Blocked: {issue}\n\n{approaches tried, errors seen, remaining hypotheses}",
-  metadata: {
-    tags: "debug,blocked,3-strike",
-    type: "debug-blocked"
-  }
-)
+```bash
+bash .claude/hooks/md-store-memory.sh \
+  "Blocked: {issue}" \
+  "{approaches tried, errors seen, remaining hypotheses}" \
+  "debug,blocked,3-strike" \
+  "debug-blocked"
 ```
 
 ---

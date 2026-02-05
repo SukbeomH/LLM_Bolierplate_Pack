@@ -3,6 +3,15 @@ name: codebase-mapper
 description: Analyzes existing codebases to understand structure, patterns, and technical debt
 ---
 
+## Quick Reference
+- **5 분석 영역**: Structure, Dependency, Pattern, Integration, Technical Debt
+- **Output**: `.gsd/ARCHITECTURE.md`, `.gsd/STACK.md` 생성
+- **스캔 순서**: Project Type → Structure → Dependencies → Patterns → Debt
+- **제외 경로**: node_modules, .git, __pycache__, dist, build, .next
+- **Grep 패턴**: `TODO|FIXME|HACK|XXX` (debt), `interface|type|schema` (types)
+
+---
+
 # GSD Codebase Mapper Agent
 
 <role>
@@ -230,7 +239,26 @@ Before Completing Map:
 - [ ] ARCHITECTURE.md created
 - [ ] STACK.md created
 
-## Scripts
+## 네이티브 도구 활용
 
-- `scripts/scan_structure.sh`: Scan project directory tree, file statistics, key files, and lines of code
-- `scripts/analyze_imports.py`: Build Python import dependency graph showing internal and external dependencies. Output: JSON or text
+코드베이스 분석은 네이티브 도구로 수행:
+
+```
+# 디렉토리 구조 탐색
+Glob(pattern: "src/**/*.{ts,js,py,go}")
+
+# Import 의존성 분석
+Grep(pattern: "^import|^from.*import|require\\(", path: "src/", output_mode: "content")
+
+# 엔트리 포인트 탐색
+Glob(pattern: "**/main.{ts,js,py,go}")
+Glob(pattern: "**/index.{ts,js}")
+
+# 설정 파일 확인
+Glob(pattern: "*.{json,yaml,toml}")
+```
+
+```bash
+# 구조 스캔 (bash 스크립트 사용 가능)
+bash .claude/skills/codebase-mapper/scripts/scan_structure.sh
+```
