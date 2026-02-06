@@ -584,6 +584,8 @@ cat > "$ANTIGRAVITY/README.md" << 'READMEEOF'
 
 AI agent development boilerplate for **Google Antigravity IDE**.
 
+**외부 종속성 없음** — 순수 bash 기반 메모리 시스템으로 바로 사용 가능합니다.
+
 ## Quick Start
 
 1. **Open in Antigravity**
@@ -592,25 +594,24 @@ AI agent development boilerplate for **Google Antigravity IDE**.
    antigravity .
    ```
 
-2. **Configure MCP Servers**
-   - Go to Agent panel "..." → MCP Servers → Manage MCP Servers → View raw config
-   - Copy contents from `mcp-settings.json` to your config
-   - Or copy to global config: `~/.gemini/antigravity/mcp-settings.json`
-
-3. **Initialize GSD Documents**
+2. **Initialize GSD Documents**
    ```bash
    zsh scripts/scaffold-gsd.sh
    ```
+
+3. **(선택) Configure MCP Servers**
+   - Go to Agent panel "..." → MCP Servers → Manage MCP Servers → View raw config
+   - Copy contents from `mcp-settings.json` to your config
 
 ## Directory Structure
 
 ```
 .agent/
-├── skills/          # 15 AI skills (SKILL.md format)
+├── skills/          # 16 AI skills (SKILL.md format)
 │   ├── planner/     # Planning skill
 │   ├── executor/    # Execution skill
 │   └── ...
-├── workflows/       # 30 workflow commands (// turbo supported)
+├── workflows/       # Workflow commands (// turbo supported)
 │   ├── plan.md      # /plan command
 │   ├── execute.md   # /execute command
 │   └── ...
@@ -620,23 +621,31 @@ AI agent development boilerplate for **Google Antigravity IDE**.
     └── gsd-workflow.md
 
 templates/gsd/       # GSD document templates
-scripts/             # Utility scripts
-mcp-settings.json    # MCP server configuration
+scripts/             # Utility scripts (메모리 포함)
+mcp-settings.json    # MCP server configuration (선택적)
 ```
 
-## Skills
+## Memory System (순수 Bash)
 
-Skills are specialized agent capabilities in `.agent/skills/[name]/SKILL.md`.
+외부 종속성 없는 파일 기반 메모리 시스템:
+
+```bash
+# 메모리 저장
+bash scripts/md-store-memory.sh "제목" "내용" "태그" "타입"
+
+# 메모리 검색
+bash scripts/md-recall-memory.sh "검색어" "." 5 compact
+```
+
+14개 메모리 타입: `architecture-decision`, `root-cause`, `session-summary` 등
+
+## Skills (16)
 
 | Skill | Description |
 |-------|-------------|
 | `planner` | Creates executable phase plans |
 | `executor` | Executes plans with atomic commits |
 | `verifier` | Verifies work with empirical evidence |
-| `commit` | Conventional emoji commits |
-| `create-pr` | Pull request creation |
-| `pr-review` | Multi-persona code review |
-| `clean` | Code quality tools (ruff, mypy) |
 | `debugger` | Systematic debugging |
 | `impact-analysis` | Change impact analysis |
 | `arch-review` | Architecture review |
@@ -645,6 +654,11 @@ Skills are specialized agent capabilities in `.agent/skills/[name]/SKILL.md`.
 | `context-health-monitor` | Context complexity monitoring |
 | `bootstrap` | Project initialization |
 | `empirical-validation` | Proof-based validation |
+| `memory-protocol` | Memory search/store protocol |
+| `commit` | Conventional emoji commits |
+| `create-pr` | Pull request creation |
+| `pr-review` | Multi-persona code review |
+| `clean` | Code quality tools (shellcheck) |
 
 ## Workflows
 
@@ -659,8 +673,6 @@ Add `// turbo` comment to auto-execute commands:
 2. `npm run test`
 ```
 
-Or `// turbo-all` at the top for all commands.
-
 ### Key Workflows
 
 | Command | Description |
@@ -670,7 +682,6 @@ Or `// turbo-all` at the top for all commands.
 | `/verify` | Verify completed work |
 | `/debug` | Systematic debugging |
 | `/map` | Map codebase structure |
-| `/new-project` | Initialize new project |
 | `/help` | List all commands |
 
 ## Rules
@@ -683,43 +694,14 @@ Rules in `.agent/rules/*.md` are always-on passive guidelines that govern agent 
 | `safety.md` | Dangerous action prevention |
 | `gsd-workflow.md` | GSD methodology rules |
 
-## MCP Servers
+## MCP Servers (선택적)
 
-Pre-configured in `mcp-settings.json`:
+MCP 서버는 **선택적**입니다. 기본 기능은 순수 bash로 동작합니다.
 
-| Server | Purpose |
-|--------|---------|
-| `graph-code` | AST-based code analysis (19 tools) |
-| `memory` | Persistent agent memory (8 tools) |
-| `context7` | Library documentation lookup |
-
-### Setup Options
-
-**Option 1: Project-level** (recommended)
-- Copy `mcp-settings.json` content via Agent panel → MCP Servers
-
-**Option 2: Global**
-```bash
-mkdir -p ~/.gemini/antigravity
-cp mcp-settings.json ~/.gemini/antigravity/
-```
-
-### Environment Variables
-
-```bash
-# Required for context7
-export CONTEXT7_API_KEY="your-api-key"
-```
-
-## Agent Settings
-
-Recommended Antigravity settings:
-
-| Setting | Value | Reason |
-|---------|-------|--------|
-| **Agent Mode** | Planning | Better for complex tasks |
-| **Artifact Review** | Request Review | Review plans before execution |
-| **Terminal Policy** | Always Proceed | With safety rules active |
+| Server | Purpose | Install |
+|--------|---------|---------|
+| `graph-code` | AST-based code analysis | `npm i -g @er77/code-graph-rag-mcp` |
+| `memory` | Semantic memory search | `pipx install mcp-memory-service` |
 
 ## GSD Methodology
 
@@ -737,7 +719,7 @@ Get Shit Done workflow:
 | `CLAUDE.md` | `.agent/rules/*.md` |
 | `.claude/skills/` | `.agent/skills/` |
 | Claude Hooks | `.agent/workflows/` (use `// turbo`) |
-| `.mcp.json` | `mcp-settings.json` |
+| `.mcp.json` | `mcp-settings.json` (선택적) |
 
 ## License
 
@@ -772,8 +754,8 @@ skill_count=$(ls -d "$ANTIGRAVITY/.agent/skills"/*/ 2>/dev/null | wc -l | tr -d 
 workflow_count=$(ls "$ANTIGRAVITY/.agent/workflows/"*.md 2>/dev/null | wc -l | tr -d ' ')
 rules_count=$(ls "$ANTIGRAVITY/.agent/rules/"*.md 2>/dev/null | wc -l | tr -d ' ')
 
-echo "  Skills:    ${skill_count} (expected: 15)"
-[ "$skill_count" -ge 14 ] || echo "    [WARN] Low skill count"
+echo "  Skills:    ${skill_count} (expected: 16)"
+[ "$skill_count" -ge 16 ] || echo "    [WARN] Low skill count"
 
 echo "  Workflows: ${workflow_count}"
 [ "$workflow_count" -ge 1 ] || echo "    [WARN] No workflows found"

@@ -595,7 +595,9 @@ if os.path.isdir(agent_dir):
 # Build README
 readme = f"""# GSD Plugin for Claude Code
 
-**Get Shit Done** v{version} — AI agent development methodology with code-graph-rag and memory-graph integration.
+**Get Shit Done** v{version} — AI agent development methodology with pure bash-based memory system.
+
+**외부 종속성 없음** — Node.js, Python 환경, MCP 서버 설치 없이 바로 사용 가능합니다.
 
 ## Installation
 
@@ -607,30 +609,42 @@ claude --plugin-dir /path/to/gsd-plugin
 alias claude='claude --plugin-dir /path/to/gsd-plugin'
 ```
 
-### Per-Project Memory Isolation
+### GitHub Release에서 설치
 
-The plugin uses `${{CLAUDE_PROJECT_DIR}}` for all paths, so each project gets its own:
-- Memory DB: `.agent/data/memory-service/memories.db`
-- Code index: per-project AST graph
-
-Create the memory directory in your project:
 ```bash
-mkdir -p .agent/data/memory-service
+# 최신 버전
+VERSION=$(gh release view --json tagName -q .tagName | sed 's/gsd-plugin-v//')
+curl -L "https://github.com/SukbeomH/LLM_Bolierplate_Pack/releases/latest/download/gsd-plugin-${{VERSION}}.zip" -o gsd-plugin.zip
+unzip gsd-plugin.zip -d ~/.claude/plugins/gsd
 ```
 
 ## Prerequisites
 
 - **Claude Code** CLI
-- **Node.js** 18+ (code-graph-rag MCP server)
-- **Python** 3.11+ (hook scripts)
 
-### MCP Servers
+### Optional: MCP Servers
+
+MCP 서버는 **선택적**입니다. 기본 메모리 기능은 순수 bash 스크립트로 제공됩니다.
 
 | Server | Install | Role |
 |--------|---------|------|
-| code-graph-rag | `npm i -g @er77/code-graph-rag-mcp` | AST-based code analysis (19 tools) |
-| mcp-memory-service | `pipx install mcp-memory-service` | Agent memory persistence |
+| code-graph-rag *(optional)* | `npm i -g @er77/code-graph-rag-mcp` | AST-based code analysis |
+| mcp-memory-service *(optional)* | `pipx install mcp-memory-service` | Semantic memory search |
 | context7 *(optional)* | Project `.mcp.json`에 직접 추가 | Library documentation lookup |
+
+## Memory System
+
+순수 bash 기반 메모리 시스템 (외부 종속성 없음):
+
+```bash
+# 메모리 저장
+bash scripts/md-store-memory.sh "제목" "내용" "태그1,태그2" "타입"
+
+# 메모리 검색
+bash scripts/md-recall-memory.sh "검색어" "." 5 compact
+```
+
+14개 메모리 타입: `architecture-decision`, `root-cause`, `debug-eliminated`, `session-summary` 등
 
 ## Quick Start
 
@@ -763,11 +777,11 @@ template_count=$(ls "$PLUGIN/templates/gsd/templates/"*.md 2>/dev/null | wc -l |
 echo "  Commands:  ${cmd_count}"
 [ "$cmd_count" -ge 1 ] || { echo "    [WARN] No commands found"; }
 
-echo "  Skills:    ${skill_count} (expected: 15)"
-[ "$skill_count" -ge 15 ] || { echo "    [WARN] Expected 15 skills"; }
+echo "  Skills:    ${skill_count} (expected: 16)"
+[ "$skill_count" -ge 16 ] || { echo "    [WARN] Expected 16 skills"; }
 
-echo "  Agents:    ${agent_count} (expected: 13)"
-[ "$agent_count" -ge 13 ] || { echo "    [WARN] Expected 13 agents"; }
+echo "  Agents:    ${agent_count} (expected: 14)"
+[ "$agent_count" -ge 14 ] || { echo "    [WARN] Expected 14 agents"; }
 
 echo "  Scripts:   ${script_count} (expected: 9)"
 [ "$script_count" -ge 9 ] || { echo "    [WARN] Expected 9 scripts"; }

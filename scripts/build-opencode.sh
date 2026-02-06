@@ -486,12 +486,15 @@ cat > "$OPENCODE/README.md" << 'READMEEOF'
 
 AI agent development boilerplate for **OpenCode**.
 
+**외부 종속성 없음** — 순수 bash 기반 메모리 시스템으로 바로 사용 가능합니다.
+
 ## Features
 
 - ✅ **Model per Agent**: Each agent has its own model configuration
 - ✅ **Token Optimization**: Haiku for planning, Sonnet/Opus for implementation
 - ✅ **Compaction**: Auto context compaction with pruning
 - ✅ **Multi-provider**: Anthropic, OpenAI, Google, and more
+- ✅ **Pure Bash Memory**: 외부 종속성 없는 파일 기반 메모리 시스템
 
 ## Quick Start
 
@@ -500,7 +503,6 @@ AI agent development boilerplate for **OpenCode**.
    cp -r opencode-boilerplate/.opencode /path/to/project/
    cp opencode-boilerplate/opencode.json /path/to/project/
    cp opencode-boilerplate/AGENTS.md /path/to/project/
-   cp opencode-boilerplate/.mcp.json /path/to/project/
    ```
 
 2. **Initialize GSD Documents**
@@ -517,18 +519,33 @@ AI agent development boilerplate for **OpenCode**.
 
 ```
 .opencode/
-├── agents/          # Agent definitions with model config
+├── agents/          # 14 agents with model config
 │   ├── planner.md   # model: anthropic/claude-opus-4-20250514
 │   ├── executor.md  # model: anthropic/claude-sonnet-4-20250514
 │   └── ...
 ├── commands/        # Workflow commands (/plan, /execute, etc.)
 ├── plugins/         # TypeScript plugins
-└── skill/           # Skills (SKILL.md format)
+└── skill/           # 16 skills (SKILL.md format)
 
+scripts/             # Utility scripts (메모리 포함)
 opencode.json        # Main config with agent model mapping
 AGENTS.md            # Project rules (equivalent to CLAUDE.md)
-.mcp.json            # MCP server configuration
+.mcp.json            # MCP server configuration (선택적)
 ```
+
+## Memory System (순수 Bash)
+
+외부 종속성 없는 파일 기반 메모리 시스템:
+
+```bash
+# 메모리 저장
+bash scripts/md-store-memory.sh "제목" "내용" "태그" "타입"
+
+# 메모리 검색
+bash scripts/md-recall-memory.sh "검색어" "." 5 compact
+```
+
+14개 메모리 타입: `architecture-decision`, `root-cause`, `session-summary` 등
 
 ## Agent Model Configuration
 
@@ -570,10 +587,6 @@ The `opencode.json` includes token-saving features:
 }
 ```
 
-- `auto`: Automatically compact when context is full
-- `prune`: Remove old tool outputs
-- `small_model`: Use Haiku for title generation, etc.
-
 ## Commands
 
 | Command | Description |
@@ -584,15 +597,14 @@ The `opencode.json` includes token-saving features:
 | `/debug` | Systematic debugging |
 | `/help` | List all commands |
 
-## MCP Servers
+## MCP Servers (선택적)
 
-Pre-configured in `.mcp.json`:
+MCP 서버는 **선택적**입니다. 기본 기능은 순수 bash로 동작합니다.
 
-| Server | Purpose |
-|--------|---------|
-| `graph-code` | AST-based code analysis |
-| `memory` | Persistent agent memory (8 tools) |
-| `context7` | Library documentation |
+| Server | Purpose | Install |
+|--------|---------|---------|
+| `graph-code` | AST-based code analysis | `npm i -g @er77/code-graph-rag-mcp` |
+| `memory` | Semantic memory search | `pipx install mcp-memory-service` |
 
 ## Migration from Claude Code
 
@@ -642,14 +654,14 @@ agent_count=$(ls "$OPENCODE/.opencode/agents/"*.md 2>/dev/null | wc -l | tr -d '
 command_count=$(ls "$OPENCODE/.opencode/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
 skill_count=$(ls -d "$OPENCODE/.opencode/skill"/*/ 2>/dev/null | wc -l | tr -d ' ')
 
-echo "  Agents:   ${agent_count} (expected: 13)"
-[ "$agent_count" -ge 12 ] || echo "    [WARN] Low agent count"
+echo "  Agents:   ${agent_count} (expected: 14)"
+[ "$agent_count" -ge 14 ] || echo "    [WARN] Low agent count"
 
 echo "  Commands: ${command_count}"
 [ "$command_count" -ge 1 ] || echo "    [WARN] No commands found"
 
-echo "  Skills:   ${skill_count} (expected: 15)"
-[ "$skill_count" -ge 14 ] || echo "    [WARN] Low skill count"
+echo "  Skills:   ${skill_count} (expected: 16)"
+[ "$skill_count" -ge 16 ] || echo "    [WARN] Low skill count"
 
 # Model field check
 echo ""
